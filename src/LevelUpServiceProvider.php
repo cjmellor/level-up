@@ -1,12 +1,13 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace LevelUp\Experience;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use VendorName\Skeleton\Commands\SkeletonCommand;
 
-class SkeletonServiceProvider extends PackageServiceProvider
+// use LevelUp\Experience\Commands\ExperienceCommand;
+
+class LevelUpServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
@@ -16,10 +17,10 @@ class SkeletonServiceProvider extends PackageServiceProvider
          * More info: https://github.com/spatie/laravel-package-tools
          */
         $package
-            ->name('skeleton')
+            ->name('level-up')
             ->hasConfigFile()
-            ->hasViews()
-            ->hasMigration('create_skeleton_table')
-            ->hasCommand(SkeletonCommand::class);
+//            ->hasViews()
+            ->hasMigrations(['create_experiences_table', 'create_levels_table']);
+//            ->hasCommand(ExperienceCommand::class);
     }
 }

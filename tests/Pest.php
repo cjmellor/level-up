@@ -1,5 +1,6 @@
 <?php
 
-use VendorName\Skeleton\Tests\TestCase;
+use LevelUp\Experience\Tests\TestCase;
+use Plannr\Laravel\FastRefreshDatabase\Traits\FastRefreshDatabase;
 
 uses(TestCase::class)->in(__DIR__);

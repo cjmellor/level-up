@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace LevelUp\Experience\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class ExperienceCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'level-up';
 
     public $description = 'My command';
 

@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use Rector\CodeQuality\Rector\Class_\InlineConstructorDefaultToPropertyRector;
+use Rector\CodingStyle\Rector\ArrowFunction\StaticArrowFunctionRector;
+use Rector\CodingStyle\Rector\Closure\StaticClosureRector;
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
@@ -24,6 +25,11 @@ return static function (RectorConfig $rectorConfig): void {
         SetList::CODING_STYLE,
         SetList::DEAD_CODE,
         SetList::EARLY_RETURN,
-        LaravelSetList::LARAVEL_:laravel_version0
+        LaravelSetList::LARAVEL_100
+    ]);
+
+    $rectorConfig->skip([
+        StaticArrowFunctionRector::class,
+        StaticClosureRector::class,
     ]);
 };
