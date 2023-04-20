@@ -2,6 +2,7 @@
 
 namespace LevelUp\Experience;
 
+use LevelUp\Experience\Providers\EventServiceProvider;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
