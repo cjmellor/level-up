@@ -19,8 +19,9 @@
     ],
     "require": {
         "php": "^8.2",
-        "spatie/laravel-package-tools": "^1.14.2",
-        "illuminate/contracts": "^10.0"
+        "illuminate/contracts": "^10.0",
+        "laravel/pint": "^1.9",
+        "spatie/laravel-package-tools": "^1.14.2"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^0.17.0",
