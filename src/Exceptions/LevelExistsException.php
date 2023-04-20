@@ -12,6 +12,6 @@ class LevelExistsException extends Exception
     {
         Log::error($exception->getMessage());
 
-        return new static(message: "The level with number \"$levelNumber\" already exists.");
+        return new static(message: sprintf('The level with number "%d" already exists.', $levelNumber));
     }
 }

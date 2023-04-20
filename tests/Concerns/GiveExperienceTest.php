@@ -32,7 +32,7 @@ test(description: 'giving points to a User without an experience Model, creates 
     // an Experience Model doesn't exist for the User, so this should create one.
     $this->user->addPoints(amount: 10);
 
-    expect($this->user->experience->experience_points)->toBe(expected: 10)
+    expect(value: $this->user->experience->experience_points)->toBe(expected: 10)
         ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
@@ -42,7 +42,7 @@ test(description: 'giving points to a User without an experience Model, creates 
     ]);
 });
 
-test(description: 'giving points to a User with an experience Model, updates the experience Model', closure: function () {
+test(description: 'giving points to a User with an experience Model, updates the experience Model', closure: function (): void {
     Event::fake();
 
     // this creates the experience Model
@@ -52,7 +52,7 @@ test(description: 'giving points to a User with an experience Model, updates the
 
     Event::assertDispatched(event: PointsIncreasedEvent::class);
 
-    expect($this->user->experience->experience_points)->toBe(expected: 20)
+    expect(value: $this->user->experience->experience_points)->toBe(expected: 20)
         ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [

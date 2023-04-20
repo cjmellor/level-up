@@ -15,7 +15,7 @@ it(description: 'can create a level', closure: function () {
     ]);
 });
 
-it(description: 'throws an error if a level exists', closure: function () {
+it(description: 'throws an error if a level exists', closure: function (): void {
     Level::add(level: 1, pointsToNextLevel: 100);
     Level::add(level: 1, pointsToNextLevel: 100);
 })->throws(exception: LevelExistsException::class, exceptionMessage: 'The level with number "1" already exists');

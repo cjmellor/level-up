@@ -5,8 +5,6 @@ namespace LevelUp\Experience;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-// use LevelUp\Experience\Commands\ExperienceCommand;
-
 class LevelUpServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
@@ -19,8 +17,13 @@ class LevelUpServiceProvider extends PackageServiceProvider
         $package
             ->name('level-up')
             ->hasConfigFile()
-//            ->hasViews()
             ->hasMigrations(['create_experiences_table', 'create_levels_table']);
-//            ->hasCommand(ExperienceCommand::class);
+    }
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->register(EventServiceProvider::class);
     }
 }
