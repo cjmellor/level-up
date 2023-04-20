@@ -3,6 +3,7 @@
 namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
 
@@ -28,6 +29,27 @@ trait GiveExperience
         event(new PointsIncreasedEvent(pointsAdded: $amount, totalPoints: $this->experience->experience_points));
 
         return $this->experience;
+    }
+
+    public function deductPoints(int $amount): Experience
+    {
+        $this->experience->decrement(column: 'experience_points', amount: $amount);
+
+        event(new PointsDecreasedEvent(pointsDecreasedBy: $amount, totalPoints: $this->experience->experience_points));
+
+        return $this->experience;
+    }
+
+    public function setPoints(int $amount): Experience
+    {
+        $this->experience->update(['experience_points' => $amount]);
+
+        return $this->experience;
+    }
+
+    public function getPoints(): int
+    {
+        return $this->experience->experience_points;
     }
 
     public function experience(): HasOne
