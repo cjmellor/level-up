@@ -3,15 +3,15 @@
 use LevelUp\Experience\Exceptions\LevelExistsException;
 use LevelUp\Experience\Models\Level;
 
-it(description: 'can create a level', closure: function () {
-    $level = Level::add(level: 1, pointsToNextLevel: 100);
+it(description: 'can create a level', closure: function (): void {
+    $level = Level::add(level: 5, pointsToNextLevel: 5000);
 
-    expect($level->level)->toBe(expected: 1)
-        ->and($level->next_level_experience)->toBe(expected: 100);
+    expect(value: $level->level)->toBe(expected: 5)
+        ->and($level->next_level_experience)->toBe(expected: 5000);
 
     $this->assertDatabaseHas(table: 'levels', data: [
-        'level' => 1,
-        'next_level_experience' => 100,
+        'level' => 5,
+        'next_level_experience' => 5000,
     ]);
 });
 

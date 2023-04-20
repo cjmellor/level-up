@@ -3,32 +3,8 @@
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\Level;
-use LevelUp\Experience\Tests\Fixtures\User;
 
-beforeEach(function () {
-    /**
-     * Always create a new user instance before each test.
-     */
-    $this->user = new User();
-
-    $this->user->fill(attributes: [
-        'name' => 'Chris Mellor',
-        'email' => 'chris@mellor.pizza',
-        'password' => bcrypt(value: 'password'),
-        'email_verified_at' => now(),
-    ])->save();
-
-    /**
-     * Always create a new level instance before each test.
-     */
-    (new Level())->fill([
-        'level' => 1,
-        'next_level_experience' => 100,
-    ])->save();
-});
-
-test(description: 'giving points to a User without an experience Model, creates a new experience Model', closure: function () {
+test(description: 'giving points to a User without an experience Model, creates a new experience Model', closure: function (): void {
     // an Experience Model doesn't exist for the User, so this should create one.
     $this->user->addPoints(amount: 10);
 
