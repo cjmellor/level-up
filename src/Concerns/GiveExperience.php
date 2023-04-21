@@ -11,8 +11,19 @@ use LevelUp\Experience\Models\Level;
 
 trait GiveExperience
 {
-    public function addPoints(int $amount): Experience
+    public function addPoints(int $amount, int $multiplier = null): Experience
     {
+        /**
+         * If the Multiplier Service is enabled, apply the Multipliers.
+         */
+        if (config(key: 'level-up.multiplier.enabled')) {
+            $amount = $this->getMultipliers(amount: $amount);
+        }
+
+        if ($multiplier) {
+            $amount *= $multiplier;
+        }
+
         /**
          * If the User does not have an Experience record, create one.
          */
@@ -62,5 +73,10 @@ trait GiveExperience
     public function level(): BelongsTo
     {
         return $this->belongsTo(related: Level::class);
+    }
+
+    protected function getMultipliers(int $amount): int
+    {
+        return app(MultiplierService::class)(points: $amount);
     }
 }

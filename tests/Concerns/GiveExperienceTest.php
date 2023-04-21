@@ -1,8 +1,13 @@
 <?php
 
+use Carbon\Carbon;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
+
+beforeEach(closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: false);
+});
 
 test(description: 'giving points to a User without an experience Model, creates a new experience Model', closure: function (): void {
     // an Experience Model doesn't exist for the User, so this should create one.
@@ -76,4 +81,36 @@ it(description: "can retrieve the Users' points", closure: function (): void {
     $this->user->addPoints(amount: 10);
 
     expect(value: $this->user->getPoints())->toBe(expected: 10);
+});
+
+test(description: 'when using a multiplier, times the points by it', closure: function (): void {
+    $this->user->addPoints(amount: 10, multiplier: 2);
+
+    expect(value: $this->user->experience->experience_points)->toBe(expected: 20)
+        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+
+    $this->assertDatabaseHas(table: 'experiences', data: [
+        'user_id' => $this->user->id,
+        'level_id' => 1,
+        'experience_points' => 20,
+    ]);
+});
+
+test(description: 'points can be multiplied', closure: function () {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
+    config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
+
+    Carbon::setTestNow(Carbon::create(month: 4));
+
+    $this->user->addPoints(amount: 10);
+
+    expect(value: $this->user->experience->experience_points)->toBe(expected: 50)
+        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+
+    $this->assertDatabaseHas(table: 'experiences', data: [
+        'user_id' => $this->user->id,
+        'level_id' => 1,
+        'experience_points' => 50,
+    ]);
 });

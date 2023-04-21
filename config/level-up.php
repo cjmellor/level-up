@@ -44,4 +44,19 @@ return [
     |
     */
     'starting_level' => 1,
+
+    /*
+    |-----------------------------------------------------------------------
+    | Multiplier Paths
+    |-----------------------------------------------------------------------
+    |
+    | Set the path and namespace for the Multiplier classes.
+    |
+    */
+    'multiplier' => [
+        'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
+        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
+        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
+    ],
+
 ];
