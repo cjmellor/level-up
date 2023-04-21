@@ -11,11 +11,11 @@ readonly class MultiplierService
         //
     }
 
-    public function __invoke(int $points): int
+    public function __invoke(int $points, array $data): int
     {
         /** @var \LevelUp\Experience\Contracts\Multiplier $multiplier */
         return $this->multipliers->reduce(
-            callback: fn ($amount, $multiplier) => $multiplier->qualifies()
+            callback: fn ($amount, $multiplier) => $multiplier->qualifies($data)
                 ? $amount * $multiplier->setMultiplier()
                 : $amount,
             initial: $points

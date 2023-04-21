@@ -11,13 +11,13 @@ use LevelUp\Experience\Models\Level;
 
 trait GiveExperience
 {
-    public function addPoints(int $amount, int $multiplier = null): Experience
+    public function addPoints(int $amount, int $multiplier = null, array $data = []): Experience
     {
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
         if (config(key: 'level-up.multiplier.enabled')) {
-            $amount = $this->getMultipliers(amount: $amount);
+            $amount = $this->getMultipliers(amount: $amount, data: $data);
         }
 
         if ($multiplier) {
@@ -75,8 +75,8 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 
-    protected function getMultipliers(int $amount): int
+    protected function getMultipliers(int $amount, array $data): int
     {
-        return app(MultiplierService::class)(points: $amount);
+        return app(MultiplierService::class)(points: $amount, data: $data);
     }
 }
