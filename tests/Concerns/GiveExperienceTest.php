@@ -4,6 +4,7 @@ use Carbon\Carbon;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\Level;
 
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
@@ -13,8 +14,9 @@ test(description: 'giving points to a User without an experience Model, creates 
     // an Experience Model doesn't exist for the User, so this should create one.
     $this->user->addPoints(amount: 10);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 10)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 10)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
@@ -33,8 +35,9 @@ test(description: 'giving points to a User with an experience Model, updates the
 
     Event::assertDispatched(event: PointsIncreasedEvent::class);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 20)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 20)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
@@ -52,8 +55,9 @@ it(description: 'can deduct points from a User', closure: function (): void {
 
     Event::assertDispatched(event: PointsDecreasedEvent::class);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 5)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 5)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
@@ -67,8 +71,9 @@ it(description: 'can set points to a User', closure: function (): void {
 
     $this->user->setPoints(amount: 5);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 5)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 5)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
@@ -80,14 +85,17 @@ it(description: 'can set points to a User', closure: function (): void {
 it(description: "can retrieve the Users' points", closure: function (): void {
     $this->user->addPoints(amount: 10);
 
-    expect(value: $this->user->getPoints())->toBe(expected: 10);
+    expect(value: $this->user)
+        ->getPoints()
+        ->toBe(expected: 10);
 });
 
 test(description: 'when using a multiplier, times the points by it', closure: function (): void {
     $this->user->addPoints(amount: 10, multiplier: 2);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 20)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 20)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
@@ -105,8 +113,9 @@ test(description: 'points can be multiplied', closure: function () {
 
     $this->user->addPoints(amount: 10);
 
-    expect(value: $this->user->experience->experience_points)->toBe(expected: 50)
-        ->and($this->user->experience)->toBeInstanceOf(class: Experience::class);
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 50)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
