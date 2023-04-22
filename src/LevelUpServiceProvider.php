@@ -18,7 +18,11 @@ class LevelUpServiceProvider extends PackageServiceProvider
         $package
             ->name('level-up')
             ->hasConfigFile()
-            ->hasMigrations(['create_experiences_table', 'create_levels_table']);
+            ->hasMigrations([
+                'create_levels_table',
+                'create_experiences_table',
+                'add_level_relationship_to_users_table',
+            ]);
     }
 
     public function register(): void

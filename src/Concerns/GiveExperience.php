@@ -2,10 +2,12 @@
 
 namespace LevelUp\Experience\Concerns;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\Level;
 
 trait GiveExperience
 {
@@ -31,6 +33,11 @@ trait GiveExperience
         return $this->experience;
     }
 
+    public function experience(): HasOne
+    {
+        return $this->hasOne(related: Experience::class);
+    }
+
     public function deductPoints(int $amount): Experience
     {
         $this->experience->decrement(column: 'experience_points', amount: $amount);
@@ -52,8 +59,8 @@ trait GiveExperience
         return $this->experience->experience_points;
     }
 
-    public function experience(): HasOne
+    public function level(): BelongsTo
     {
-        return $this->hasOne(Experience::class);
+        return $this->belongsTo(related: Level::class);
     }
 }

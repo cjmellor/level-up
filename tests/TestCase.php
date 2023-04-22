@@ -38,10 +38,13 @@ class TestCase extends Orchestra
             $table->timestamps();
         });
 
+        $migration = include __DIR__.'/../database/migrations/create_levels_table.php.stub';
+        $migration->up();
+
         $migration = include __DIR__.'/../database/migrations/create_experiences_table.php.stub';
         $migration->up();
 
-        $migration = include __DIR__.'/../database/migrations/create_levels_table.php.stub';
+        $migration = include __DIR__.'/../database/migrations/add_level_relationship_to_users_table.php.stub';
         $migration->up();
     }
 }
