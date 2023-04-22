@@ -4,20 +4,24 @@ namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
 use LevelUp\Experience\Models\Level;
+use LevelUp\Experience\Services\MultiplierService;
 
 trait GiveExperience
 {
-    public function addPoints(int $amount, int $multiplier = null, array $data = []): Experience
+    protected ?Collection $multiplierData = null;
+
+    public function addPoints(int $amount, int $multiplier = null): Experience
     {
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
         if (config(key: 'level-up.multiplier.enabled')) {
-            $amount = $this->getMultipliers(amount: $amount, data: $data);
+            $amount = $this->getMultipliers(amount: $amount);
         }
 
         if ($multiplier) {
@@ -42,6 +46,15 @@ trait GiveExperience
         event(new PointsIncreasedEvent(pointsAdded: $amount, totalPoints: $this->experience->experience_points));
 
         return $this->experience;
+    }
+
+    protected function getMultipliers(int $amount): int
+    {
+        $multiplierService = app(MultiplierService::class, [
+            'data' => $this->multiplierData ? $this->multiplierData->toArray() : [],
+        ]);
+
+        return $multiplierService(points: $amount);
     }
 
     public function experience(): HasOne
@@ -70,13 +83,15 @@ trait GiveExperience
         return $this->experience->experience_points;
     }
 
+    public function withMultiplierData(array $data): static
+    {
+        $this->multiplierData = collect($data);
+
+        return $this;
+    }
+
     public function level(): BelongsTo
     {
         return $this->belongsTo(related: Level::class);
-    }
-
-    protected function getMultipliers(int $amount, array $data): int
-    {
-        return app(MultiplierService::class)(points: $amount, data: $data);
     }
 }

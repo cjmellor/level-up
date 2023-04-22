@@ -6,8 +6,7 @@ use LevelUp\Experience\Contracts\Multiplier;
 
 class isMonthApril implements Multiplier
 {
-
-    public function qualifies(): bool
+    public function qualifies(array $data): bool
     {
         return now()->month === 4;
     }
