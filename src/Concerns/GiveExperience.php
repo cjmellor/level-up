@@ -71,16 +71,20 @@ trait GiveExperience
         return $this->experience;
     }
 
+    /**
+     * @throws \Exception
+     */
     public function setPoints(int $amount): Experience
     {
-        $this->experience->update(['experience_points' => $amount]);
+        if (! $this->experience()->exists()) {
+            throw new \Exception(message: 'User has no experience record.');
+        }
+
+        $this->experience->update(attributes: [
+            'experience_points' => $amount,
+        ]);
 
         return $this->experience;
-    }
-
-    public function getPoints(): int
-    {
-        return $this->experience->experience_points;
     }
 
     public function withMultiplierData(array $data): static
@@ -93,5 +97,17 @@ trait GiveExperience
     public function level(): BelongsTo
     {
         return $this->belongsTo(related: Level::class);
+    }
+
+    public function nextLevelAt(): int
+    {
+        $pointsToNextLevel = Level::where(column: 'level', operator: $this->experience->level->level + 1)->value(column: 'next_level_experience') - $this->getPoints();
+
+        return max($pointsToNextLevel, 0);
+    }
+
+    public function getPoints(): int
+    {
+        return $this->experience->experience_points;
     }
 }
