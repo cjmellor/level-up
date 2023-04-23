@@ -99,9 +99,9 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 
-    public function nextLevelAt(): int
+    public function nextLevelAt(int $checkAgainst = null): int
     {
-        $pointsToNextLevel = Level::where(column: 'level', operator: $this->experience->level->level + 1)->value(column: 'next_level_experience') - $this->getPoints();
+        $pointsToNextLevel = Level::where(column: 'level', operator: $checkAgainst ?? $this->experience->level->level + 1)->value(column: 'next_level_experience') - $this->getPoints();
 
         return max($pointsToNextLevel, 0);
     }
