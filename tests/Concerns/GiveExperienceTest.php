@@ -129,23 +129,14 @@ test(description: 'points can be multiplied', closure: function () {
 });
 
 test('a User can see how many more points are needed until they can level up', function () {
-    Level::add(level: 1, pointsToNextLevel: 20);
-    Level::add(level: 2, pointsToNextLevel: 40);
-
     $this->user->addPoints(amount: 10);
 
     expect($this->user)
         ->nextLevelAt()
-        ->toBe(30);
+        ->toBe(90);
 });
 
 test(description: 'when a User hits the next level threshold, their level will increase', closure: function () {
-    Level::add(
-        ['level' => 1, 'next_level_experience' => NULL],
-        ['level' => 2, 'next_level_experience' => 100],
-        ['level' => 3, 'next_level_experience' => 250],
-    );
-
     $this->user->addPoints(amount: 1);
     $this->user->addPoints(amount: 149);
 

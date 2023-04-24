@@ -42,7 +42,7 @@ trait GiveExperience
         /**
          * If the User does have an Experience record, update it.
          */
-        if ($this->getLevel() >= Level::getLastLevel() && config(key: 'level-up.level_cap.enabled') && config(key: 'level-up.level_cap.points_continue') === true) {
+        if ($this->getLevel() >= Level::getLastLevel() && config(key: 'level-up.level_cap.enabled') && config(key: 'level-up.level_cap.points_continue')) {
             return $this->experience;
         }
 
@@ -106,7 +106,7 @@ trait GiveExperience
 
     public function nextLevelAt(int $checkAgainst = null): int
     {
-        $nextLevel = Level::firstWhere(column: 'level', operator: $checkAgainst ?? $this->getLevel() + 1)();
+        $nextLevel = Level::firstWhere(column: 'level', operator: $checkAgainst ?? $this->getLevel() + 1);
 
         if ($nextLevel && $nextLevel->next_level_experience !== null) {
             $pointsDifference = $nextLevel->next_level_experience - Level::firstWhere(column: 'level', operator: $this->getLevel())->next_level_experience;
