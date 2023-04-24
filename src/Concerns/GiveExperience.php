@@ -2,6 +2,7 @@
 
 namespace LevelUp\Experience\Concerns;
 
+use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
@@ -41,9 +42,13 @@ trait GiveExperience
         /**
          * If the User does have an Experience record, update it.
          */
+        if ($this->getLevel() >= Level::getLastLevel() && config(key: 'level-up.level_cap.enabled') && config(key: 'level-up.level_cap.points_continue') === true) {
+            return $this->experience;
+        }
+
         $this->experience->increment(column: 'experience_points', amount: $amount);
 
-        event(new PointsIncreasedEvent(pointsAdded: $amount, totalPoints: $this->experience->experience_points));
+        event(new PointsIncreasedEvent(pointsAdded: $amount, totalPoints: $this->experience->experience_points, user: $this));
 
         return $this->experience;
     }
@@ -62,6 +67,11 @@ trait GiveExperience
         return $this->hasOne(related: Experience::class);
     }
 
+    public function getLevel(): int
+    {
+        return $this->experience->level->level;
+    }
+
     public function deductPoints(int $amount): Experience
     {
         $this->experience->decrement(column: 'experience_points', amount: $amount);
@@ -77,7 +87,7 @@ trait GiveExperience
     public function setPoints(int $amount): Experience
     {
         if (! $this->experience()->exists()) {
-            throw new \Exception(message: 'User has no experience record.');
+            throw new Exception(message: 'User has no experience record.');
         }
 
         $this->experience->update(attributes: [
@@ -94,20 +104,41 @@ trait GiveExperience
         return $this;
     }
 
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(related: Level::class);
-    }
-
     public function nextLevelAt(int $checkAgainst = null): int
     {
-        $pointsToNextLevel = Level::where(column: 'level', operator: $checkAgainst ?? $this->experience->level->level + 1)->value(column: 'next_level_experience') - $this->getPoints();
+        $nextLevel = Level::firstWhere(column: 'level', operator: $checkAgainst ?? $this->getLevel() + 1)();
 
-        return max($pointsToNextLevel, 0);
+        if ($nextLevel && $nextLevel->next_level_experience !== null) {
+            $pointsDifference = $nextLevel->next_level_experience - Level::firstWhere(column: 'level', operator: $this->getLevel())->next_level_experience;
+            return abs(num: $pointsDifference - $this->getPoints());
+        }
+
+        return 0;
     }
 
     public function getPoints(): int
     {
         return $this->experience->experience_points;
+    }
+
+    public function levelUp(): void
+    {
+//        if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= Level::getLastLevel()) {
+//            return;
+//        }
+
+        $nextLevel = Level::where(column: 'level', operator: $this->getLevel() + 1)->first();
+
+        $this->experience->level()->associate(model: $nextLevel);
+        $this->experience->save();
+
+        $this->update(attributes: [
+            'level_id' => $nextLevel->id,
+        ]);
+    }
+
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(related: Level::class);
     }
 }

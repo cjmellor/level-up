@@ -14,16 +14,39 @@ class Level extends Model
     /**
      * @throws \LevelUp\Experience\Exceptions\LevelExistsException
      */
-    public static function add(int $level, int $pointsToNextLevel): self
+    public static function add(...$levels): array
     {
-        try {
-            return self::create([
-                'level' => $level,
-                'next_level_experience' => $pointsToNextLevel,
-            ]);
-        } catch (Throwable $throwable) {
-            throw LevelExistsException::handle(levelNumber: $level, exception: $throwable);
+        $newLevels = [];
+
+        foreach ($levels as $level) {
+            if (is_array($level)) {
+                $levelNumber = $level['level'];
+                $pointsToNextLevel = $level['next_level_experience'];
+            } else {
+                $levelNumber = $level;
+                $pointsToNextLevel = $levels[1] ?? 0;
+            }
+
+            try {
+                $newLevels[] = self::create([
+                    'level' => $levelNumber,
+                    'next_level_experience' => $pointsToNextLevel,
+                ]);
+            } catch (Throwable $throwable) {
+                throw LevelExistsException::handle(levelNumber: $levelNumber);
+            }
+
+            if (!is_array($level)) {
+                break;
+            }
         }
+
+        return $newLevels;
+    }
+
+    public static function getLastLevel(): int
+    {
+        return self::latest()->first()->level;
     }
 
     public function users(): HasMany

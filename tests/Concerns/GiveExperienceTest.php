@@ -82,6 +82,10 @@ it(description: 'can set points to a User', closure: function (): void {
     ]);
 });
 
+test(description: 'it throws an error if points cannot be set', closure: function () {
+    $this->user->setPoints(amount: 5);
+})->throws(exception: \Exception::class, exceptionMessage: 'User has no experience record.');
+
 it(description: "can retrieve the Users' points", closure: function (): void {
     $this->user->addPoints(amount: 10);
 
@@ -133,4 +137,19 @@ test('a User can see how many more points are needed until they can level up', f
     expect($this->user)
         ->nextLevelAt()
         ->toBe(30);
+});
+
+test(description: 'when a User hits the next level threshold, their level will increase', closure: function () {
+    Level::add(
+        ['level' => 1, 'next_level_experience' => NULL],
+        ['level' => 2, 'next_level_experience' => 100],
+        ['level' => 3, 'next_level_experience' => 250],
+    );
+
+    $this->user->addPoints(amount: 1);
+    $this->user->addPoints(amount: 149);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 150)
+        ->and($this->user->getLevel())->toBe(expected: 2);
 });
