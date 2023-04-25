@@ -11,8 +11,14 @@ class PointsIncreasedListener
     {
         $nextLevel = Level::where('level', $event->user->getLevel() + 1)->first();
 
-        if ($nextLevel && $event->user->getPoints() >= $nextLevel->next_level_experience) {
-            $event->user->levelUp();
+        if (! $nextLevel) {
+            return;
         }
+
+        if ($event->user->getPoints() < $nextLevel->next_level_experience) {
+            return;
+        }
+
+        $event->user->levelUp();
     }
 }

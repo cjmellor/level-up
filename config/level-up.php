@@ -70,6 +70,6 @@ return [
     'level_cap' => [
         'enabled' => env(key: 'LEVEL_CAP_ENABLED', default: true),
         'level' => env(key: 'LEVEL_CAP', default: 100),
-        'points_continue' => env(key: 'LEVEL_CAP_POINTS_CONTINUE', default: false),
+        'points_continue' => env(key: 'LEVEL_CAP_POINTS_CONTINUE', default: true),
     ],
 ];

@@ -82,7 +82,7 @@ it(description: 'can set points to a User', closure: function (): void {
     ]);
 });
 
-test(description: 'it throws an error if points cannot be set', closure: function () {
+test(description: 'it throws an error if points cannot be set', closure: function (): void {
     $this->user->setPoints(amount: 5);
 })->throws(exception: \Exception::class, exceptionMessage: 'User has no experience record.');
 
@@ -108,7 +108,7 @@ test(description: 'when using a multiplier, times the points by it', closure: fu
     ]);
 });
 
-test(description: 'points can be multiplied', closure: function () {
+test(description: 'points can be multiplied', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
     config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
@@ -128,7 +128,7 @@ test(description: 'points can be multiplied', closure: function () {
     ]);
 });
 
-test('a User can see how many more points are needed until they can level up', function () {
+test('a User can see how many more points are needed until they can level up', function (): void {
     $this->user->addPoints(amount: 10);
 
     expect($this->user)
@@ -136,11 +136,54 @@ test('a User can see how many more points are needed until they can level up', f
         ->toBe(90);
 });
 
-test(description: 'when a User hits the next level threshold, their level will increase', closure: function () {
+test(description: 'when a User hits the next level threshold, their level will increase to the correct level', closure: function (): void {
+    $this->user->addPoints(amount: 1);
+    $this->user->addPoints(amount: 99);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 100)
+        ->and($this->user->getLevel())->toBe(expected: 2);
+
+    $this->user->addPoints(amount: 150);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 250)
+        ->and($this->user->getLevel())->toBe(expected: 3);
+});
+
+test(description: 'when the level cap is enabled, and a User hits that level cap, they will not level up', closure: function (): void {
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 2);
+
     $this->user->addPoints(amount: 1);
     $this->user->addPoints(amount: 149);
 
     expect(value: $this->user->experience)
         ->experience_points->toBe(expected: 150)
-        ->and($this->user->getLevel())->toBe(expected: 2);
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+
+    $this->user->addPoints(amount: 150);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 300)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+});
+
+test(description: 'when the level cap is enabled, and a User hits that level cap, they will not level up, but they can continue to earn points', closure: function (): void {
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 2);
+    config()->set(key: 'level-up.level_cap.points_continue', value: true);
+
+    $this->user->addPoints(amount: 1);
+    $this->user->addPoints(amount: 149);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 150)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+
+    $this->user->addPoints(amount: 150);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 300)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
 });

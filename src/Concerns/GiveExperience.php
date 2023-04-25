@@ -42,7 +42,7 @@ trait GiveExperience
         /**
          * If the User does have an Experience record, update it.
          */
-        if ($this->getLevel() >= Level::getLastLevel() && config(key: 'level-up.level_cap.enabled') && config(key: 'level-up.level_cap.points_continue')) {
+        if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= config(key: 'level-up.level_cap.level') && ! (config(key: 'level-up.level_cap.points_continue'))) {
             return $this->experience;
         }
 
@@ -110,6 +110,7 @@ trait GiveExperience
 
         if ($nextLevel && $nextLevel->next_level_experience !== null) {
             $pointsDifference = $nextLevel->next_level_experience - Level::firstWhere(column: 'level', operator: $this->getLevel())->next_level_experience;
+
             return abs(num: $pointsDifference - $this->getPoints());
         }
 
@@ -123,9 +124,9 @@ trait GiveExperience
 
     public function levelUp(): void
     {
-//        if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= Level::getLastLevel()) {
-//            return;
-//        }
+        if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= config(key: 'level-up.level_cap.level')) {
+            return;
+        }
 
         $nextLevel = Level::where(column: 'level', operator: $this->getLevel() + 1)->first();
 

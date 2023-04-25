@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Rector\CodingStyle\Rector\ArrowFunction\StaticArrowFunctionRector;
+use Rector\CodingStyle\Rector\ClassMethod\UnSpreadOperatorRector;
 use Rector\CodingStyle\Rector\Closure\StaticClosureRector;
 use Rector\Config\RectorConfig;
 use Rector\Privatization\Rector\Class_\FinalizeClassesWithoutChildrenRector;
@@ -35,5 +36,6 @@ return static function (RectorConfig $rectorConfig): void {
         FinalizeClassesWithoutChildrenRector::class,
         StaticArrowFunctionRector::class,
         StaticClosureRector::class,
+        UnSpreadOperatorRector::class,
     ]);
 };

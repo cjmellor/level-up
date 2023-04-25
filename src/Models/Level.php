@@ -32,11 +32,11 @@ class Level extends Model
                     'level' => $levelNumber,
                     'next_level_experience' => $pointsToNextLevel,
                 ]);
-            } catch (Throwable $throwable) {
+            } catch (Throwable) {
                 throw LevelExistsException::handle(levelNumber: $levelNumber);
             }
 
-            if (!is_array($level)) {
+            if (! is_array($level)) {
                 break;
             }
         }
