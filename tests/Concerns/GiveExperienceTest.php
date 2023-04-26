@@ -4,7 +4,6 @@ use Carbon\Carbon;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\Level;
 
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
@@ -172,7 +171,6 @@ test(description: 'when the level cap is enabled, and a User hits that level cap
 test(description: 'when the level cap is enabled, and a User hits that level cap, they will not level up, but they can continue to earn points', closure: function (): void {
     config()->set(key: 'level-up.level_cap.enabled', value: true);
     config()->set(key: 'level-up.level_cap.level', value: 2);
-    config()->set(key: 'level-up.level_cap.points_continue', value: true);
 
     $this->user->addPoints(amount: 1);
     $this->user->addPoints(amount: 149);
@@ -187,3 +185,49 @@ test(description: 'when the level cap is enabled, and a User hits that level cap
         ->experience_points->toBe(expected: 300)
         ->and($this->user)->getLevel()->toBe(expected: 2);
 });
+
+test('when the level cap is enabled, and a User hits that level cap, they will not level up, and points will freeze', function () {
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 2);
+    config()->set(key: 'level-up.level_cap.points_continue', value: false);
+
+    $this->user->addPoints(amount: 1);
+    $this->user->addPoints(amount: 249);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 250);
+
+    $this->user->addPoints(amount: 100);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 250);
+});
+
+test('a Users level is restored if the level cap is re-enabled and points continue to increment', function () {
+    config()->set(key: 'level-up.level_cap.enabled', value: false);
+
+    $this->user->addPoints(amount: 1);
+    $this->user->addPoints(amount: 99);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 100)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 2);
+
+    $this->user->addPoints(amount: 200);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 300)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+
+    config()->set(key: 'level-up.level_cap.enabled', value: false);
+
+    $this->user->addPoints(amount: 100);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 400)
+        ->and($this->user)->getLevel()->toBe(expected: 3);
+});
+
