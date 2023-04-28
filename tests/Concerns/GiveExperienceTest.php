@@ -230,4 +230,3 @@ test('a Users level is restored if the level cap is re-enabled and points contin
         ->experience_points->toBe(expected: 400)
         ->and($this->user)->getLevel()->toBe(expected: 3);
 });
-
