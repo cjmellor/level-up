@@ -10,7 +10,7 @@ class PointsIncreasedListener
     public function __invoke(PointsIncreasedEvent $event): void
     {
         if (config(key: 'level-up.audit.enabled')) {
-            $event->user->history()->create([
+            $event->user->experienceHistory()->create([
                 'points' => $event->pointsAdded,
                 'type' => $event->type,
                 'reason' => $event->reason,

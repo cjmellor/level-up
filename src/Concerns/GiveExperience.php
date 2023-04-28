@@ -145,7 +145,7 @@ trait GiveExperience
             return;
         }
 
-        $nextLevel = Level::where(column: 'level', operator: $this->getLevel() + 1)->first();
+        $nextLevel = Level::firstWhere(column: 'level', operator: $this->getLevel() + 1);
 
         $this->experience->level()->associate(model: $nextLevel);
         $this->experience->save();
@@ -160,7 +160,7 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 
-    public function history()
+    public function experienceHistory()
     {
         return $this->hasMany(related: ExperienceAudit::class);
     }

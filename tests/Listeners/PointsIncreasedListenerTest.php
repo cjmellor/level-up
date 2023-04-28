@@ -26,7 +26,7 @@ test(description: 'adding points creates an audit record', closure: function () 
     $this->user->addPoints(amount: 10);
 
     expect($this->user)
-        ->history()->count()->toBe(1);
+        ->experienceHistory()->count()->toBe(1);
 
     $this->assertDatabaseHas(table: 'experience_audits', data: [
         'user_id' => $this->user->id,
