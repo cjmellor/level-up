@@ -11,6 +11,10 @@ class LevelUpServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
+        $migrations = collect(glob(database_path(path: 'migrations/*.php.stub')))
+            ->map(callback: fn (string $fileName): array|string => str_replace(search: '.stub', replace: '', subject: basename($fileName)))
+            ->toArray();
+
         $package
             ->name('level-up')
             ->hasConfigFile()
@@ -18,6 +22,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_levels_table',
                 'create_experiences_table',
                 'add_level_relationship_to_users_table',
+                'create_experience_audits_table',
             ]);
     }
 

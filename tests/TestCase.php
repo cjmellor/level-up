@@ -46,5 +46,8 @@ class TestCase extends Orchestra
 
         $migration = include __DIR__.'/../database/migrations/add_level_relationship_to_users_table.php.stub';
         $migration->up();
+
+        $migration = include __DIR__.'/../database/migrations/create_experience_audits_table.php.stub';
+        $migration->up();
     }
 }

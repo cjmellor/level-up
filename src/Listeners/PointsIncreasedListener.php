@@ -9,6 +9,14 @@ class PointsIncreasedListener
 {
     public function __invoke(PointsIncreasedEvent $event): void
     {
+        if (config(key: 'level-up.audit.enabled')) {
+            $event->user->history()->create([
+                'points' => $event->pointsAdded,
+                'type' => $event->type,
+                'reason' => $event->reason,
+            ]);
+        }
+
         $nextLevel = Level::where('level', $event->user->getLevel() + 1)->first();
 
         if (! $nextLevel) {

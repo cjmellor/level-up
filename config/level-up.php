@@ -16,17 +16,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Experience Model
-    |--------------------------------------------------------------------------
-    |
-    | This value is the fully qualified class name of the Experience model.
-    |
-    */
-
-    'model' => App\Models\Experience::class,
-
-    /*
-    |--------------------------------------------------------------------------
     | Experience Table
     |--------------------------------------------------------------------------
     |
@@ -71,5 +60,17 @@ return [
         'enabled' => env(key: 'LEVEL_CAP_ENABLED', default: true),
         'level' => env(key: 'LEVEL_CAP', default: 100),
         'points_continue' => env(key: 'LEVEL_CAP_POINTS_CONTINUE', default: true),
+    ],
+
+    /*
+    | -------------------------------------------------------------------------
+    | Audit
+    | -------------------------------------------------------------------------
+    |
+    | Set the audit configuration.
+    |
+    */
+    'audit' => [
+        'enabled' => env(key: 'AUDIT_POINTS', default: false),
     ],
 ];

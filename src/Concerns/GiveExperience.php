@@ -6,9 +6,11 @@ use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Events\PointsDecreasedEvent;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\ExperienceAudit;
 use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Services\MultiplierService;
 
@@ -16,7 +18,7 @@ trait GiveExperience
 {
     protected ?Collection $multiplierData = null;
 
-    public function addPoints(int $amount, int $multiplier = null): Experience
+    public function addPoints(int $amount, int $multiplier = null, string $type = AuditType::Add->value, string $reason = null): Experience
     {
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
@@ -33,10 +35,14 @@ trait GiveExperience
          * If the User does not have an Experience record, create one.
          */
         if (! $this->experience()->exists()) {
-            return $this->experience()->create(attributes: [
+            $this->experience()->create(attributes: [
                 'level_id' => (int) config(key: 'level-up.starting_level'),
                 'experience_points' => $amount,
             ]);
+
+            $this->dispatchEvent($amount, $type, $reason);
+
+            return $this->experience;
         }
 
         /**
@@ -48,7 +54,7 @@ trait GiveExperience
 
         $this->experience->increment(column: 'experience_points', amount: $amount);
 
-        event(new PointsIncreasedEvent(pointsAdded: $amount, totalPoints: $this->experience->experience_points, user: $this));
+        $this->dispatchEvent($amount, $type, $reason);
 
         return $this->experience;
     }
@@ -65,6 +71,17 @@ trait GiveExperience
     public function experience(): HasOne
     {
         return $this->hasOne(related: Experience::class);
+    }
+
+    protected function dispatchEvent(int $amount, string $type, ?string $reason): void
+    {
+        event(new PointsIncreasedEvent(
+            pointsAdded: $amount,
+            totalPoints: $this->experience->experience_points,
+            type: $type,
+            reason: $reason,
+            user: $this,
+        ));
     }
 
     public function getLevel(): int
@@ -141,5 +158,10 @@ trait GiveExperience
     public function level(): BelongsTo
     {
         return $this->belongsTo(related: Level::class);
+    }
+
+    public function history()
+    {
+        return $this->hasMany(related: ExperienceAudit::class);
     }
 }

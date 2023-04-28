@@ -14,6 +14,8 @@ class PointsIncreasedEvent
     public function __construct(
         public int $pointsAdded,
         public int $totalPoints,
+        public string $type,
+        public ?string $reason,
         public Model $user,
     ) {
         //

@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\PointsIncreasedEvent;
 use LevelUp\Experience\Listeners\PointsIncreasedListener;
 
@@ -17,4 +18,19 @@ test(description: 'the Event and Listener run when points are added to a User Mo
         Event::assertDispatched(event: PointsIncreasedEvent::class);
         Event::assertListening(expectedEvent: PointsIncreasedEvent::class, expectedListener: PointsIncreasedListener::class);
     });
+});
+
+test(description: 'adding points creates an audit record', closure: function () {
+    config()->set(key: 'level-up.audit.enabled', value: true);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user)
+        ->history()->count()->toBe(1);
+
+    $this->assertDatabaseHas(table: 'experience_audits', data: [
+        'user_id' => $this->user->id,
+        'type' => 'add',
+        'points' => 10,
+    ]);
 });
