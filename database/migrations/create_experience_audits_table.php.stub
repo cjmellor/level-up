@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('experience_audits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId(config('level-up.user.foreign_key'))->constrained('users');
-            $table->integer('points');
+            $table->foreignId(config('level-up.user.foreign_key'))->constrained('users')->index();
+            $table->integer('points')->index();
             $table->enum('type', ['add', 'remove', 'reset']);
             $table->string('reason')->nullable();
             $table->timestamps();
