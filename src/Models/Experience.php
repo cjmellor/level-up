@@ -17,8 +17,8 @@ class Experience extends Model
         return $this->belongsTo(config(key: 'level-up.user.model'));
     }
 
-    public function level(): BelongsTo
+    public function status(): BelongsTo
     {
-        return $this->belongsTo(related: Level::class);
+        return $this->belongsTo(related: Level::class, foreignKey: 'level_id');
     }
 }

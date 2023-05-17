@@ -86,7 +86,7 @@ trait GiveExperience
 
     public function getLevel(): int
     {
-        return $this->experience->level->level;
+        return $this->experience->status->level;
     }
 
     public function deductPoints(int $amount): Experience
@@ -147,7 +147,7 @@ trait GiveExperience
 
         $nextLevel = Level::firstWhere(column: 'level', operator: $this->getLevel() + 1);
 
-        $this->experience->level()->associate(model: $nextLevel);
+        $this->experience->status()->associate(model: $nextLevel);
         $this->experience->save();
 
         $this->update(attributes: [
