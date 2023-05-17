@@ -159,6 +159,8 @@ trait GiveExperience
         $this->update(attributes: [
             'level_id' => $nextLevel->id,
         ]);
+
+        event(new UserLevelledUp(user: $this, level: $this->getLevel()));
     }
 
     public function level(): BelongsTo

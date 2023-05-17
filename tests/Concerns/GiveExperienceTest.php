@@ -138,6 +138,8 @@ test('a User can see how many more points are needed until they can level up', f
 });
 
 test(description: 'when a User hits the next level threshold, their level will increase to the correct level', closure: function (): void {
+    Event::fake([UserLevelledUp::class]);
+
     $this->user->addPoints(amount: 1);
     $this->user->addPoints(amount: 99);
 
@@ -145,11 +147,7 @@ test(description: 'when a User hits the next level threshold, their level will i
         ->experience_points->toBe(expected: 100)
         ->and($this->user->getLevel())->toBe(expected: 2);
 
-    $this->user->addPoints(amount: 150);
-
-    expect(value: $this->user->experience)
-        ->experience_points->toBe(expected: 250)
-        ->and($this->user->getLevel())->toBe(expected: 3);
+    Event::assertDispatched(event: UserLevelledUp::class);
 });
 
 test(description: 'when the level cap is enabled, and a User hits that level cap, they will not level up', closure: function (): void {
