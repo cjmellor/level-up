@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
-use LevelUp\Experience\Events\PointsIncreasedEvent;
+use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Listeners\PointsIncreasedListener;
 
 beforeEach(closure: function (): void {
@@ -15,8 +15,8 @@ test(description: 'the Event and Listener run when points are added to a User Mo
         // so now it will increment the points, instead of creating a new experience Model
         $this->user->addPoints(amount: 10);
 
-        Event::assertDispatched(event: PointsIncreasedEvent::class);
-        Event::assertListening(expectedEvent: PointsIncreasedEvent::class, expectedListener: PointsIncreasedListener::class);
+        Event::assertDispatched(event: PointsIncreased::class);
+        Event::assertListening(expectedEvent: PointsIncreased::class, expectedListener: PointsIncreasedListener::class);
     });
 });
 

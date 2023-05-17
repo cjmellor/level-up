@@ -2,12 +2,12 @@
 
 namespace LevelUp\Experience\Listeners;
 
-use LevelUp\Experience\Events\PointsIncreasedEvent;
+use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Models\Level;
 
 class PointsIncreasedListener
 {
-    public function __invoke(PointsIncreasedEvent $event): void
+    public function __invoke(PointsIncreased $event): void
     {
         if (config(key: 'level-up.audit.enabled')) {
             $event->user->experienceHistory()->create([

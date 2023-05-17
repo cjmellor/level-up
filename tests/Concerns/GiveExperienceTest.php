@@ -1,8 +1,10 @@
 <?php
 
 use Carbon\Carbon;
-use LevelUp\Experience\Events\PointsDecreasedEvent;
-use LevelUp\Experience\Events\PointsIncreasedEvent;
+use Illuminate\Support\Facades\Event;
+use LevelUp\Experience\Events\PointsDecreased;
+use LevelUp\Experience\Events\PointsIncreased;
+use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
 
 beforeEach(closure: function (): void {
@@ -32,7 +34,7 @@ test(description: 'giving points to a User with an experience Model, updates the
     // so now it will increment the points, instead of creating a new experience Model
     $this->user->addPoints(amount: 10);
 
-    Event::assertDispatched(event: PointsIncreasedEvent::class);
+    Event::assertDispatched(event: PointsIncreased::class);
 
     expect(value: $this->user->experience)
         ->experience_points->toBe(expected: 20)
@@ -52,7 +54,7 @@ it(description: 'can deduct points from a User', closure: function (): void {
 
     $this->user->deductPoints(amount: 5);
 
-    Event::assertDispatched(event: PointsDecreasedEvent::class);
+    Event::assertDispatched(event: PointsDecreased::class);
 
     expect(value: $this->user->experience)
         ->experience_points->toBe(expected: 5)

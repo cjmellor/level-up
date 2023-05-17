@@ -7,8 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use LevelUp\Experience\Enums\AuditType;
-use LevelUp\Experience\Events\PointsDecreasedEvent;
-use LevelUp\Experience\Events\PointsIncreasedEvent;
+use LevelUp\Experience\Events\PointsDecreased;
+use LevelUp\Experience\Events\PointsIncreased;
+use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
 use LevelUp\Experience\Models\ExperienceAudit;
 use LevelUp\Experience\Models\Level;
@@ -75,7 +76,7 @@ trait GiveExperience
 
     protected function dispatchEvent(int $amount, string $type, ?string $reason): void
     {
-        event(new PointsIncreasedEvent(
+        event(new PointsIncreased(
             pointsAdded: $amount,
             totalPoints: $this->experience->experience_points,
             type: $type,
@@ -93,7 +94,7 @@ trait GiveExperience
     {
         $this->experience->decrement(column: 'experience_points', amount: $amount);
 
-        event(new PointsDecreasedEvent(pointsDecreasedBy: $amount, totalPoints: $this->experience->experience_points));
+        event(new PointsDecreased(pointsDecreasedBy: $amount, totalPoints: $this->experience->experience_points));
 
         return $this->experience;
     }

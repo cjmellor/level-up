@@ -5,7 +5,7 @@ namespace LevelUp\Experience\Events;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class PointsDecreasedEvent
+class PointsDecreased
 {
     use Dispatchable;
     use SerializesModels;
