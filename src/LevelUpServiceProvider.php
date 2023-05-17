@@ -11,7 +11,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
 {
     public function configurePackage(Package $package): void
     {
-        $migrations = collect(glob(database_path(path: 'migrations/*.php.stub')))
+        collect(glob(database_path(path: 'migrations/*.php.stub')))
             ->map(callback: fn (string $fileName): array|string => str_replace(search: '.stub', replace: '', subject: basename($fileName)))
             ->toArray();
 

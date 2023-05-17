@@ -17,7 +17,7 @@ class PointsIncreasedListener
             ]);
         }
 
-        $nextLevel = Level::where('level', $event->user->getLevel() + 1)->first();
+        $nextLevel = Level::firstWhere(column: 'level', operator: $event->user->getLevel() + 1);
 
         if (! $nextLevel) {
             return;

@@ -188,7 +188,7 @@ test(description: 'when the level cap is enabled, and a User hits that level cap
         ->and($this->user)->getLevel()->toBe(expected: 2);
 });
 
-test('when the level cap is enabled, and a User hits that level cap, they will not level up, and points will freeze', function () {
+test('when the level cap is enabled, and a User hits that level cap, they will not level up, and points will freeze', function (): void {
     config()->set(key: 'level-up.level_cap.enabled', value: true);
     config()->set(key: 'level-up.level_cap.level', value: 2);
     config()->set(key: 'level-up.level_cap.points_continue', value: false);
@@ -205,7 +205,7 @@ test('when the level cap is enabled, and a User hits that level cap, they will n
         ->experience_points->toBe(expected: 250);
 });
 
-test('a Users level is restored if the level cap is re-enabled and points continue to increment', function () {
+test('a Users level is restored if the level cap is re-enabled and points continue to increment', function (): void {
     config()->set(key: 'level-up.level_cap.enabled', value: false);
 
     $this->user->addPoints(amount: 1);

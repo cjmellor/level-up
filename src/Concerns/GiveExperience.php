@@ -4,6 +4,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use LevelUp\Experience\Enums\AuditType;
@@ -19,8 +20,12 @@ trait GiveExperience
 {
     protected ?Collection $multiplierData = null;
 
-    public function addPoints(int $amount, int $multiplier = null, string $type = AuditType::Add->value, string $reason = null): Experience
-    {
+    public function addPoints(
+        int $amount,
+        int $multiplier = null,
+        string $type = AuditType::Add->value,
+        string $reason = null
+    ): Experience {
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
@@ -35,7 +40,7 @@ trait GiveExperience
         /**
          * If the User does not have an Experience record, create one.
          */
-        if (! $this->experience()->exists()) {
+        if ($this->experience()->doesntExist()) {
             $this->experience()->create(attributes: [
                 'level_id' => (int) config(key: 'level-up.starting_level'),
                 'experience_points' => $amount,
@@ -161,7 +166,7 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 
-    public function experienceHistory()
+    public function experienceHistory(): HasMany
     {
         return $this->hasMany(related: ExperienceAudit::class);
     }

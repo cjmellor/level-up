@@ -20,7 +20,7 @@ test(description: 'the Event and Listener run when points are added to a User Mo
     });
 });
 
-test(description: 'adding points creates an audit record', closure: function () {
+test(description: 'adding points creates an audit record', closure: function (): void {
     config()->set(key: 'level-up.audit.enabled', value: true);
 
     $this->user->addPoints(amount: 10);
