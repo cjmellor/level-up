@@ -127,17 +127,21 @@ trait GiveExperience
         return $this;
     }
 
-    public function nextLevelAt(int $checkAgainst = null): int
+    public function nextLevelAt(int $checkAgainst = null, bool $showAsPercentage = false): int
     {
-        $nextLevel = Level::firstWhere(column: 'level', operator: $checkAgainst ?? $this->getLevel() + 1);
+        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
 
-        if ($nextLevel && $nextLevel->next_level_experience !== null) {
-            $pointsDifference = $nextLevel->next_level_experience - Level::firstWhere(column: 'level', operator: $this->getLevel())->next_level_experience;
-
-            return abs(num: $pointsDifference - $this->getPoints());
+        if ($nextLevel && $nextLevel->next_level_experience === null) {
+            return 0;
         }
 
-        return 0;
+        $currentLevelExperience = Level::firstWhere(column: 'level', operator: '=', value: $this->getLevel())->next_level_experience;
+
+        if ($showAsPercentage) {
+            return (int) ((($this->getPoints() - $currentLevelExperience) / ($nextLevel->next_level_experience - $currentLevelExperience)) * 100);
+        }
+
+        return max(0, ($nextLevel->next_level_experience - $currentLevelExperience) - ($this->getPoints() - $currentLevelExperience));
     }
 
     public function getPoints(): int

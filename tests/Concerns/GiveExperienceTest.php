@@ -129,12 +129,19 @@ test(description: 'points can be multiplied', closure: function (): void {
     ]);
 });
 
-test('a User can see how many more points are needed until they can level up', function (): void {
-    $this->user->addPoints(amount: 10);
+test('a User can see how many more points are needed until they can level up', closure: function (): void {
+    $this->user->addPoints(amount: 100);
 
     expect($this->user)
         ->nextLevelAt()
-        ->toBe(90);
+        ->toBe(expected: 150);
+
+    $this->user->setPoints(0); // reset points
+    $this->user->addPoints(amount: 249);
+
+    expect($this->user)
+        ->nextLevelAt(showAsPercentage: true)
+        ->toBe(expected: 99);
 });
 
 test(description: 'when a User hits the next level threshold, their level will increase to the correct level', closure: function (): void {
