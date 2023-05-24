@@ -11,7 +11,9 @@ return new class extends Migration {
             $table->id();
             $table->foreignId(config('level-up.user.foreign_key'))->constrained('users');
             $table->integer('points')->index();
-            $table->enum('type', ['add', 'remove', 'reset']);
+            $table->boolean('levelled_up')->default(false);
+            $table->integer('level_to')->nullable();
+            $table->enum('type', ['add', 'remove', 'reset', 'level_up']);
             $table->string('reason')->nullable();
             $table->timestamps();
         });

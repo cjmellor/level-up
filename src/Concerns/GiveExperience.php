@@ -159,6 +159,16 @@ trait GiveExperience
 
         $this->experience->status()->associate(model: $nextLevel);
 
+        if (config(key: 'level-up.audit.enabled')) {
+            $this->experienceHistory()->create(attributes: [
+                'user_id' => $this->id,
+                'points' => $this->getPoints(),
+                'levelled_up' => true,
+                'level_to' => $nextLevel->level,
+                'type' => AuditType::LevelUp->value,
+            ]);
+        }
+
         $this->update(attributes: [
             'level_id' => $nextLevel->id,
         ]);
