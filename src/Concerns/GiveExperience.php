@@ -158,7 +158,6 @@ trait GiveExperience
         $nextLevel = Level::firstWhere(column: 'level', operator: $this->getLevel() + 1);
 
         $this->experience->status()->associate(model: $nextLevel);
-        $this->experience->save();
 
         $this->update(attributes: [
             'level_id' => $nextLevel->id,

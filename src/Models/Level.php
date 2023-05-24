@@ -44,11 +44,6 @@ class Level extends Model
         return $newLevels;
     }
 
-    public static function getLastLevel(): int
-    {
-        return self::latest()->first()->level;
-    }
-
     public function users(): HasMany
     {
         return $this->hasMany(related: config(key: 'level-up.user.model'));
