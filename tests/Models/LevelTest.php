@@ -3,6 +3,8 @@
 use LevelUp\Experience\Exceptions\LevelExistsException;
 use LevelUp\Experience\Models\Level;
 
+uses()->group('levels');
+
 it(description: 'can create a level', closure: function (): void {
     $level = Level::add([
         'level' => 4,

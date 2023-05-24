@@ -8,6 +8,8 @@ beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
 });
 
+uses()->group('experience');
+
 test(description: 'the Event and Listener run when points are added to a User Model', closure: function (): void {
     Event::fakeFor(callable: function (): void {
         // this creates the experience Model

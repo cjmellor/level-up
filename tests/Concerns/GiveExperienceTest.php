@@ -11,6 +11,8 @@ beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
 });
 
+uses()->group('experience');
+
 test(description: 'giving points to a User without an experience Model, creates a new experience Model', closure: function (): void {
     // an Experience Model doesn't exist for the User, so this should create one.
     $this->user->addPoints(amount: 10);
