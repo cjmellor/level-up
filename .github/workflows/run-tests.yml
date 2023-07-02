@@ -16,11 +16,11 @@ jobs:
         laravel: [10.*, 9.*]
         stability: [prefer-lowest, prefer-stable]
         include:
-          - laravel: ^10.*
-            testbench: ^8.*
+          - laravel: 10.*
+            testbench: 8.*
             carbon: ^2.63
-          - laravel: ^9.*
-            testbench: ^7.*
+          - laravel: 9.*
+            testbench: 7.*
             carbon: ^2.63
 
     name: "PHP: v${{ matrix.php }} / Laravel: v${{ matrix.laravel }} - ${{ matrix.stability }}"
