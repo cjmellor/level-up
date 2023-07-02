@@ -4,6 +4,7 @@ namespace LevelUp\Experience;
 
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Providers\MultiplierServiceProvider;
+use LevelUp\Experience\Services\LeaderboardService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -28,7 +29,8 @@ class LevelUpServiceProvider extends PackageServiceProvider
     {
         parent::register();
 
-        $this->app->register(EventServiceProvider::class);
-        $this->app->register(MultiplierServiceProvider::class);
+        $this->app->register(provider: EventServiceProvider::class);
+        $this->app->singleton(abstract: 'leaderboard', concrete: fn () => new LeaderboardService());
+        $this->app->register(provider: MultiplierServiceProvider::class);
     }
 }
