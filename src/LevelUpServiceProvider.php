@@ -2,6 +2,7 @@
 
 namespace LevelUp\Experience;
 
+use LevelUp\Experience\Commands\MakeMultiplierCommand;
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Providers\MultiplierServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
@@ -13,7 +14,8 @@ class LevelUpServiceProvider extends PackageServiceProvider
     public function configurePackage(Package $package): void
     {
         $package
-            ->name('level-up')
+            ->name(name: 'level-up')
+            ->hasCommand(commandClassName: MakeMultiplierCommand::class)
             ->hasConfigFile()
             ->hasMigrations([
                 'create_levels_table',
