@@ -1,8 +1,10 @@
 <?php
 
+namespace {{ namespace }};
+
 use LevelUp\Experience\Contracts\Multiplier;
 
-class [class] implements Multiplier
+class {{ class }} implements Multiplier
 {
     public bool $enabled = true;
 
