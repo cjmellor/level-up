@@ -239,3 +239,25 @@ test('a Users level is restored if the level cap is re-enabled and points contin
         ->experience_points->toBe(expected: 400)
         ->and($this->user)->getLevel()->toBe(expected: 3);
 });
+
+test('A multiplier can use data that was passed through to it', function () {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
+    config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
+
+    $this->user
+        ->withMultiplierData([
+            'event_id' => 2,
+        ])
+        ->addPoints(amount: 10);
+
+    expect($this->user->experience)
+        ->experience_points->toBe(expected: 50)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
+
+    $this->assertDatabaseHas(table: 'experiences', data: [
+        'user_id' => $this->user->id,
+        'level_id' => 1,
+        'experience_points' => 50,
+    ]);
+});
