@@ -20,6 +20,10 @@ trait HasAchievements
             throw new Exception(message: 'Progress cannot be greater than 100');
         }
 
+        if ($this->achievements()->find($achievement->id)) {
+            throw new Exception(message: 'User already has this Achievement');
+        }
+
         $this->achievements()->attach($achievement, [
             'progress' => $progress ?? null,
         ]);

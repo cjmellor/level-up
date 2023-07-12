@@ -104,3 +104,10 @@ it(description: 'can increment the progress of an Achievement', closure: functio
         'progress' => 51,
     ]);
 });
+
+test('a User cannot be granted the same Achievement twice', closure: function () {
+    $this->user->grantAchievement($this->achievement);
+    $this->user->grantAchievement($this->achievement);
+
+    expect($this->user)->achievements->toHaveCount(count: 1);
+})->throws(exception: Exception::class, exceptionMessage: 'User already has this Achievement');
