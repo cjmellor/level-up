@@ -10,7 +10,7 @@ class HasExternalData implements Multiplier
 
     public function qualifies(array $data): bool
     {
-        return $data['event_id'] === 2;
+        return isset($data['event_id']) && $data['event_id'] === 2;
     }
 
     public function setMultiplier(): int
