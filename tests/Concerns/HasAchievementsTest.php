@@ -41,7 +41,7 @@ test(description: 'an Event runs when an Achievement is earned', closure: functi
         $this->user->grantAchievement($this->achievement);
         Event::assertDispatched(event: AchievementAwarded::class);
 
-        $this->user->grantAchievement($this->achievement, 100); // grant an achievement with 100% progress
+        $this->user->grantAchievement(Achievement::factory()->create(), 100); // grant an achievement with 100% progress
         Event::assertDispatched(event: AchievementAwarded::class);
     });
 });
@@ -69,7 +69,7 @@ test(description: 'a User can see secret Achievements', closure: function (): vo
 
 test(description: 'a User can see all Achievements', closure: function (): void {
     $this->user->grantAchievement($this->achievement);
-    $this->user->grantAchievement($this->achievement, 50);
+    $this->user->grantAchievement(Achievement::factory()->create(), 50);
     $this->user->grantAchievement(Achievement::factory()->secret()->create());
 
     expect($this->user)->allAchievements->toHaveCount(3);
@@ -77,7 +77,7 @@ test(description: 'a User can see all Achievements', closure: function (): void 
 
 it(description: 'can fetch Achievements that have a certain amount of progression', closure: function (): void {
     $this->user->grantAchievement($this->achievement, 50);
-    $this->user->grantAchievement($this->achievement, 50);
+    $this->user->grantAchievement(Achievement::factory()->create(), 50);
 
     expect($this->user)->achievements->first()->pivot->withProgress(50)->toHaveCount(2);
 });
