@@ -1,10 +1,12 @@
-# This package allows users to gain experience points (XP) and progress through levels by performing actions on your site. It can provide a simple way to track user progress and implement gamification elements into your application
-
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/cjmellor/level-up?color=rgb%2856%20189%20248%29&label=release&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/cjmellor/level-up/run-tests.yml?branch=main&label=tests&style=for-the-badge&color=rgb%28134%20239%20128%29)](https://github.com/cjmellor/level-up/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/cjmellor/level-up.svg?color=rgb%28249%20115%2022%29&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
 ![Packagist PHP Version](https://img.shields.io/packagist/dependency-v/cjmellor/level-up/php?color=rgb%28165%20180%20252%29&logo=php&logoColor=rgb%28165%20180%20252%29&style=for-the-badge)
 ![Laravel Version](https://img.shields.io/badge/laravel-^10-rgb(235%2068%2050)?style=for-the-badge&logo=laravel)
+
+This package allows users to gain experience points (XP) and progress through levels by performing actions on your site. It can provide a simple way to track user progress and implement gamification elements into your application
+
+![Banner](https://banners.beyondco.de/Level%20Up.png?theme=dark&packageManager=composer+require&packageName=cjmellor%2Flevel-up&pattern=ticTacToe&style=style_1&description=Enable+gamification+via+XP%2C+levels%2C+leaderboards%2C+achievements%2C+and+dynamic+multipliers&md=1&showWatermark=0&fontSize=100px&images=puzzle&widths=auto)
 
 # Installation
 
@@ -110,7 +112,7 @@ return [
 
 ## 💯 Experience Points (XP)
 
-> **Note**
+> **Note** 
 > XP is enabled by default. You can disable it in the config
 
 Add the `GiveExperience` trait to your `User` model.
@@ -122,7 +124,7 @@ class User extends Model
 {
     use GiveExperience;
 
-		...
+    // ...
 }
 ```
 
@@ -178,11 +180,11 @@ use LevelUp\Experience\Contracts\Multiplier;
 class IsMonthDecember implements Multiplier
 {
     public bool $enabled = true;
-		
-		public function qualifies(array $data): bool
-		{
-		    return now()->month === 12;
-		}
+    
+    public function qualifies(array $data): bool
+    {
+        return now()->month === 12;
+    }
 
     public function setMultiplier(): int
     {
@@ -210,10 +212,10 @@ You can pass extra data along when you’re adding points to a User. Any enabled
 
 ```php
 $user
-	->withMultiplierData([
-		'event_id' => 222,
-	])
-	->addPoints(10);
+    ->withMultiplierData([
+        'event_id' => 222,
+    ])
+    ->addPoints(10);
 
 //
 
@@ -231,8 +233,8 @@ You can skip this altogether and just multiply the points manually if you desire
 
 ```php
 $user->addPoints(
-	amount: 10, 
-	multiplier: 2
+    amount: 10, 
+    multiplier: 2
 );
 ```
 
@@ -263,9 +265,9 @@ The package has a handy facade to help you create your levels.
 
 ```php
 Level::add(
-   ['level' => 1, 'next_level_experience' => null],
-   ['level' => 2, 'next_level_experience' => 100],
-   ['level' => 3, 'next_level_experience' => 250],
+    ['level' => 1, 'next_level_experience' => null],
+    ['level' => 2, 'next_level_experience' => 100],
+    ['level' => 3, 'next_level_experience' => 250],
 );
 ```
 
@@ -318,10 +320,10 @@ There is no built in methods for creating achievements, there is just an `Achiev
 
 ```php
 Achievement::create([
-	'name' => 'Hit Level 20',
-	'is_secret' => false,
-	'description' => 'When a User hits Level 20',
-	'image' => 'storage/app/achievements/level-20.png',
+    'name' => 'Hit Level 20',
+    'is_secret' => false,
+    'description' => 'When a User hits Level 20',
+    'image' => 'storage/app/achievements/level-20.png',
 ]);
 ```
 
@@ -360,8 +362,8 @@ $user->achievements;
 
 ```php
 $user->grantAchievement(
-	achievement: $achievement, 
-	progress: 50 // 50%
+    achievement: $achievement, 
+    progress: 50 // 50%
 );
 ```
 
@@ -380,10 +382,10 @@ Check Achievements that have a certain amount of progression:
 
 ```php
 $user->achievements
-	->first()
-	->pivot()
-	->withProgress(25)
-	->get();
+    ->first()
+    ->pivot()
+    ->withProgress(25)
+    ->get();
 ```
 
 ### Increase Achievement Progression
@@ -392,8 +394,8 @@ You can increment the progression of an Achievement up-to 100.
 
 ```php
 $user->incrementAchievementProgress(
-	achievement: $achievement, 
-	amount: 10
+    achievement: $achievement, 
+    amount: 10
 );
 ```
 
@@ -464,10 +466,10 @@ The `type` and `reason` fields will be populated automatically based on the acti
 
 ```php
 $user->addPoints(
-	amount: 50,
-	multiplier: 2,
-	type: AuditType::Add->value,
-	reason: "Some reason here",
+    amount: 50,
+    multiplier: 2,
+    type: AuditType::Add->value,
+    reason: "Some reason here",
 );
 ```
 
