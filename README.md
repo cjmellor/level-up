@@ -112,7 +112,8 @@ return [
 
 ## 💯 Experience Points (XP)
 
-> **Note** 
+> **Note**
+> 
 > XP is enabled by default. You can disable it in the config
 
 Add the `GiveExperience` trait to your `User` model.
@@ -367,7 +368,8 @@ $user->grantAchievement(
 );
 ```
 
-> **Note:**
+> **Note**
+> 
 > an Achievements progress is capped to 100%
 
 ### Check Achievement Progression
@@ -432,7 +434,8 @@ public Achievement $achievement,
 public Model $user,
 ```
 
-> **Note:**
+> **Note**
+> 
 > This event only runs if the progress of the Achievement is 100%
 
 **AchievementProgressionIncreased** - When a Users’ progression for an Achievement is increased.
