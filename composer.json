@@ -24,7 +24,7 @@
         "spatie/laravel-package-tools": "^1.15"
     },
     "require-dev": {
-        "driftingly/rector-laravel": "^0.17.0",
+        "driftingly/rector-laravel": "^0.21.0",
         "nunomaduro/collision": "^7.5.2",
         "orchestra/testbench": "^8.5.3",
         "pestphp/pest": "^2.6.1",
