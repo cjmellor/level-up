@@ -29,7 +29,7 @@ trait GiveExperience
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
-        if (config(key: 'level-up.multiplier.enabled')) {
+        if (config(key: 'level-up.multiplier.enabled') && file_exists(filename: config(key: 'level-up.multiplier.path'))) {
             $amount = $this->getMultipliers(amount: $amount);
         }
 
@@ -176,13 +176,13 @@ trait GiveExperience
         event(new UserLevelledUp(user: $this, level: $this->getLevel()));
     }
 
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(related: Level::class);
-    }
-
     public function experienceHistory(): HasMany
     {
         return $this->hasMany(related: ExperienceAudit::class);
+    }
+
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(related: Level::class);
     }
 }
