@@ -6,6 +6,7 @@ use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\Level;
 
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
@@ -259,5 +260,25 @@ test('A multiplier can use data that was passed through to it', function () {
         'user_id' => $this->user->id,
         'level_id' => 1,
         'experience_points' => 50,
+    ]);
+});
+
+test(description: 'Add default level if not applied before trying to add points', closure: function () {
+    // In this scenario, no Level Model should be applied to the User, so the default level should be applied
+    Level::truncate();
+
+    // The Levels table should be empty
+    expect(Level::count())->toBe(expected: 0);
+
+    $this->user->addPoints(amount: 10);
+
+    // The Levels table should now have 1 record
+    expect(Level::count())->toBe(expected: 1);
+
+    // Assert the data in the Levels table is correct
+    $this->assertDatabaseHas(table: 'levels', data: [
+        'id' => 1,
+        'level' => 1,
+        'next_level_experience' => null,
     ]);
 });

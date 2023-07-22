@@ -17,6 +17,13 @@ class PointsIncreasedListener
             ]);
         }
 
+        if (Level::count() === 0) {
+            Level::add([
+                'level' => config(key: 'level-up.starting_level'),
+                'next_level_experience' => null,
+            ]);
+        }
+
         $nextLevel = Level::firstWhere(column: 'level', operator: $event->user->getLevel() + 1);
 
         if (! $nextLevel) {
