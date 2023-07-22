@@ -137,6 +137,10 @@ $user->addPoints(10);
 
 A new record will be added to the `experiences` table which stores the Users’ points. If a record already exists, it will be updated instead. All new records will be given a `level_id` of `1`.
 
+> **Note**
+> 
+> If you didn't set up your Level structure yet, a default Level of `1` will be added to get you started.
+
 **Deduct XP points from a User**
 
 ```php
@@ -145,7 +149,7 @@ $user->deductPoints(10);
 
 **Set XP points to a User**
 
-For an event where you just want to directly add a certain amount of points to a User. Points can only be ***set*** if the User has an Experience Model.
+For an event where you just want to directly add a certain number of points to a User. Points can only be ***set*** if the User has an Experience Model.
 
 ```php
 $user->setPoints(10);
@@ -207,9 +211,9 @@ public function qualifies(array $data): bool
 }
 ```
 
-or passing extra data along to check against. This is a bit more complex.
+Or passing extra data along to check against. This is a bit more complex.
 
-You can pass extra data along when you’re adding points to a User. Any enabled Multiplier can then use that data to check against.
+You can pass extra data along when you're adding points to a User. Any enabled Multiplier can then use that data to check against.
 
 ```php
 $user
@@ -260,7 +264,11 @@ public int $totalPoints,
 
 ## ⬆️ Levelling
 
-### Set-up your levelling structure
+> **Note**
+> 
+> If you add points before setting up your levelling structure, a default Level of `1` will be added to get you started.
+
+### Set up your levelling structure
 
 The package has a handy facade to help you create your levels.
 
@@ -274,11 +282,11 @@ Level::add(
 
 **Level 1** should always be `null` for the `next_level_experience` as it is the default starting point.
 
-As soon as a User gains the correct amount of points listed for the next level, they will level-up.
+As soon as a User gains the correct number of points listed for the next level, they will level-up.
 
 > **Example:** a User gains 50 points, they’ll still be on Level 1, but gets another 50 points, so the User will now move onto Level 2
 
-**See how many points until next level**
+**See how many points until the next level**
 
 ```php
 $user->nextLevelAt();
@@ -313,11 +321,15 @@ public int $level
 
 ## 🏆 Achievements
 
-This a feature that allows you to recognise and reward users for completing specific tasks or reaching certain milestones. You can define your own achievements and criteria for earning them.  Achievements can be static or have progression. Static meaning the achievement can be earned instantly. Achievements with progression can be earned in increments, like an achievement can only be obtained once the progress is 100% complete.
+This is a feature that allows you to recognise and reward users for completing specific tasks or reaching certain milestones.
+You can define your own achievements and criteria for earning them.
+Achievements can be static or have progression.
+Static meaning the achievement can be earned instantly.
+Achievements with progression can be earned in increments, like an achievement can only be obtained once the progress is 100% complete.
 
 ### Creating Achievements
 
-There is no built in methods for creating achievements, there is just an `Achievement` model that you can use as normal:
+There is no built-in methods for creating achievements, there is just an `Achievement` model that you can use as normal:
 
 ```php
 Achievement::create([
@@ -370,7 +382,7 @@ $user->grantAchievement(
 
 > **Note**
 > 
-> an Achievements progress is capped to 100%
+> Achievement progress is capped to 100%
 
 ### Check Achievement Progression
 
@@ -392,7 +404,7 @@ $user->achievements
 
 ### Increase Achievement Progression
 
-You can increment the progression of an Achievement up-to 100.
+You can increment the progression of an Achievement up to 100.
 
 ```php
 $user->incrementAchievementProgress(
@@ -456,7 +468,7 @@ The Leaderboard comes as a Service.
 Leaderboard::generate();
 ```
 
-This generates a User model along with it’s Experience and Level data and ordered by the Users’ experience points.
+This generates a User model along with its Experience and Level data and ordered by the Users’ experience points.
 
 > The Leaderboard is very basic and has room for improvement
 >
@@ -494,4 +506,4 @@ Please see [CHANGELOG](notion://www.notion.so/CHANGELOG.md) for more information
 
 # License
 
-The MIT License (MIT). Please see [License File](notion://www.notion.so/LICENSE.md) for more information.
+The MIT Licence (MIT). Please see [Licence File](notion://www.notion.so/LICENSE.md) for more information.
