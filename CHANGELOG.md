@@ -2,6 +2,18 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## 0.0.4 - 2023-07-24
+
+### What's Changed
+
+- Adding configurable user's table to level relationship migration. by @matthewscalf in https://github.com/cjmellor/level-up/pull/16
+
+### New Contributors
+
+- @matthewscalf made their first contribution in https://github.com/cjmellor/level-up/pull/16
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.3...0.0.4
+
 ## v0.0.3 - 2023-07-22
 
 ### What's Changed
