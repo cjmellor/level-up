@@ -4,7 +4,7 @@ namespace LevelUp\Experience\Services;
 
 use Illuminate\Support\Collection;
 
-readonly class MultiplierService
+class MultiplierService
 {
     public function __construct(
         private Collection $multipliers,

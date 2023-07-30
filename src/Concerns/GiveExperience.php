@@ -23,9 +23,13 @@ trait GiveExperience
     public function addPoints(
         int $amount,
         int $multiplier = null,
-        string $type = AuditType::Add->value,
+        string $type = null,
         string $reason = null
     ): Experience {
+        if ($type === null) {
+            $type = AuditType::Add->value;
+        }
+
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
