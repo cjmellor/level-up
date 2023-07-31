@@ -2,7 +2,7 @@
 
 uses()->group('leaderboard');
 
-use LevelUp\Experience\Services\LeaderboardService;
+use LevelUp\Experience\Facades\Leaderboard;
 use LevelUp\Experience\Tests\Fixtures\User;
 
 beforeEach(function () {
@@ -18,8 +18,7 @@ it(description: 'returns the correct data in the correct order', closure: functi
     tap(User::newFactory()->create())->addPoints(245);
 
     expect(
-        app(abstract: LeaderboardService::class)
-            ->generate()
+        Leaderboard::generate()
             ->pluck(value: 'experience.experience_points')
             ->toArray()
     )

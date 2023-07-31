@@ -23,6 +23,17 @@ test(description: 'the Event and Listener run when points are added to a User Mo
     });
 });
 
+test(description: 'the level_id in User\'s table defaults to 1 on Model creation', closure: function () {
+    $this->user->addPoints(1);
+
+    expect($this->user->level_id)->toBe(expected: 1);
+
+    $this->assertDatabaseHas(table: 'users', data: [
+        'id' => $this->user->id,
+        'level_id' => 1,
+    ]);
+});
+
 test(description: 'adding points creates an audit record', closure: function (): void {
     config()->set(key: 'level-up.audit.enabled', value: true);
 
@@ -52,5 +63,24 @@ test(description: 'when a User levels up, a record is stored in the audit', clos
         'levelled_up' => true,
         'level_to' => 2,
         'type' => AuditType::LevelUp->value,
+    ]);
+});
+
+test(description: 'user levels are correct', closure: function () {
+    $this->user->addPoints(amount: 100);
+    expect($this->user->getLevel())->toBe(expected: 2)
+        ->and($this->user->level_id)->toBe(expected: 2)
+        ->and($this->user->nextLevelAt())->toBe(expected: 150)
+        ->and($this->user->experience->status->level)->toBe(expected: 2);
+
+    $this->user->addPoints(amount: 150);
+
+    expect($this->user->getLevel())->toBe(expected: 3)
+        ->and($this->user->level_id)->toBe(expected: 3)
+        ->and($this->user->experience->status->level)->toBe(expected: 3);
+
+    $this->assertDatabaseHas(table: 'users', data: [
+        'id' => $this->user->id,
+        'level_id' => 3,
     ]);
 });
