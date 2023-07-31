@@ -2,6 +2,19 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.5 - 2023-07-31
+
+### What's Changed
+
+- fix: Relationship Association by @cjmellor in https://github.com/cjmellor/level-up/pull/19
+- Support PHP 8.1 by @QuintenJustus in https://github.com/cjmellor/level-up/pull/18
+
+### New Contributors
+
+- @QuintenJustus made their first contribution in https://github.com/cjmellor/level-up/pull/18
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.4...v0.0.5
+
 ## 0.0.4 - 2023-07-24
 
 ### What's Changed
