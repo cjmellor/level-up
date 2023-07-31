@@ -41,10 +41,14 @@ trait GiveExperience
          * If the User does not have an Experience record, create one.
          */
         if ($this->experience()->doesntExist()) {
-            $this->experience()->create(attributes: [
+            $experience = $this->experience()->create(attributes: [
                 'level_id' => (int) config(key: 'level-up.starting_level'),
                 'experience_points' => $amount,
             ]);
+
+            $this->fill([
+                'level_id' => $experience->level_id,
+            ])->save();
 
             $this->dispatchEvent($amount, $type, $reason);
 
@@ -158,6 +162,7 @@ trait GiveExperience
         $nextLevel = Level::firstWhere(column: 'level', operator: $this->getLevel() + 1);
 
         $this->experience->status()->associate(model: $nextLevel);
+        $this->experience->save();
 
         if (config(key: 'level-up.audit.enabled')) {
             $this->experienceHistory()->create(attributes: [

@@ -117,7 +117,7 @@ test(description: 'points can be multiplied', closure: function (): void {
     config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
     config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
 
-    Carbon::setTestNow(Carbon::create(month: 4));
+    Carbon::setTestNow(Carbon::create(month: 12));
 
     $this->user->addPoints(amount: 10);
 
@@ -158,6 +158,12 @@ test(description: 'when a User hits the next level threshold, their level will i
         ->and($this->user->getLevel())->toBe(expected: 2);
 
     Event::assertDispatched(event: UserLevelledUp::class);
+
+    $this->user->addPoints(amount: 150);
+
+    expect(value: $this->user->experience)
+        ->experience_points->toBe(expected: 250)
+        ->and($this->user->getLevel())->toBe(expected: 3);
 });
 
 test(description: 'when the level cap is enabled, and a User hits that level cap, they will not level up', closure: function (): void {
