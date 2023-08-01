@@ -1,3 +1,4 @@
+
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/cjmellor/level-up?color=rgb%2856%20189%20248%29&label=release&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/cjmellor/level-up/run-tests.yml?branch=main&label=tests&style=for-the-badge&color=rgb%28134%20239%20128%29)](https://github.com/cjmellor/level-up/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/cjmellor/level-up.svg?color=rgb%28249%20115%2022%29&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
@@ -110,7 +111,7 @@ return [
 
 # Usage
 
-## 💯 Experience Points (XP)
+## 💯 Experience Points (XP)
 
 > **Note**
 > 
@@ -262,7 +263,7 @@ public int $pointsDecreasedBy,
 public int $totalPoints,
 ```
 
-## ⬆️ Levelling
+## ⬆️ Levelling
 
 > **Note**
 > 
@@ -274,13 +275,13 @@ The package has a handy facade to help you create your levels.
 
 ```php
 Level::add(
-    ['level' => 1, 'next_level_experience' => null],
+    ['level' => 1, 'next_level_experience' => null, 'title' => 'Beginner'],
     ['level' => 2, 'next_level_experience' => 100],
     ['level' => 3, 'next_level_experience' => 250],
 );
 ```
 
-**Level 1** should always be `null` for the `next_level_experience` as it is the default starting point.
+**Level 1** should always be `null` for the `next_level_experience` as it is the default starting point. The '**title**' key is optional.
 
 As soon as a User gains the correct number of points listed for the next level, they will level-up.
 
@@ -296,6 +297,11 @@ $user->nextLevelAt();
 
 ```php
 $user->getLevel();
+```
+**Get the Title for the Users’ current Level**
+
+```php
+$user->getLevelTitle();
 ```
 
 ### Level Cap
@@ -319,7 +325,7 @@ public Model $user,
 public int $level
 ```
 
-## 🏆 Achievements
+## 🏆 Achievements
 
 This is a feature that allows you to recognise and reward users for completing specific tasks or reaching certain milestones.
 You can define your own achievements and criteria for earning them.
@@ -458,7 +464,7 @@ public Model $user,
 public int $amount,
 ```
 
-## 📈 Leaderboard
+## 📈 Leaderboard
 
 The package also includes a leaderboard feature to track and display user rankings based on their experience points.
 
@@ -473,7 +479,7 @@ This generates a User model along with its Experience and Level data and ordered
 > The Leaderboard is very basic and has room for improvement
 >
 
-## 🔍 Auditing
+## 🔍 Auditing
 
 You can enable an Auditing feature in the config, which keeps a track each time a User gains points, levels up and what level to.
 
