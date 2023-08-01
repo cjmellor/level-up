@@ -24,6 +24,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_experience_audits_table',
                 'create_achievements_table',
                 'create_achievement_user_pivot_table',
+                'add_title_to_levels_table',
             ]);
     }
 
