@@ -147,6 +147,17 @@ test('a User can see how many more points are needed until they can level up', c
         ->toBe(expected: 99);
 });
 
+it(description: 'returns zero when User has hit Level cap and tries to see how many points until next level', closure: function () {
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 3);
+
+    $this->user->addPoints(amount: 250);
+
+    expect($this->user)
+        ->nextLevelAt()
+        ->toBe(expected: 0);
+});
+
 test(description: 'when a User hits the next level threshold, their level will increase to the correct level', closure: function (): void {
     Event::fake([UserLevelledUp::class]);
 
