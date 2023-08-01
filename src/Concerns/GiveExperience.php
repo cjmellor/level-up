@@ -103,6 +103,11 @@ trait GiveExperience
         return $this->experience->status->level;
     }
 
+    public function getLevelTitle(): ?string
+    {
+        return $this->experience->status->title;
+    }
+
     public function deductPoints(int $amount): Experience
     {
         $this->experience->decrement(column: 'experience_points', amount: $amount);
