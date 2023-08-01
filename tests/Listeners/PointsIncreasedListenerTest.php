@@ -68,10 +68,17 @@ test(description: 'when a User levels up, a record is stored in the audit', clos
 
 test(description: 'user levels are correct', closure: function () {
     $this->user->addPoints(amount: 100);
+
     expect($this->user->getLevel())->toBe(expected: 2)
         ->and($this->user->level_id)->toBe(expected: 2)
         ->and($this->user->nextLevelAt())->toBe(expected: 150)
         ->and($this->user->experience->status->level)->toBe(expected: 2);
+
+    $this->assertDatabaseHas(table: 'experiences', data: [
+        'user_id' => $this->user->id,
+        'experience_points' => 100,
+        'level_id' => 2,
+    ]);
 
     $this->user->addPoints(amount: 150);
 

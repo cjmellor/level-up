@@ -139,7 +139,7 @@ trait GiveExperience
     {
         $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
 
-        if ($nextLevel && $nextLevel->next_level_experience === null) {
+        if (! $nextLevel || $nextLevel->next_level_experience === null) {
             return 0;
         }
 
