@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.6 - 2023-08-01
+
+### What's Changed
+
+- fix: Return correct value on next level check by @cjmellor in https://github.com/cjmellor/level-up/pull/22
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.5...v0.0.6
+
 ## v0.0.5 - 2023-07-31
 
 ### What's Changed
