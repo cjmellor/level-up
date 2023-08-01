@@ -22,15 +22,18 @@ class Level extends Model
             if (is_array($level)) {
                 $levelNumber = $level['level'];
                 $pointsToNextLevel = $level['next_level_experience'];
+                $title = $level['title'] ?? null;
             } else {
                 $levelNumber = $level;
                 $pointsToNextLevel = $levels[1] ?? 0;
+                $title = $levels[2] ?? null;
             }
 
             try {
                 $newLevels[] = self::create([
                     'level' => $levelNumber,
                     'next_level_experience' => $pointsToNextLevel,
+                    'title' => $title,
                 ]);
             } catch (Throwable) {
                 throw LevelExistsException::handle(levelNumber: $levelNumber);
