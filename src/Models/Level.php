@@ -22,7 +22,8 @@ class Level extends Model
             if (is_array($level)) {
                 $levelNumber = $level['level'];
                 $pointsToNextLevel = $level['next_level_experience'];
-                $title = $level['title'] ?? null;
+                $title = array_key_exists('title', $level) ? level['title'] : null;
+                
             } else {
                 $levelNumber = $level;
                 $pointsToNextLevel = $levels[1] ?? 0;
