@@ -4,6 +4,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LevelUp\Experience\Events\StreakBroken;
 use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
 use LevelUp\Experience\Models\Activity;
@@ -24,6 +25,15 @@ trait HasStreaks
             ->diffInDays(now()->startOfDay());
 
         if ($diffInDays === 0) {
+            return;
+        }
+
+        // Check to see if the streak was broken
+        if ($diffInDays > 1) {
+            $this->resetStreak($activity);
+
+            event(new StreakBroken($this, $activity, $this->streaks()->first()));
+
             return;
         }
 
@@ -72,6 +82,16 @@ trait HasStreaks
             ->first();
     }
 
+    public function resetStreak(Activity $activity): void
+    {
+        $this->streaks()
+            ->whereBelongsTo(related: $activity)
+            ->update([
+                'count' => 1,
+                'activity_at' => now(),
+            ]);
+    }
+
     public function getCurrentStreakCount(Activity $activity): int
     {
         return $this->streaks()->whereBelongsTo(related: $activity)->first()
@@ -84,13 +104,6 @@ trait HasStreaks
         return $this->getStreakLastActivity($activity)
             ->activity_at
             ->isToday();
-    }
-
-    public function resetStreak(Activity $activity): void
-    {
-        $this->streaks()
-            ->whereBelongsTo(related: $activity)
-            ->update(['count' => 1]);
     }
 
     //    public function getLongestStreak(Activity $activity): int
