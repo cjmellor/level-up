@@ -7,8 +7,8 @@ use Illuminate\Support\Collection;
 class MultiplierService
 {
     public function __construct(
-        private Collection $multipliers,
-        private array $data = [],
+        private readonly Collection $multipliers,
+        private readonly array $data = [],
     ) {
     }
 
@@ -16,7 +16,7 @@ class MultiplierService
     {
         /** @var \LevelUp\Experience\Contracts\Multiplier $multiplier */
         return $this->multipliers->reduce(
-            callback: fn ($amount, $multiplier) => $multiplier->qualifies($this->getMultiplierData()->toArray())
+            callback: fn (int $amount, $multiplier) => $multiplier->qualifies($this->getMultiplierData()->toArray())
                 ? $amount * $multiplier->setMultiplier()
                 : $amount,
             initial: $points

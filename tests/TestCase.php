@@ -2,12 +2,11 @@
 
 namespace LevelUp\Experience\Tests;
 
-use AllowDynamicProperties;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use LevelUp\Experience\LevelUpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
-#[AllowDynamicProperties] class TestCase extends Orchestra
+class TestCase extends Orchestra
 {
     protected function setUp(): void
     {
@@ -55,6 +54,12 @@ use Orchestra\Testbench\TestCase as Orchestra;
         $migration->up();
 
         $migration = include __DIR__.'/../database/migrations/create_achievement_user_pivot_table.php.stub';
+        $migration->up();
+
+        $migration = include __DIR__.'/../database/migrations/create_streaks_table.php.stub';
+        $migration->up();
+
+        $migration = include __DIR__.'/../database/migrations/create_streak_activities_table.php.stub';
         $migration->up();
     }
 }
