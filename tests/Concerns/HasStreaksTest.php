@@ -10,22 +10,15 @@ use function Spatie\PestPluginTestTime\testTime;
 
 uses()->group('streaks');
 
-function simulateActivity(Activity $activity, int $daysInFuture = 1, $incrementCount = null): void
-{
-    $activity->streaks->first()->update([
-        'count' => $incrementCount ?? $activity->streaks->first()->count,
-        'activity_at' => now()->addDays($daysInFuture),
-    ]);
-}
+beforeEach(closure: fn () => $this->activity = Activity::factory()->create());
 
 test(description: 'record a streak if one does not exist for the activity', closure: function () {
     Event::fake();
 
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
-    Event::assertDispatched(event: StreakStarted::class,
+    Event::assertDispatched(
+        event: StreakStarted::class,
         callback: fn (StreakStarted $event): bool => $event->user->is($this->user)
             && $event->activity->is($this->activity)
             && $event->streak->activity_at->isToday(),
@@ -42,9 +35,6 @@ test(description: 'record a streak if one does not exist for the activity', clos
 });
 
 test(description: 'if an activity happens more than once on the same day, nothing will happen', closure: function () {
-    // First, create a streak record
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
     expect($this->activity->streaks)->toHaveCount(count: 1);
@@ -67,21 +57,19 @@ test(description: 'if an activity happens more than once on the same day, nothin
 test(description: 'when a streak record exists, update the data', closure: function () {
     Event::fake();
 
-    // First, create a streak record
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
-    expect($this->activity->streaks)->toHaveCount(count: 1);
+    expect($this->activity->streaks)->toHaveCount(count: 1)
+        ->and($this->activity->streaks->first()->count)->toBe(expected: 1)
+        ->and($this->activity->streaks->first()->activity_at->isToday());
 
     // Now, simulate the record happening the next day and instead, been updated
-    // Using Carbon::setTestNow() doesn't seem to work here
-    // This is the equivalent of recording a streak the next day
-    simulateActivity(activity: $this->activity);
+    testTime()->addDay();
 
     $this->user->recordStreak($this->activity);
 
-    Event::assertDispatched(event: StreakIncreased::class,
+    Event::assertDispatched(
+        event: StreakIncreased::class,
         callback: fn (StreakIncreased $event): bool => $event->user->is($this->user)
             && $event->activity->is($this->activity)
             && $event->streak->activity_at->isToday()
@@ -100,11 +88,8 @@ test(description: 'when a streak record exists, update the data', closure: funct
     ]);
 });
 
-// test that a streak is broken if the activity is not recorded for a day
 test(description: 'a User\'s streak is broken when they miss a day', closure: function () {
     Event::fake();
-
-    $this->activity = Activity::factory()->createOne();
 
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity->streaks)->toHaveCount(count: 1)
@@ -127,7 +112,8 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
         ->and($this->activity->fresh()->streaks->first()->count)->toBe(expected: 1)
         ->and($this->activity->fresh()->streaks->first()->activity_at)->toBeCarbon(now());
 
-    Event::assertDispatched(event: StreakBroken::class,
+    Event::assertDispatched(
+        event: StreakBroken::class,
         callback: fn (StreakBroken $event): bool => $event->user->is($this->user)
             && $event->activity->is($this->activity)
             && $event->streak->activity_at->isToday()
@@ -136,8 +122,6 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
 });
 
 test(description: 'the Users current streak count is correct', closure: function () {
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
     expect($this->user->streaks)->toHaveCount(count: 1)
@@ -145,17 +129,12 @@ test(description: 'the Users current streak count is correct', closure: function
 });
 
 test(description: 'a User has a streak going', closure: function () {
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
     expect($this->user->hasStreakToday($this->activity))->toBeTrue();
 });
 
-// test the streak can be reset
 test(description: 'a User\'s streak can be reset', closure: function () {
-    $this->activity = Activity::factory()->createOne();
-
     $this->user->recordStreak($this->activity);
 
     expect($this->user->hasStreakToday($this->activity))->toBeTrue();
