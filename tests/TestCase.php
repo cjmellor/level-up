@@ -56,10 +56,13 @@ class TestCase extends Orchestra
         $migration = include __DIR__.'/../database/migrations/create_achievement_user_pivot_table.php.stub';
         $migration->up();
 
+        $migration = include __DIR__.'/../database/migrations/create_streak_activities_table.php.stub';
+        $migration->up();
+
         $migration = include __DIR__.'/../database/migrations/create_streaks_table.php.stub';
         $migration->up();
 
-        $migration = include __DIR__.'/../database/migrations/create_streak_activities_table.php.stub';
+        $migration = include __DIR__.'/../database/migrations/create_streak_histories_table.php.stub';
         $migration->up();
     }
 }

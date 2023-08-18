@@ -150,3 +150,35 @@ test(description: 'a User\'s streak can be reset', closure: function () {
 
     expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
 });
+
+test(description: 'when a streak is broken, it is also archived for historical usage', closure: function () {
+    // Simulate a 3 day streak
+    // Day 1
+    $this->user->recordStreak($this->activity);
+
+    // Day 2
+    testTime()->addDays();
+    $this->user->recordStreak($this->activity);
+
+    // Day 3
+    testTime()->addDays();
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->streaks)->toHaveCount(count: 1)
+        ->and($this->user->getCurrentStreakCount($this->activity))->toBe(3);
+
+    // Now, break the streak
+    testTime()->addDays(2);
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
+
+    // Check the streak's history data is correct...
+    $this->assertDatabaseHas(table: 'streak_histories', data: [
+        'user_id' => $this->user->id,
+        'activity_id' => $this->activity->id,
+        'count' => 3,
+        'started_at' => now()->subDays(value: 4),
+        'ended_at' => now()->subDays(value: 2),
+    ]);
+});

@@ -9,6 +9,7 @@ use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
 use LevelUp\Experience\Models\Activity;
 use LevelUp\Experience\Models\Streak;
+use LevelUp\Experience\Models\StreakHistory;
 
 trait HasStreaks
 {
@@ -84,12 +85,28 @@ trait HasStreaks
 
     public function resetStreak(Activity $activity): void
     {
+        // Archive the streak
+        $this->archiveStreak($activity);
+
         $this->streaks()
             ->whereBelongsTo(related: $activity)
             ->update([
                 'count' => 1,
                 'activity_at' => now(),
             ]);
+    }
+
+    protected function archiveStreak(Activity $activity): void
+    {
+        $latestStreak = $this->getStreakLastActivity($activity);
+
+        StreakHistory::create([
+            'user_id' => $this->id,
+            'activity_id' => $activity->id,
+            'count' => $latestStreak->count,
+            'started_at' => $latestStreak->activity_at->subDays($latestStreak->count - 1),
+            'ended_at' => $latestStreak->activity_at,
+        ]);
     }
 
     public function getCurrentStreakCount(Activity $activity): int
