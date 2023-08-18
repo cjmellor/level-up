@@ -32,8 +32,7 @@
         "pestphp/pest-plugin-laravel": "^2.0",
         "pestphp/pest-plugin-type-coverage": "^2.0",
         "plannr/laravel-fast-refresh-database": "^1.0.2",
-        "rector/rector": "^0.17.6",
-        "spatie/pest-plugin-test-time": "^2.0"
+        "rector/rector": "^0.17.6"
     },
     "autoload": {
         "psr-4": {

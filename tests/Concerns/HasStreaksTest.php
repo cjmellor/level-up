@@ -6,7 +6,7 @@ use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
 use LevelUp\Experience\Models\Activity;
 
-use function Spatie\PestPluginTestTime\testTime;
+use function Pest\Laravel\travel;
 
 uses()->group('streaks');
 
@@ -64,7 +64,7 @@ test(description: 'when a streak record exists, update the data', closure: funct
         ->and($this->activity->streaks->first()->activity_at->isToday());
 
     // Now, simulate the record happening the next day and instead, been updated
-    testTime()->addDay();
+    travel(1)->day();
 
     $this->user->recordStreak($this->activity);
 
@@ -97,7 +97,7 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
         ->and($this->activity->streaks->first()->activity_at->isToday());
 
     // Simulate the activity happening again the next day
-    testTime()->addDays();
+    travel(1)->day();
 
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity->streaks)->toHaveCount(count: 1)
@@ -105,12 +105,12 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
         ->and($this->activity->streaks->first()->activity_at->isTomorrow());
 
     // Simulate the activity happening again the next day
-    testTime()->addDays(2);
+    travel(2)->days();
 
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity->streaks)->toHaveCount(count: 1)
         ->and($this->activity->fresh()->streaks->first()->count)->toBe(expected: 1)
-        ->and($this->activity->fresh()->streaks->first()->activity_at)->toBeCarbon(now());
+        ->and($this->activity->fresh()->streaks->first()->activity_at)->isToday();
 
     Event::assertDispatched(
         event: StreakBroken::class,
@@ -139,7 +139,7 @@ test(description: 'a User\'s streak can be reset', closure: function () {
 
     expect($this->user->hasStreakToday($this->activity))->toBeTrue();
 
-    testTime()->addDay();
+    travel(1)->day();
     $this->user->resetStreak($this->activity);
 
     expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
@@ -151,18 +151,18 @@ test(description: 'when a streak is broken, it is also archived for historical u
     $this->user->recordStreak($this->activity);
 
     // Day 2
-    testTime()->addDays();
+    travel(1)->day();
     $this->user->recordStreak($this->activity);
 
     // Day 3
-    testTime()->addDays();
+    travel(1)->day();
     $this->user->recordStreak($this->activity);
 
     expect($this->user->streaks)->toHaveCount(count: 1)
         ->and($this->user->getCurrentStreakCount($this->activity))->toBe(3);
 
     // Now, break the streak
-    testTime()->addDays(2);
+    travel(2)->days();
     $this->user->recordStreak($this->activity);
 
     expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
