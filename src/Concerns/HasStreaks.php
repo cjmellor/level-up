@@ -86,7 +86,9 @@ trait HasStreaks
     public function resetStreak(Activity $activity): void
     {
         // Archive the streak
-        $this->archiveStreak($activity);
+        if (config(key: 'level-up.archive_streak_history.enabled')) {
+            $this->archiveStreak($activity);
+        }
 
         $this->streaks()
             ->whereBelongsTo(related: $activity)

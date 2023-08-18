@@ -139,13 +139,7 @@ test(description: 'a User\'s streak can be reset', closure: function () {
 
     expect($this->user->hasStreakToday($this->activity))->toBeTrue();
 
-    // Mimic recording a streak the next day
-    // Setting Carbon::setTestNow() doesn't seem to work
-    $this->activity->streaks->first()->update([
-        'count' => 2,
-        'activity_at' => now()->addDay(),
-    ]);
-
+    testTime()->addDay();
     $this->user->resetStreak($this->activity);
 
     expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
