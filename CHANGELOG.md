@@ -2,6 +2,19 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.7 - 2023-08-18
+
+### What's Changed
+
+- fix: set timestamps when creating achievements by @ibrunotome in https://github.com/cjmellor/level-up/pull/28
+- Streaks by @cjmellor in https://github.com/cjmellor/level-up/pull/29
+
+### New Contributors
+
+- @ibrunotome made their first contribution in https://github.com/cjmellor/level-up/pull/28
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.6...v0.0.7
+
 ## v0.0.6 - 2023-08-01
 
 ### What's Changed

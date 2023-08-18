@@ -113,7 +113,7 @@ return [
 ## 💯 Experience Points (XP)
 
 > **Note**
-> 
+>
 > XP is enabled by default. You can disable it in the config
 
 Add the `GiveExperience` trait to your `User` model.
@@ -138,7 +138,7 @@ $user->addPoints(10);
 A new record will be added to the `experiences` table which stores the Users’ points. If a record already exists, it will be updated instead. All new records will be given a `level_id` of `1`.
 
 > **Note**
-> 
+>
 > If you didn't set up your Level structure yet, a default Level of `1` will be added to get you started.
 
 **Deduct XP points from a User**
@@ -265,7 +265,7 @@ public int $totalPoints,
 ## ⬆️ Levelling
 
 > **Note**
-> 
+>
 > If you add points before setting up your levelling structure, a default Level of `1` will be added to get you started.
 
 ### Set up your levelling structure
@@ -300,7 +300,8 @@ $user->getLevel();
 
 ### Level Cap
 
-A level cap sets the maximum level that a user can reach. Once a user reaches the level cap, they will not be able to gain any more levels, even if they continue to earn experience points. The level cap is enabled by default and capped to level `100`. These options can be changed in the packages config file at `config/level-up.php` or by adding them to your `.env` file.
+A level cap sets the maximum level that a user can reach. Once a user reaches the level cap, they will not be able to gain any more levels, even if they continue to earn experience points. The level cap is enabled by default and capped to level `100`. These
+options can be changed in the packages config file at `config/level-up.php` or by adding them to your `.env` file.
 
 ```
 LEVEL_CAP_ENABLED=
@@ -381,7 +382,7 @@ $user->grantAchievement(
 ```
 
 > **Note**
-> 
+>
 > Achievement progress is capped to 100%
 
 ### Check Achievement Progression
@@ -447,7 +448,7 @@ public Model $user,
 ```
 
 > **Note**
-> 
+>
 > This event only runs if the progress of the Achievement is 100%
 
 **AchievementProgressionIncreased** - When a Users’ progression for an Achievement is increased.
@@ -492,6 +493,102 @@ $user->addPoints(
 
 ```php
 $user->experienceHistory;
+```
+
+## 🔥 Streaks
+
+With the Streaks feature, you can track and motivate user engagement by monitoring consecutive daily activities. Whether it's logging in, completing tasks, or any other daily activity, maintaining streaks encourages users to stay active and engaged.
+
+Streaks are controlled in a Trait, so only use the trait if you want to use this feature. Add the Trait to you `User` model
+
+```php
+use LevelUp\Experience\Concerns\HasStreaks;
+
+class User extends Model
+{
+	use HasStreaks;
+
+	// ...
+}
+```
+
+### Activities
+
+Use the `Activies` model to add new activities that you want to track. Here’s some examples:
+
+- Logs into a website
+- Posts an article
+
+### Record a Streak
+
+```php
+$activity = Activity::find(1);
+
+$user->recordStreak($activity);
+```
+
+This will increment the streak count for the User on this activity. An `Event is ran on increment.
+
+### Break a Streak
+
+Streaks can be broken, both automatically and manually. This puts the count back to `1` to start again. An Event is ran when a streak is broken.
+
+For example, if your streak has had a successful run of 5 days, but a day is skipped and you run the activity on day 7, the streak will be broken and reset back to `1`. Currently, this happens automatically.
+
+### Reset a Streak
+
+You can reset a streak manually if you desire. If `level-up.archive_streak_history.enabled` is true, the streak history will be recorded.
+
+```php
+$activity = Activity::find(1);
+
+$user->resetStreak($activity);
+```
+
+### Archive Streak Histories
+
+Streaks are recorded, or “archived” by default. When a streak is broken, a record of the streak is recorded. A Model is supplied to use this data.
+
+```php
+use LevelUp\Experience\Models\StreakHistory;
+
+StreakHistory::all();
+```
+
+### Get Current Streak Count
+
+See the streak count for an activity for a User
+
+```php
+$user->getCurrentStreakCount($activity); // 2
+```
+
+### Check User Streak Activity
+
+Check if the User has performed a streak for the day
+
+```php
+$user->hasStreakToday($activity);
+```
+
+### Events
+
+**StreakIncreased** - If an activity happens on a day after the previous day, the streak is increased.
+
+```php
+public int $pointsAdded,
+public int $totalPoints,
+public string $type,
+public ?string $reason,
+public Model $user,
+```
+
+**StreakBroken** - When a streak is broken and the counter is reset.
+
+```php
+public Model $user,
+public Activity $activity,
+public Streak $streak,
 ```
 
 # Testing
