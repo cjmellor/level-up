@@ -3,6 +3,7 @@
 namespace LevelUp\Experience\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use LevelUp\Experience\Models\Experience;
 
@@ -15,7 +16,7 @@ class LeaderboardService
         $this->userModel = config(key: 'level-up.user.model');
     }
 
-    public function generate($paginate = false, int|null $limit = null): array|Collection|LengthAwarePaginator
+    public function generate(bool $paginate = false, int $limit = null): array|Collection|LengthAwarePaginator
     {
         return $this->userModel::query()
             ->with(relations: ['experience', 'level'])
@@ -25,6 +26,6 @@ class LeaderboardService
                     ->latest()
             )
             ->take($limit)
-            ->when($paginate, fn ($query) => $query->paginate(), fn ($query) => $query->get());
+            ->when($paginate, fn (Builder $query) => $query->paginate(), fn (Builder $query) => $query->get());
     }
 }

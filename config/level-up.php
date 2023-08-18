@@ -74,4 +74,16 @@ return [
     'audit' => [
         'enabled' => env(key: 'AUDIT_POINTS', default: false),
     ],
+
+    /*
+    | -------------------------------------------------------------------------
+    | Record streak history
+    | -------------------------------------------------------------------------
+    |
+    | Set the streak history configuration.
+    |
+    */
+    'archive_streak_history' => [
+        'enabled' => env(key: 'ARCHIVE_STREAK_HISTORY_ENABLED', default: true),
+    ],
 ];
