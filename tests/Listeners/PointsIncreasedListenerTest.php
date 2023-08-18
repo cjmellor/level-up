@@ -44,8 +44,11 @@ test(description: 'adding points creates an audit record', closure: function ():
 
     $this->assertDatabaseHas(table: 'experience_audits', data: [
         'user_id' => $this->user->id,
-        'type' => AuditType::Add->value,
         'points' => 10,
+        'levelled_up' => false,
+        'level_to' => null,
+        'type' => AuditType::Add->value,
+        'reason' => null,
     ]);
 });
 
@@ -63,6 +66,7 @@ test(description: 'when a User levels up, a record is stored in the audit', clos
         'levelled_up' => true,
         'level_to' => 2,
         'type' => AuditType::LevelUp->value,
+        'reason' => null,
     ]);
 });
 
@@ -89,5 +93,20 @@ test(description: 'user levels are correct', closure: function () {
     $this->assertDatabaseHas(table: 'users', data: [
         'id' => $this->user->id,
         'level_id' => 3,
+    ]);
+});
+
+test(description: 'points can be added with a reason, for the audit log', closure: function () {
+    config()->set(key: 'level-up.audit.enabled', value: true);
+
+    $this->user->addPoints(amount: 100, reason: 'test');
+
+    $this->assertDatabaseHas(table: 'experience_audits', data: [
+        'user_id' => $this->user->id,
+        'points' => 100,
+        'levelled_up' => false,
+        'level_to' => null,
+        'type' => AuditType::Add->value,
+        'reason' => 'test',
     ]);
 });

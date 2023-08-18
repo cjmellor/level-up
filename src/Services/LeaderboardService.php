@@ -15,7 +15,7 @@ class LeaderboardService
         $this->userModel = config(key: 'level-up.user.model');
     }
 
-    public function generate($paginate = false, int|null $limit = null): array|Collection|LengthAwarePaginator
+    public function generate($paginate = false, int $limit = null): array|Collection|LengthAwarePaginator
     {
         return $this->userModel::query()
             ->with(relations: ['experience', 'level'])
