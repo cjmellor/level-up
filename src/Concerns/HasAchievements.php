@@ -34,6 +34,7 @@ trait HasAchievements
     public function achievements(): BelongsToMany
     {
         return $this->belongsToMany(related: Achievement::class)
+            ->withTimestamps()
             ->withPivot(columns: 'progress')
             ->where('is_secret', false)
             ->using(AchievementUser::class);
