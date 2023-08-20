@@ -2,6 +2,16 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.8 - 2023-08-20
+
+### What's Changed
+
+- Possible `nextLevelAt()` Bug by @cjmellor in https://github.com/cjmellor/level-up/pull/26
+- Missing Test by @cjmellor in https://github.com/cjmellor/level-up/pull/27
+- fix: prevent grant of secret achievement twice by @ibrunotome in https://github.com/cjmellor/level-up/pull/31
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.7...v0.0.8
+
 ## v0.0.7 - 2023-08-18
 
 ### What's Changed
