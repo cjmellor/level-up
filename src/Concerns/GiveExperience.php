@@ -137,7 +137,8 @@ trait GiveExperience
 
     public function nextLevelAt(int $checkAgainst = null, bool $showAsPercentage = false): int
     {
-        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
+        // $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
+        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
 
         if (! $nextLevel || $nextLevel->next_level_experience === null) {
             return 0;
