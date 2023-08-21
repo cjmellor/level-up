@@ -4,9 +4,12 @@ namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\StreakBroken;
+use LevelUp\Experience\Events\StreakFrozen;
 use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
+use LevelUp\Experience\Events\StreakUnfroze;
 use LevelUp\Experience\Models\Activity;
 use LevelUp\Experience\Models\Streak;
 use LevelUp\Experience\Models\StreakHistory;
@@ -136,12 +139,19 @@ trait HasStreaks
     {
         $days = $days ?? config(key: 'level-up.freeze_duration');
 
+        Event::dispatch(new StreakFrozen(
+            frozenStreakLength: $days,
+            frozenUntil: now()->addDays(value: $days)->startOfDay()
+        ));
+
         return $this->getStreakLastActivity($activity)
             ->update(['frozen_until' => now()->addDays(value: $days)->startOfDay()]);
     }
 
     public function unFreezeStreak(Activity $activity): bool
     {
+        Event::dispatch(new StreakUnfroze());
+
         return $this->getStreakLastActivity($activity)
             ->update(['frozen_until' => null]);
     }

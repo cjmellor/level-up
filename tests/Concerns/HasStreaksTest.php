@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\StreakBroken;
+use LevelUp\Experience\Events\StreakFrozen;
 use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
+use LevelUp\Experience\Events\StreakUnfroze;
 use LevelUp\Experience\Models\Activity;
 
 use function Spatie\PestPluginTestTime\testTime;
@@ -178,14 +180,24 @@ test(description: 'when a streak is broken, it is also archived for historical u
 });
 
 test(description: 'a streak can be frozen', closure: function () {
+    Event::fake();
+
     $this->user->recordStreak($this->activity);
 
     $this->user->freezeStreak($this->activity);
 
     expect($this->user->streaks->first()->frozen_until)->toBeCarbon(now()->addDays()->startOfDay());
+
+    Event::assertDispatched(
+        event: StreakFrozen::class,
+        callback: fn (StreakFrozen $event): bool => $event->frozenStreakLength === config(key: 'level-up.freeze_duration')
+            && $event->frozenUntil->isTomorrow(),
+    );
 });
 
 test(description: 'a streak can be unfrozen', closure: function () {
+    Event::fake();
+
     $this->user->recordStreak($this->activity);
 
     $this->user->freezeStreak($this->activity);
@@ -195,6 +207,8 @@ test(description: 'a streak can be unfrozen', closure: function () {
     $this->user->unFreezeStreak($this->activity);
 
     expect($this->user->isStreakFrozen($this->activity))->toBeFalse();
+
+    Event::assertDispatched(event: StreakUnfroze::class);
 });
 
 test(description: 'when a streak is frozen, it does not break', closure: function () {
