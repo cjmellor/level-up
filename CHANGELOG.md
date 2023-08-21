@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.9 - 2023-08-21
+
+### What's Changed
+
+- Adds a feature to freeze a streak by @cjmellor in https://github.com/cjmellor/level-up/pull/32
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.8...v0.0.9
+
 ## v0.0.8 - 2023-08-20
 
 ### What's Changed
