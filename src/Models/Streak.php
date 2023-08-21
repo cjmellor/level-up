@@ -14,6 +14,7 @@ class Streak extends Model
 
     protected $casts = [
         'activity_at' => 'datetime',
+        'frozen_until' => 'datetime',
     ];
 
     public function user(): BelongsTo

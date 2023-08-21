@@ -1,0 +1,21 @@
+name: "Run Linter"
+
+on: pull_request
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Lint with Pint
+        uses: aglipanci/laravel-pint-action@2.3.0
+
+      - name: Commit linted files
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "fix: Files linted with Pint"
+

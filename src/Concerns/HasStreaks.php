@@ -4,9 +4,12 @@ namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\StreakBroken;
+use LevelUp\Experience\Events\StreakFrozen;
 use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
+use LevelUp\Experience\Events\StreakUnfroze;
 use LevelUp\Experience\Models\Activity;
 use LevelUp\Experience\Models\Streak;
 use LevelUp\Experience\Models\StreakHistory;
@@ -18,12 +21,19 @@ trait HasStreaks
         // If the user doesn't have a streak for this activity, start a new one
         if (! $this->hasStreakForActivity(activity: $activity)) {
             $this->startNewStreak($activity);
+
+            return;
         }
 
         $diffInDays = $this->getStreakLastActivity($activity)
             ->activity_at
             ->startOfDay()
             ->diffInDays(now()->startOfDay());
+
+        // Checking to see if the streak is frozen
+        if ($this->getStreakLastActivity($activity)->frozen_until && now()->lessThan($this->getStreakLastActivity($activity)->frozen_until)) {
+            return;
+        }
 
         if ($diffInDays === 0) {
             return;
@@ -125,10 +135,29 @@ trait HasStreaks
             ->isToday();
     }
 
-    //    public function getLongestStreak(Activity $activity): int
-    //    {
-    //        return $this->streaks()
-    //            ->whereBelongsTo(related: $activity)
-    //            ->max(column: 'count');
-    //    }
+    public function freezeStreak(Activity $activity, int $days = null): bool
+    {
+        $days = $days ?? config(key: 'level-up.freeze_duration');
+
+        Event::dispatch(new StreakFrozen(
+            frozenStreakLength: $days,
+            frozenUntil: now()->addDays(value: $days)->startOfDay()
+        ));
+
+        return $this->getStreakLastActivity($activity)
+            ->update(['frozen_until' => now()->addDays(value: $days)->startOfDay()]);
+    }
+
+    public function unFreezeStreak(Activity $activity): bool
+    {
+        Event::dispatch(new StreakUnfroze());
+
+        return $this->getStreakLastActivity($activity)
+            ->update(['frozen_until' => null]);
+    }
+
+    public function isStreakFrozen(Activity $activity): bool
+    {
+        return ! is_null($this->getStreakLastActivity($activity)->frozen_until);
+    }
 }

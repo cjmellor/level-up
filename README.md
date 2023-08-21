@@ -591,6 +591,59 @@ public Activity $activity,
 public Streak $streak,
 ```
 
+## 🥶 Streak Freezing
+
+Streaks can be frozen, which means they will not be broken if a day is skipped. This is useful for when you want to allow users to take a break from an activity without losing their streak.
+
+The freeze duration is a configurable option in the config file.
+
+```php
+'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
+```
+
+### Freeze a Streak
+
+Fetch the activity you want to freeze and pass it to the `freezeStreak` method. A second parameter can be passed to set the duration of the freeze. The default is `1` day (as set in the config)
+
+A `StreakFrozen` Event is ran when a streak is frozen.
+
+```php
+$user->freezeStreak(activity: $activity);
+
+$user->freezeStreak(activity: $activity, days: 5); // freeze for 5 days
+```
+
+### Unfreeze a Streak
+
+The opposite of freezing a streak is unfreezing it. This will allow the streak to be broken again.
+
+A `StreakUnfrozen` Event is run when a streak is unfrozen.
+
+```php
+$user->unfreezeStreak($activity);
+```
+
+### Check if a Streak is Frozen
+
+```php
+$user->isStreakFrozen($activity);
+```
+
+### Events
+
+**StreakFrozen** - When a streak is frozen.
+
+```php
+public int $frozenStreakLength,
+public Carbon $frozenUntil,
+```
+
+**StreakUnfrozen** - When a streak is unfrozen.
+
+```
+No data is sent with this event
+```
+
 # Testing
 
 ```

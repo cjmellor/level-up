@@ -86,4 +86,14 @@ return [
     'archive_streak_history' => [
         'enabled' => env(key: 'ARCHIVE_STREAK_HISTORY_ENABLED', default: true),
     ],
+
+    /*
+     | -------------------------------------------------------------------------
+     | Default Streak Freeze Time
+     | -------------------------------------------------------------------------
+     |
+     | Set the default time in days that a streak will be frozen for.
+     |
+     */
+    'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
 ];

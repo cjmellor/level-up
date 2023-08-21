@@ -38,31 +38,23 @@ class TestCase extends Orchestra
             $table->timestamps();
         });
 
-        $migration = include __DIR__.'/../database/migrations/create_levels_table.php.stub';
-        $migration->up();
+        $migrationFiles = [
+            'create_levels_table',
+            'create_experiences_table',
+            'add_level_relationship_to_users_table',
+            'create_experience_audits_table',
+            'create_achievements_table',
+            'create_achievement_user_pivot_table',
+            'create_streak_activities_table',
+            'create_streaks_table',
+            'create_streak_histories_table',
+            'add_streak_freeze_feature_columns_to_streaks_table',
+        ];
 
-        $migration = include __DIR__.'/../database/migrations/create_experiences_table.php.stub';
-        $migration->up();
+        foreach ($migrationFiles as $migrationFile) {
+            $migration = include __DIR__."/../database/migrations/$migrationFile.php.stub";
 
-        $migration = include __DIR__.'/../database/migrations/add_level_relationship_to_users_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_experience_audits_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_achievements_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_achievement_user_pivot_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_streak_activities_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_streaks_table.php.stub';
-        $migration->up();
-
-        $migration = include __DIR__.'/../database/migrations/create_streak_histories_table.php.stub';
-        $migration->up();
+            $migration->up();
+        }
     }
 }
