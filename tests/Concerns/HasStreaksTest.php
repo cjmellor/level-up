@@ -176,3 +176,55 @@ test(description: 'when a streak is broken, it is also archived for historical u
         'ended_at' => now()->subDays(value: 2),
     ]);
 });
+
+test(description: 'a streak can be frozen', closure: function () {
+    $this->user->recordStreak($this->activity);
+
+    $this->user->freezeStreak($this->activity);
+
+    expect($this->user->streaks->first()->frozen_until)->toBeCarbon(now()->addDays()->startOfDay());
+});
+
+test(description: 'a streak can be unfrozen', closure: function () {
+    $this->user->recordStreak($this->activity);
+
+    $this->user->freezeStreak($this->activity);
+
+    expect($this->user->streaks->first()->frozen_until)->toBeCarbon(now()->addDays()->startOfDay());
+
+    $this->user->unFreezeStreak($this->activity);
+
+    expect($this->user->isStreakFrozen($this->activity))->toBeFalse();
+});
+
+test(description: 'when a streak is frozen, it does not break', closure: function () {
+    $this->user->recordStreak($this->activity);
+
+    testTime()->addDays();
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 2);
+
+    $this->user->freezeStreak($this->activity);
+
+    testTime()->addDays();
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 3);
+});
+
+test('when a streak is frozen and freeze duration has passed, streak count will reset', function () {
+    $this->user->recordStreak($this->activity);
+
+    testTime()->addDays();
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 2);
+
+    $this->user->freezeStreak($this->activity);
+
+    testTime()->addDays(2);
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user->getCurrentStreakCount($this->activity))->toBe(expected: 1);
+});
