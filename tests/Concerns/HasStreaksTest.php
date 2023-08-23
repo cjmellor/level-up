@@ -174,8 +174,8 @@ test(description: 'when a streak is broken, it is also archived for historical u
         'user_id' => $this->user->id,
         'activity_id' => $this->activity->id,
         'count' => 3,
-        'started_at' => now()->subDays(value: 4),
-        'ended_at' => now()->subDays(value: 2),
+        'started_at' => now()->subDays(4),
+        'ended_at' => now()->subDays(2),
     ]);
 });
 
