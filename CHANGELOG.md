@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.10 - 2023-08-23
+
+### What's Changed
+
+- Refactor Tests by @cjmellor in https://github.com/cjmellor/level-up/pull/33
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.9...v0.0.10
+
 ## v0.0.9 - 2023-08-21
 
 ### What's Changed
