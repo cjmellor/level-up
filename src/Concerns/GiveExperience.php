@@ -30,6 +30,12 @@ trait GiveExperience
             $type = AuditType::Add->value;
         }
 
+        $lastLevel = Level::orderByDesc(column: 'level')->first();
+        throw_if(
+            condition: isset($lastLevel->next_level_experience) && $amount > Level::orderByDesc(column: 'level')->first()->next_level_experience,
+            message: 'Points exceed the last level\'s experience points.',
+        );
+
         /**
          * If the Multiplier Service is enabled, apply the Multipliers.
          */
@@ -180,7 +186,7 @@ trait GiveExperience
         }
 
         $this->update(attributes: [
-            'level_id' => $nextLevel->id,
+            'level_id' => $nextLevel->level,
         ]);
 
         event(new UserLevelledUp(user: $this, level: $this->getLevel()));

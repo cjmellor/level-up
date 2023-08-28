@@ -63,7 +63,7 @@ test(description: 'when a streak record exists, update the data', closure: funct
 
     expect($this->activity)->streaks->toHaveCount(count: 1)
         ->and($this->activity)->streaks->first()->count->toBe(expected: 1)
-        ->and($this->activity)->streaks->first()->activity_at->format('U')->toBe(now()->format('U'));
+        ->and($this->activity)->streaks->first()->activity_at->toBeCarbon(now());
 
     // Now, simulate the record happening the next day and instead, been updated
     travel(1)->day();
@@ -96,7 +96,7 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity)->streaks->toHaveCount(count: 1)
         ->and($this->activity)->streaks->first()->count->toBe(expected: 1)
-        ->and($this->activity)->streaks->first()->activity_at->format('U')->toBe(now()->format('U'));
+        ->and($this->activity)->streaks->first()->activity_at->toBeCarbon(now());
 
     // Simulate the activity happening again the next day
     travel(value: 1)->day();
@@ -104,7 +104,7 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity)->streaks->toHaveCount(count: 1)
         ->and($this->activity)->fresh()->streaks->first()->count->toBe(expected: 2)
-        ->and($this->activity)->fresh()->streaks->first()->activity_at->format('U')->toBe(now()->format('U'));
+        ->and($this->activity)->fresh()->streaks->first()->activity_at->toBeCarbon(now());
 
     // Simulate the activity happening again the next day
     travel(value: 2)->days();
@@ -112,7 +112,7 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
     $this->user->recordStreak($this->activity);
     expect(value: $this->activity->streaks)->toHaveCount(count: 1)
         ->and($this->activity)->fresh()->streaks->first()->count->toBe(expected: 1)
-        ->and($this->activity)->fresh()->streaks->first()->activity_at->format('U')->toBe(now()->format('U'));
+        ->and($this->activity)->fresh()->streaks->first()->activity_at->toBeCarbon(now());
 
     Event::assertDispatched(
         event: StreakBroken::class,
@@ -186,7 +186,7 @@ test(description: 'a streak can be frozen', closure: function () {
 
     $this->user->freezeStreak($this->activity);
 
-    expect($this->user)->streaks->first()->frozen_until->format('U')->toBe(now()->addDays()->startOfDay()->format('U'));
+    expect($this->user)->streaks->first()->frozen_until->toBeCarbon(now()->addDays()->startOfDay());
 
     Event::assertDispatched(
         event: StreakFrozen::class,
@@ -202,7 +202,7 @@ test(description: 'a streak can be unfrozen', closure: function () {
 
     $this->user->freezeStreak($this->activity);
 
-    expect($this->user)->streaks->first()->frozen_until->format('U')->toBe(now()->addDays()->startOfDay()->format('U'));
+    expect($this->user)->streaks->first()->frozen_until->toBeCarbon(now()->addDays()->startOfDay());
 
     $this->user->unFreezeStreak($this->activity);
 

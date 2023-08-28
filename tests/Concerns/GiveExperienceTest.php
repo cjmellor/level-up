@@ -299,3 +299,8 @@ test(description: 'Add default level if not applied before trying to add points'
         'next_level_experience' => null,
     ]);
 });
+
+it('throws an error when points added exceed the last levels experience requirement')
+    ->defer(fn () => $this->user->addPoints(amount: 1000))
+    ->throws(exception: \Exception::class);
+
