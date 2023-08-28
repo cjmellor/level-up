@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.11 - 2023-08-28
+
+### What's Changed
+
+- Add custom expectation for Carbon instances and level cap validation by @cjmellor in https://github.com/cjmellor/level-up/pull/37
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.10...v0.0.11
+
 ## v0.0.10 - 2023-08-23
 
 ### What's Changed
