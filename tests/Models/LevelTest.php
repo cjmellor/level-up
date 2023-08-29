@@ -7,15 +7,15 @@ uses()->group('levels');
 
 it(description: 'can create a level', closure: function (): void {
     $level = Level::add([
-        'level' => 4,
-        'next_level_experience' => 500,
+        'level' => 6,
+        'next_level_experience' => 750,
     ]);
 
-    expect(value: $level[0]->level)->toBe(expected: 4);
+    expect(value: $level[0]->level)->toBe(expected: 6);
 
     $this->assertDatabaseHas(table: 'levels', data: [
-        'level' => 4,
-        'next_level_experience' => 500,
+        'level' => 6,
+        'next_level_experience' => 750,
     ]);
 });
 

@@ -77,11 +77,10 @@ trait GiveExperience
 
             return $this->experience;
         }
-
         /**
          * If the User does have an Experience record, update it.
          */
-        if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= config(key: 'level-up.level_cap.level') && ! (config(key: 'level-up.level_cap.points_continue'))) {
+        if ($this->levelCapExceedsUserLevel()) {
             return $this->experience;
         }
 
@@ -106,6 +105,16 @@ trait GiveExperience
         return $this->hasOne(related: Experience::class);
     }
 
+    public function experienceHistory(): HasMany
+    {
+        return $this->hasMany(related: ExperienceAudit::class);
+    }
+
+    public function getPoints(): int
+    {
+        return $this->experience->experience_points;
+    }
+
     protected function dispatchEvent(int $amount, string $type, ?string $reason): void
     {
         event(new PointsIncreased(
@@ -115,6 +124,13 @@ trait GiveExperience
             reason: $reason,
             user: $this,
         ));
+    }
+
+    protected function levelCapExceedsUserLevel(): bool
+    {
+        return config(key: 'level-up.level_cap.enabled')
+            && $this->getLevel() >= config(key: 'level-up.level_cap.level')
+            && ! (config(key: 'level-up.level_cap.points_continue'));
     }
 
     public function getLevel(): int
@@ -156,8 +172,11 @@ trait GiveExperience
 
     public function nextLevelAt(int $checkAgainst = null, bool $showAsPercentage = false): int
     {
-        // $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
         $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
+
+        if ($this->levelCapExceedsUserLevel()) {
+            return 0;
+        }
 
         if (! $nextLevel || $nextLevel->next_level_experience === null) {
             return 0;
@@ -172,11 +191,6 @@ trait GiveExperience
         return max(0, ($nextLevel->next_level_experience - $currentLevelExperience) - ($this->getPoints() - $currentLevelExperience));
     }
 
-    public function getPoints(): int
-    {
-        return $this->experience->experience_points;
-    }
-
     public function levelUp(): void
     {
         if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= config(key: 'level-up.level_cap.level')) {
@@ -188,26 +202,11 @@ trait GiveExperience
         $this->experience->status()->associate(model: $nextLevel);
         $this->experience->save();
 
-        if (config(key: 'level-up.audit.enabled')) {
-            $this->experienceHistory()->create(attributes: [
-                'user_id' => $this->id,
-                'points' => $this->getPoints(),
-                'levelled_up' => true,
-                'level_to' => $nextLevel->level,
-                'type' => AuditType::LevelUp->value,
-            ]);
-        }
-
         $this->update(attributes: [
             'level_id' => $nextLevel->level,
         ]);
 
         event(new UserLevelledUp(user: $this, level: $this->getLevel()));
-    }
-
-    public function experienceHistory(): HasMany
-    {
-        return $this->hasMany(related: ExperienceAudit::class);
     }
 
     public function level(): BelongsTo

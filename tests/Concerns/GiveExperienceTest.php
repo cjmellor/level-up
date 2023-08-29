@@ -150,8 +150,10 @@ test('a User can see how many more points are needed until they can level up', c
 it(description: 'returns zero when User has hit Level cap and tries to see how many points until next level', closure: function () {
     config()->set(key: 'level-up.level_cap.enabled', value: true);
     config()->set(key: 'level-up.level_cap.level', value: 3);
+    config()->set(key: 'level-up.level_cap.points_continue', value: false);
 
-    $this->user->addPoints(amount: 250);
+    $this->user->addPoints(amount: 100);
+    $this->user->addPoints(amount: 150);
 
     expect($this->user)
         ->nextLevelAt()
