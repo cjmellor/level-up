@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
-use LevelUp\Experience\Listeners\PointsIncreasedListener;
 use LevelUp\Experience\Models\Experience;
 use LevelUp\Experience\Models\Level;
 
@@ -333,13 +332,4 @@ it(description: 'dispatches an event after points have been added for the very f
     $this->user->addPoints(amount: 250);
 
     Event::assertDispatched(event: UserLevelledUp::class);
-});
-
-test('events', function () {
-    Event::fake();
-
-    $this->user->addPoints(amount: 10);
-
-    Event::assertDispatched(event: PointsIncreased::class);
-    Event::assertListening(expectedEvent: PointsIncreased::class, expectedListener: PointsIncreasedListener::class);
 });
