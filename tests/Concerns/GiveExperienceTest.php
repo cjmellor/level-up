@@ -300,7 +300,34 @@ test(description: 'Add default level if not applied before trying to add points'
     ]);
 });
 
-it('throws an error when points added exceed the last levels experience requirement')
+it(description: 'throws an error when points added exceed the last levels experience requirement')
     ->defer(fn () => $this->user->addPoints(amount: 1000))
     ->throws(exception: \Exception::class);
 
+test(description: 'the level is correct when adding more points than available on initial experience gain', closure: function () {
+    // Levels have been added, up to Level 5, needing to reach 600 points to get there
+    // User is initially given 400 points, so should directly go to Level 4
+    $this->user->addPoints(amount: 10);
+    expect($this->user)->level_id->toBe(expected: 1);
+    $this->user->setPoints(amount: 0);
+
+    $this->user->addPoints(100);
+    expect($this->user)->level_id->toBe(expected: 2);
+    $this->user->setPoints(amount: 0);
+
+    $this->user->addPoints(250);
+    expect($this->user)->level_id->toBe(expected: 3);
+    $this->user->setPoints(amount: 0);
+
+    $this->user->addPoints(400);
+    expect($this->user)->level_id->toBe(expected: 4);
+    $this->user->setPoints(amount: 0);
+});
+
+it(description: 'dispatches an event after points have been added for the very first time', closure: function () {
+    Event::fake();
+
+    $this->user->addPoints(amount: 250);
+
+    Event::assertDispatched(event: UserLevelledUp::class);
+});

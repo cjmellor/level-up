@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
@@ -51,14 +52,27 @@ trait GiveExperience
          * If the User does not have an Experience record, create one.
          */
         if ($this->experience()->doesntExist()) {
+            $level = Level::query()
+                ->where(column: 'next_level_experience', operator: '<=', value: $amount)
+                ->orderByDesc(column: 'next_level_experience')
+                ->first();
+
             $experience = $this->experience()->create(attributes: [
-                'level_id' => (int) config(key: 'level-up.starting_level'),
+                'level_id' => $level->level ?? config(key: 'level-up.starting_level'),
                 'experience_points' => $amount,
             ]);
 
+            /**
+             * This is updating the User's level_id column, which is not the same as the Experience's level_id column.
+             */
             $this->fill([
                 'level_id' => $experience->level_id,
             ])->save();
+
+
+            if ($level?->level > config(key: 'level-up.starting_level')) {
+                Event::dispatch(event: new UserLevelledUp(user: $this, level: $level->level));
+            }
 
             $this->dispatchEvent($amount, $type, $reason);
 

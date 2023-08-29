@@ -23,6 +23,8 @@ uses(TestCase::class, FastRefreshDatabase::class)
             ['level' => 1, 'next_level_experience' => null],
             ['level' => 2, 'next_level_experience' => 100],
             ['level' => 3, 'next_level_experience' => 250],
+            ['level' => 4, 'next_level_experience' => 400],
+            ['level' => 5, 'next_level_experience' => 600],
         );
     })
     ->in(__DIR__);
