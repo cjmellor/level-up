@@ -69,7 +69,6 @@ trait GiveExperience
                 'level_id' => $experience->level_id,
             ])->save();
 
-
             if ($level?->level > config(key: 'level-up.starting_level')) {
                 Event::dispatch(event: new UserLevelledUp(user: $this, level: $level->level));
             }
