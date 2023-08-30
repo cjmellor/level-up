@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.12 - 2023-08-30
+
+### What's Changed
+
+- Add level calculation and event dispatch on initial experience gain by @cjmellor in https://github.com/cjmellor/level-up/pull/38
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.11...v0.0.12
+
 ## v0.0.11 - 2023-08-28
 
 ### What's Changed
