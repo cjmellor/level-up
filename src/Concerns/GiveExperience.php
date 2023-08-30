@@ -215,4 +215,3 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 }
-
