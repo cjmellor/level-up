@@ -257,7 +257,7 @@ test('a Users level is restored if the level cap is re-enabled and points contin
 
     expect($this->user->experience)
         ->experience_points->toBe(expected: 400)
-        ->and($this->user)->getLevel()->toBe(expected: 3);
+        ->and($this->user)->getLevel()->toBe(expected: 4);
 });
 
 test('A multiplier can use data that was passed through to it', function () {

@@ -69,14 +69,15 @@ trait GiveExperience
                 'level_id' => $experience->level_id,
             ])->save();
 
-            if ($level?->level > config(key: 'level-up.starting_level')) {
-                Event::dispatch(event: new UserLevelledUp(user: $this, level: $level->level));
+            for ($lvl = config(key: 'level-up.starting_level'); $lvl <= $level?->level; $lvl++) {
+                Event::dispatch(event: new UserLevelledUp(user: $this, level: $lvl));
             }
 
             $this->dispatchEvent($amount, $type, $reason);
 
             return $this->experience;
         }
+
         /**
          * If the User does have an Experience record, update it.
          */
@@ -105,16 +106,6 @@ trait GiveExperience
         return $this->hasOne(related: Experience::class);
     }
 
-    public function experienceHistory(): HasMany
-    {
-        return $this->hasMany(related: ExperienceAudit::class);
-    }
-
-    public function getPoints(): int
-    {
-        return $this->experience->experience_points;
-    }
-
     protected function dispatchEvent(int $amount, string $type, ?string $reason): void
     {
         event(new PointsIncreased(
@@ -136,6 +127,11 @@ trait GiveExperience
     public function getLevel(): int
     {
         return $this->experience->status->level;
+    }
+
+    public function experienceHistory(): HasMany
+    {
+        return $this->hasMany(related: ExperienceAudit::class);
     }
 
     public function deductPoints(int $amount): Experience
@@ -191,22 +187,27 @@ trait GiveExperience
         return max(0, ($nextLevel->next_level_experience - $currentLevelExperience) - ($this->getPoints() - $currentLevelExperience));
     }
 
-    public function levelUp(): void
+    public function getPoints(): int
+    {
+        return $this->experience->experience_points;
+    }
+
+    public function levelUp(int $to): void
     {
         if (config(key: 'level-up.level_cap.enabled') && $this->getLevel() >= config(key: 'level-up.level_cap.level')) {
             return;
         }
 
-        $nextLevel = Level::firstWhere(column: 'level', operator: $this->getLevel() + 1);
+        $this->fill(attributes: ['level_id' => $to])
+            ->save();
 
-        $this->experience->status()->associate(model: $nextLevel);
-        $this->experience->save();
+        $this->experience->status()->associate(model: $to);
+        $this->save();
 
-        $this->update(attributes: [
-            'level_id' => $nextLevel->level,
-        ]);
-
-        event(new UserLevelledUp(user: $this, level: $this->getLevel()));
+        // Fire an event for each level gained
+        for ($lvl = $this->getLevel(); $lvl <= $to; $lvl++) {
+            event(new UserLevelledUp(user: $this, level: $lvl));
+        }
     }
 
     public function level(): BelongsTo
@@ -214,3 +215,4 @@ trait GiveExperience
         return $this->belongsTo(related: Level::class);
     }
 }
+

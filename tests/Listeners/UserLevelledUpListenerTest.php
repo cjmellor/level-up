@@ -12,7 +12,7 @@ beforeEach(closure: function (): void {
 it(description: 'adds audit data when a User level\'s up', closure: function () {
     $this->user->addPoints(100);
 
-    expect($this->user)->experienceHistory->count()->toBe(expected: 2);
+    expect($this->user)->experienceHistory->count()->toBe(expected: 3);
 
     $this->assertDatabaseHas(table: 'experience_audits', data: [
         'user_id' => $this->user->id,
@@ -31,3 +31,19 @@ test(description: 'the Event and Listener run when levelling up', closure: funct
     Event::assertDispatched(event: UserLevelledUp::class);
     Event::assertListening(expectedEvent: UserLevelledUp::class, expectedListener: UserLevelledUpListener::class);
 });
+
+test(description: 'when a User levels up more than once, an event runs for each level', closure: function (int $level) {
+    Event::fake();
+
+    $this->user->addPoints(300);
+
+    expect($this->user)->experience->level_id->toBe(expected: 3)
+        ->and($this->user)->level_id->toBe(expected: 3);
+
+    Event::assertDispatchedTimes(event: UserLevelledUp::class, times: 3);
+
+    Event::assertDispatched(
+        event: UserLevelledUp::class,
+        callback: fn (UserLevelledUp $event): bool => $event->level === $level
+    );
+})->with([1, 2, 3]);

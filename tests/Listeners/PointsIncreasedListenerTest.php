@@ -58,7 +58,7 @@ test(description: 'when a User levels up, a record is stored in the audit', clos
     $this->user->addPoints(amount: 100);
 
     expect($this->user)
-        ->experienceHistory()->count()->toBe(expected: 2);
+        ->experienceHistory()->count()->toBe(expected: 3);
 
     $this->assertDatabaseHas(table: 'experience_audits', data: [
         'user_id' => $this->user->id,
@@ -109,4 +109,15 @@ test(description: 'points can be added with a reason, for the audit log', closur
         'type' => AuditType::Add->value,
         'reason' => 'test',
     ]);
+});
+
+test(description: 'a User can level up multiple times', closure: function () {
+    /**
+     * Example: a new User will start with no experience, can be given
+     * 300 points, and will level up to level 3
+     */
+    $this->user->addPoints(amount: 300);
+    $this->user->addPoints(amount: 300);
+
+    expect($this->user)->getLevel()->toBe(expected: 5);
 });

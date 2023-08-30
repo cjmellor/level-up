@@ -24,16 +24,26 @@ class PointsIncreasedListener
             ]);
         }
 
-        $nextLevel = Level::firstWhere(column: 'level', operator: $event->user->getLevel() + 1);
+        // Get the next level experience needed for the user's current level
+        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
 
         if (! $nextLevel) {
+            // If there is no next level, return
             return;
         }
 
-        if ($event->user->getPoints() < $nextLevel->next_level_experience) {
-            return;
-        }
+        // Check if user's points are equal or greater than the next level's required experience
+        if ($event->user->getPoints() >= $nextLevel->next_level_experience) {
+            // Find the highest level the user can achieve with current points
+            $highestAchievableLevel = Level::query()
+                ->where(column: 'next_level_experience', operator: '<=', value: $event->user->getPoints())
+                ->orderByDesc(column: 'level')
+                ->first();
 
-        $event->user->levelUp();
+            // Update the user level to the highest achievable level
+            if ($highestAchievableLevel->level > $event->user->getLevel()) {
+                $event->user->levelUp(to: $highestAchievableLevel->level);
+            }
+        }
     }
 }
