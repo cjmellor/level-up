@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.13 - 2023-08-31
+
+### What's Changed
+
+- Fire Multiple Levelled Up Events by @cjmellor in https://github.com/cjmellor/level-up/pull/39
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.12...v0.0.13
+
 ## v0.0.12 - 2023-08-30
 
 ### What's Changed
