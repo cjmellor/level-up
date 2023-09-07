@@ -365,7 +365,7 @@ Achievement::create([
 
 ### Gain Achievement
 
-To use Achievements in your User mode, you must first add the Trait.
+To use Achievements in your User model, you must first add the Trait.
 
 ```php
 // App\Models\User.php
