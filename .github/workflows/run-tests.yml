@@ -1,11 +1,6 @@
 name: "Run Tests"
-on:
-  push:
-    branches:
-      - 'main'
-  pull_request:
-    branches:
-      - '*'
+
+on: pull_request
 
 jobs:
   tests:
@@ -17,7 +12,7 @@ jobs:
         laravel: [ 10 ]
         stability: [ prefer-lowest, prefer-stable ]
 
-    name: "PHP: v${{ matrix.php }} / Laravel: v${{ matrix.laravel }} - ${{ matrix.stability }}"
+    name: "PHP: v${{ matrix.php }} [${{ matrix.stability }}]"
 
     steps:
       - name: Checkout
@@ -40,4 +35,4 @@ jobs:
           composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Execute tests
-        run: vendor/bin/pest
+        run: vendor/bin/pest --parallel

@@ -282,6 +282,8 @@ public Model $user,
 ```php
 public int $pointsDecreasedBy,
 public int $totalPoints,
+public ?string $reason,
+public Model $user,
 ```
 
 ## ⬆️ Levelling
@@ -510,6 +512,10 @@ $user->addPoints(
     reason: "Some reason here",
 );
 ```
+
+> **Note**
+> 
+> Auditing happens when the `addPoints` and `deductPoints` methods are called. Auditing must be enabled in the config file.
 
 **View a Users’ Audit Experience**
 
