@@ -2,6 +2,20 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v0.0.14 - 2023-09-23
+
+### What's Changed
+
+- build(deps): Bump actions/checkout from 3 to 4 by @dependabot in https://github.com/cjmellor/level-up/pull/40
+- Update README.md by @mohamedalwhaidi in https://github.com/cjmellor/level-up/pull/42
+- Add Listener for PointsDecreased Event by @cjmellor in https://github.com/cjmellor/level-up/pull/46
+
+### New Contributors
+
+- @mohamedalwhaidi made their first contribution in https://github.com/cjmellor/level-up/pull/42
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.13...v0.0.14
+
 ## v0.0.13 - 2023-08-31
 
 ### What's Changed
