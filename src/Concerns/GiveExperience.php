@@ -134,15 +134,44 @@ trait GiveExperience
         return $this->hasMany(related: ExperienceAudit::class);
     }
 
-    public function deductPoints(int $amount): Experience
+    /**
+     * @throws Exception
+     */
+    public function deductPoints(
+        int    $amount,
+        string $type = null,
+        string $reason = null
+    ): Experience
     {
+        if ($type === null) {
+            $type = AuditType::Remove->value;
+        }
+
+        if ($this->experience()->doesntExist()) {
+            throw new Exception(message: 'User has no experience record.');
+        }
+
+        if ($this->levelCapExceedsUserLevel()) {
+            return $this->experience;
+        }
+
         $this->experience->decrement(column: 'experience_points', amount: $amount);
 
-        event(new PointsDecreased(pointsDecreasedBy: $amount, totalPoints: $this->experience->experience_points));
+        $this->dispatchDecreaseEvent($amount, $type, $reason);
 
         return $this->experience;
     }
 
+    protected function dispatchDecreaseEvent(int $amount, string $type, ?string $reason): void
+    {
+        event(new PointsDecreased(
+            pointsDeducted: $amount,
+            totalPoints: $this->experience->experience_points,
+            type: $type,
+            reason: $reason,
+            user: $this,
+        ));
+    }
     /**
      * @throws \Exception
      */
