@@ -134,11 +134,20 @@ trait GiveExperience
         return $this->hasMany(related: ExperienceAudit::class);
     }
 
-    public function deductPoints(int $amount): Experience
+    public function deductPoints(int $amount, string $reason = null): Experience
     {
+        if ($this->experience()->doesntExist()) {
+            return $this->experience;
+        }
+
         $this->experience->decrement(column: 'experience_points', amount: $amount);
 
-        event(new PointsDecreased(pointsDecreasedBy: $amount, totalPoints: $this->experience->experience_points));
+        event(new PointsDecreased(
+            pointsDecreasedBy: $amount,
+            totalPoints: $this->experience->experience_points,
+            reason: $reason,
+            user: $this,
+        ));
 
         return $this->experience;
     }
