@@ -2,6 +2,12 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.0.0 - 2023-10-02
+
+Package seems stable enough to tag v1.
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v0.0.14...v1.0.0
+
 ## v0.0.14 - 2023-09-23
 
 ### What's Changed
