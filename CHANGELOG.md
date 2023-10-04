@@ -2,6 +2,18 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.0.1 - 2023-10-04
+
+### What's Changed
+
+- fix: update level_id in experiences table when levelled up by @7OMI in https://github.com/cjmellor/level-up/pull/48
+
+### New Contributors
+
+- @7OMI made their first contribution in https://github.com/cjmellor/level-up/pull/48
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.0.0...v1.0.1
+
 ## v1.0.0 - 2023-10-02
 
 Package seems stable enough to tag v1.
