@@ -211,7 +211,7 @@ trait GiveExperience
             ->save();
 
         $this->experience->status()->associate(model: $to);
-        $this->save();
+        $this->experience->save();
 
         // Fire an event for each level gained
         for ($lvl = $this->getLevel(); $lvl <= $to; $lvl++) {

@@ -17,9 +17,6 @@ class UserLevelledUpListener
                 'level_to' => $event->level,
                 'type' => AuditType::LevelUp->value,
             ]);
-            $event->user->experience->update(attributes: [
-                'level_id' => $event->level,
-            ]);
         }
     }
 }
