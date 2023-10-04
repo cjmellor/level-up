@@ -50,6 +50,17 @@ test(description: 'giving points to a User with an experience Model, updates the
     ]);
 });
 
+test(description: 'levels are associated on point increments', closure: function () {
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user)->level_id->toBe(expected: 1);
+
+    $this->user->addPoints(amount: 100);
+
+    expect($this->user)->level_id->toBe(expected: 2)
+        ->and($this->user)->getLevel()->toBe(expected: 2);
+});
+
 it(description: 'can deduct points from a User', closure: function (): void {
     Event::fake();
 
