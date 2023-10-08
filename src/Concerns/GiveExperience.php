@@ -2,12 +2,14 @@
 
 namespace LevelUp\Experience\Concerns;
 
+use Closure;
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
@@ -19,6 +21,8 @@ use LevelUp\Experience\Services\MultiplierService;
 
 trait GiveExperience
 {
+    protected ?Closure $multiplierCondition = null;
+
     protected ?Collection $multiplierData = null;
 
     public function addPoints(
@@ -42,6 +46,14 @@ trait GiveExperience
          */
         if (config(key: 'level-up.multiplier.enabled') && file_exists(filename: config(key: 'level-up.multiplier.path'))) {
             $amount = $this->getMultipliers(amount: $amount);
+        }
+
+        if ($this->multiplierCondition instanceof \Closure && is_null($multiplier)) {
+            throw new InvalidArgumentException(message: 'Multiplier is not set');
+        }
+
+        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
+            $multiplier = 1;
         }
 
         if ($multiplier) {
@@ -94,7 +106,11 @@ trait GiveExperience
 
     protected function getMultipliers(int $amount): int
     {
-        $multiplierService = app(MultiplierService::class, [
+        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
+            return $amount;
+        }
+
+        $multiplierService = app(abstract: MultiplierService::class, parameters: [
             'data' => $this->multiplierData ? $this->multiplierData->toArray() : [],
         ]);
 
@@ -168,9 +184,13 @@ trait GiveExperience
         return $this->experience;
     }
 
-    public function withMultiplierData(array $data): static
+    public function withMultiplierData(array|callable $data): static
     {
-        $this->multiplierData = collect($data);
+        if ($data instanceof Closure) {
+            $this->multiplierCondition = $data;
+        } else {
+            $this->multiplierData = collect(value: $data);
+        }
 
         return $this;
     }

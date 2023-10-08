@@ -271,7 +271,7 @@ test('a Users level is restored if the level cap is re-enabled and points contin
         ->and($this->user)->getLevel()->toBe(expected: 4);
 });
 
-test('A multiplier can use data that was passed through to it', function () {
+test('A multiplier can use data that was passed through to it', closure: function () {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
     config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
@@ -292,6 +292,31 @@ test('A multiplier can use data that was passed through to it', function () {
         'experience_points' => 50,
     ]);
 });
+
+test(description: 'an anonymous function can be used as a multiplier condition', closure: function () {
+    $this->user
+        ->withMultiplierData(fn () => true)
+        ->addPoints(amount: 10, multiplier: 2);
+
+    expect($this->user)
+        ->experience->experience_points->toBe(expected: 20)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
+
+    /*
+     * Check the opposite of the above -- if condition is false, multiplier should not be applied
+     * */
+    $this->user
+        ->withMultiplierData(fn () => false)
+        ->addPoints(amount: 10, multiplier: 2);
+
+    expect($this->user)
+        ->experience->experience_points->toBe(expected: 30)
+        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
+});
+
+test(description: 'a multiplier must be added when using multiplier closures')
+    ->defer(fn () => $this->user->withMultiplierData(fn () => true)->addPoints(amount: 10))
+    ->throws(exception: InvalidArgumentException::class, exceptionMessage: 'Multiplier is not set');
 
 test(description: 'Add default level if not applied before trying to add points', closure: function () {
     // In this scenario, no Level Model should be applied to the User, so the default level should be applied

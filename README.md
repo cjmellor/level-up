@@ -252,6 +252,16 @@ public function qualifies(array $data): bool
 }
 ```
 
+**Conditional Multipliers**
+
+If you don't want to use the class based method to check conditionals to add multipliers, you can do this inline by giving the method a callback with the conditional. When using this method, make sure you have the multiplier set as an argument in the `addPoints` method, otherwise an error will occur. See example below:
+
+```php
+$user
+    ->withMultiplierData(fn () => true)
+    ->addPoints(amount: 10, multiplier: 2);
+```
+
 The `setMultiplier` method expects an `int` which is the number it will be multiplied by.
 
 **Multiply Manually**
