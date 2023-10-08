@@ -49,7 +49,7 @@ trait GiveExperience
         }
 
         if ($this->multiplierCondition instanceof \Closure && is_null($multiplier)) {
-            throw new InvalidArgumentException(message: "Multiplier is not set");
+            throw new InvalidArgumentException(message: 'Multiplier is not set');
         }
 
         if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
