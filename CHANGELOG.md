@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.1.0 - 2023-10-08
+
+### What's Changed
+
+- feat: Conditional Multipliers by @cjmellor in https://github.com/cjmellor/level-up/pull/50
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.0.1...v1.1.0
+
 ## v1.0.1 - 2023-10-04
 
 ### What's Changed
