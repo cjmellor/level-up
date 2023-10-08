@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
@@ -45,6 +46,10 @@ trait GiveExperience
          */
         if (config(key: 'level-up.multiplier.enabled') && file_exists(filename: config(key: 'level-up.multiplier.path'))) {
             $amount = $this->getMultipliers(amount: $amount);
+        }
+
+        if ($this->multiplierCondition instanceof \Closure && is_null($multiplier)) {
+            throw new InvalidArgumentException(message: "Multiplier is not set");
         }
 
         if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
@@ -179,7 +184,7 @@ trait GiveExperience
         return $this->experience;
     }
 
-    public function withMultiplierData($data): static
+    public function withMultiplierData(array|callable $data): static
     {
         if ($data instanceof Closure) {
             $this->multiplierCondition = $data;

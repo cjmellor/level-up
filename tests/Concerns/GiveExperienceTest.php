@@ -314,6 +314,10 @@ test(description: 'an anonymous function can be used as a multiplier condition',
         ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 });
 
+test(description: 'a multiplier must be added when using multiplier closures')
+    ->defer(fn () => $this->user->withMultiplierData(fn () => true)->addPoints(amount: 10))
+    ->throws(exception: InvalidArgumentException::class, exceptionMessage: 'Multiplier is not set');
+
 test(description: 'Add default level if not applied before trying to add points', closure: function () {
     // In this scenario, no Level Model should be applied to the User, so the default level should be applied
     Level::truncate();
