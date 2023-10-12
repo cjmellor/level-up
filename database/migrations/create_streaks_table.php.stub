@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('streaks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId(column: 'user_id')->constrained()->onDelete('cascade');
+            $table->foreignId(column: config('level-up.user.foreign_key'))->constrained()->onDelete('cascade');
             $table->foreignId(column: 'activity_id')->constrained('streak_activities')->onDelete('cascade');
             $table->integer(column: 'count')->default(1);
             $table->timestamp(column: 'activity_at');
