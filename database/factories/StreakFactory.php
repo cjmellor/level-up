@@ -14,7 +14,7 @@ class StreakFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
+            config(key: 'level-up.user.foreign_key', default: 'user_id') => User::factory(),
             'activity_id' => Activity::factory(),
             'count' => 1,
             'activity_at' => now(),

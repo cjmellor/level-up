@@ -74,8 +74,8 @@ trait HasStreaks
     protected function startNewStreak(Activity $activity): Model|Streak
     {
         $streak = $activity->streaks()
-            ->updateOrCreate([
-                'user_id' => $this->id,
+            ->updateOrCreate(attributes: [
+                config(key: 'level-up.streaks.foreign_key', default: 'user_id') => $this->id,
                 'activity_id' => $activity->id,
                 'activity_at' => now(),
             ]);
@@ -113,7 +113,7 @@ trait HasStreaks
         $latestStreak = $this->getStreakLastActivity($activity);
 
         StreakHistory::create([
-            'user_id' => $this->id,
+            config(key: 'level-up.streaks.foreign_key', default: 'user_id') => $this->id,
             'activity_id' => $activity->id,
             'count' => $latestStreak->count,
             'started_at' => $latestStreak->activity_at->subDays($latestStreak->count - 1),
