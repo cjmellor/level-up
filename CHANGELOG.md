@@ -2,6 +2,22 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.2.0 - 2024-02-21
+
+### What's Changed
+
+* build(deps): Bump stefanzweifel/git-auto-commit-action from 4 to 5 by @dependabot in https://github.com/cjmellor/level-up/pull/51
+* fix: Support foreign key configuration throughout by @cjmellor in https://github.com/cjmellor/level-up/pull/52
+* build(deps): Bump aglipanci/laravel-pint-action from 2.3.0 to 2.3.1 by @dependabot in https://github.com/cjmellor/level-up/pull/56
+* Update run-tests.yml by @imabulhasan99 in https://github.com/cjmellor/level-up/pull/62
+* Update composer.json for Laravel 11 support by @imabulhasan99 in https://github.com/cjmellor/level-up/pull/61
+
+### New Contributors
+
+* @imabulhasan99 made their first contribution in https://github.com/cjmellor/level-up/pull/62
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.1.0...v1.2.0
+
 ## v1.1.0 - 2023-10-08
 
 ### What's Changed
