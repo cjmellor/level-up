@@ -18,15 +18,15 @@
         }
     ],
     "require": {
-        "php": "^8.1",
-        "illuminate/contracts": "^10.0",
+        "php": "^8.1|^8.2",
+        "illuminate/contracts": "^10.0|^11.0",
         "laravel/pint": "^1.10",
         "spatie/laravel-package-tools": "^1.15"
     },
     "require-dev": {
         "driftingly/rector-laravel": "^0.21.0",
         "nunomaduro/collision": "^7.5.2",
-        "orchestra/testbench": "^8.5.3",
+        "orchestra/testbench": "^8.5.3|^9.0.0",
         "pestphp/pest": "^2.6.1",
         "pestphp/pest-plugin-arch": "^v2.0.2",
         "pestphp/pest-plugin-laravel": "^2.0",
