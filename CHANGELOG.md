@@ -2,6 +2,18 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.2.1 - 2024-02-26
+
+### What's Changed
+
+* Update LeaderboardService.php by @guptarakesh198 in https://github.com/cjmellor/level-up/pull/63
+
+### New Contributors
+
+* @guptarakesh198 made their first contribution in https://github.com/cjmellor/level-up/pull/63
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.2.0...v1.2.1
+
 ## v1.2.0 - 2024-02-21
 
 ### What's Changed
