@@ -22,7 +22,7 @@ class LeaderboardService
             ->with(relations: ['experience', 'level'])
             ->orderByDesc(
                 column: Experience::select('experience_points')
-                    ->whereColumn(config('level-up.user.foreign_key'), 'users.id')
+                    ->whereColumn(config('level-up.user.foreign_key'), config('level-up.user.users_table').'.id')
                     ->latest()
             )
             ->take($limit)
