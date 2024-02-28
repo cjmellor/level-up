@@ -134,8 +134,7 @@ return [
 
 ## 💯 Experience Points (XP)
 
-> **Note**
->
+> [!NOTE]
 > XP is enabled by default. You can disable it in the config
 
 Add the `GiveExperience` trait to your `User` model.
@@ -159,8 +158,7 @@ $user->addPoints(10);
 
 A new record will be added to the `experiences` table which stores the Users’ points. If a record already exists, it will be updated instead. All new records will be given a `level_id` of `1`.
 
-> **Note**
->
+> [!NOTE]
 > If you didn't set up your Level structure yet, a default Level of `1` will be added to get you started.
 
 **Deduct XP points from a User**
@@ -298,8 +296,7 @@ public Model $user,
 
 ## ⬆️ Levelling
 
-> **Note**
->
+> [!NOTE]
 > If you add points before setting up your levelling structure, a default Level of `1` will be added to get you started.
 
 ### Set up your levelling structure
@@ -318,7 +315,8 @@ Level::add(
 
 As soon as a User gains the correct number of points listed for the next level, they will level-up.
 
-> **Example:** a User gains 50 points, they’ll still be on Level 1, but gets another 50 points, so the User will now move onto Level 2
+> [!TIP]
+> a User gains 50 points, they’ll still be on Level 1, but gets another 50 points, so the User will now move onto Level 2
 
 **See how many points until the next level**
 
@@ -415,8 +413,7 @@ $user->grantAchievement(
 );
 ```
 
-> **Note**
->
+> [!NOTE]
 > Achievement progress is capped to 100%
 
 ### Check Achievement Progression
@@ -481,8 +478,7 @@ public Achievement $achievement,
 public Model $user,
 ```
 
-> **Note**
->
+> [!NOTE]
 > This event only runs if the progress of the Achievement is 100%
 
 **AchievementProgressionIncreased** - When a Users’ progression for an Achievement is increased.
@@ -523,8 +519,7 @@ $user->addPoints(
 );
 ```
 
-> **Note**
-> 
+> [!NOTE]
 > Auditing happens when the `addPoints` and `deductPoints` methods are called. Auditing must be enabled in the config file.
 
 **View a Users’ Audit Experience**
