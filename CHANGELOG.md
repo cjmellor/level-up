@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.2.2 - 2024-02-28
+
+### What's Changed
+
+* adding null safety, when no experience records by @guptarakesh198 in https://github.com/cjmellor/level-up/pull/64
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.2.1...v1.2.2
+
 ## v1.2.1 - 2024-02-26
 
 ### What's Changed
