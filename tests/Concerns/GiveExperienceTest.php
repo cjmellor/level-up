@@ -375,13 +375,13 @@ beforeEach(function (): void {
 });
 
 it('returns 0 when level is not set', function (): void {
-    $this->user->experience = null; // Simulating a user with no experience model
+    $this->user->experience = null; 
 
     expect($this->user->getLevel())->toBe(0);
 });
 
 it('returns 0 when experience points are not set', function (): void {
-    $this->user->experience = null; // Simulating a user with no experience model
+    $this->user->experience = null; 
 
     expect($this->user->getPoints())->toBe(0);
 });
