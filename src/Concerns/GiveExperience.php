@@ -52,7 +52,7 @@ trait GiveExperience
             throw new InvalidArgumentException(message: 'Multiplier is not set');
         }
 
-        if (isset($this->multiplierCondition) && !($this->multiplierCondition)()) {
+        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
             $multiplier = 1;
         }
 
@@ -106,7 +106,7 @@ trait GiveExperience
 
     protected function getMultipliers(int $amount): int
     {
-        if (isset($this->multiplierCondition) && !($this->multiplierCondition)()) {
+        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
             return $amount;
         }
 
@@ -137,7 +137,7 @@ trait GiveExperience
     {
         return config(key: 'level-up.level_cap.enabled')
             && $this->getLevel() >= config(key: 'level-up.level_cap.level')
-            && !(config(key: 'level-up.level_cap.points_continue'));
+            && ! (config(key: 'level-up.level_cap.points_continue'));
     }
 
     public function getLevel(): int
@@ -173,7 +173,7 @@ trait GiveExperience
      */
     public function setPoints(int $amount): Experience
     {
-        if (!$this->experience()->exists()) {
+        if (! $this->experience()->exists()) {
             throw new Exception(message: 'User has no experience record.');
         }
 
@@ -203,7 +203,7 @@ trait GiveExperience
             return 0;
         }
 
-        if (!$nextLevel || $nextLevel->next_level_experience === null) {
+        if (! $nextLevel || $nextLevel->next_level_experience === null) {
             return 0;
         }
 

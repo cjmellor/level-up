@@ -1,20 +1,10 @@
-# Ugrade Guide
+# Upgrade Guide
 
-## v0.0.6 -> v0.0.7
+## v1.2.2 -> v1.2.3
 
-v0.0.7 comes with a brand-new feature -- Streaks.
+#### New Migration for Nullable `ended_at` Column
 
-Some new configuration settings have been introduced. Delete the `config/level-up.php` file.
-
-Now run `php artisan vendor:publish` and select `LevelUp\Experience\LevelUpServiceProvider`
-
-This also publishes new migration files. Run `php artisan migrate` to migrate the new tables.
-
-
-
-#### New Migration for Nullable ended_at Column
-
-In version `v0.0.7`, a new migration is introduced to make the `ended_at` column in the `streak_histories` table nullable. This change allows flexibility in recording the end time of streaks.
+In version `v1.2.3`, a new migration is introduced to make the `ended_at` column in the `streak_histories` table nullable. This change allows flexibility in recording the end time of streaks.
 
 To apply this migration:
 
@@ -45,6 +35,14 @@ return new class extends Migration
         });
     }
 };
-
-
 ```
+
+## v0.0.6 -> v0.0.7
+
+v0.0.7 comes with a brand-new feature -- Streaks.
+
+Some new configuration settings have been introduced. Delete the `config/level-up.php` file.
+
+Now run `php artisan vendor:publish` and select `LevelUp\Experience\LevelUpServiceProvider`
+
+This also publishes new migration files. Run `php artisan migrate` to migrate the new tables.
