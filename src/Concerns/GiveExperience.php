@@ -92,7 +92,6 @@ trait GiveExperience
 
         /**
          * If the User does have an Experience record, update it.
-         * 
          */
         if ($this->levelCapExceedsUserLevel()) {
             return $this->experience;
