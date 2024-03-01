@@ -15,7 +15,7 @@ return new class extends Migration
             $table->foreignIdFor(model: Activity::class)->constrained(table: 'streak_activities');
             $table->integer(column: 'count')->default(value: 1);
             $table->timestamp(column: 'started_at');
-            $table->timestamp(column: 'ended_at');
+            $table->timestamp(column: 'ended_at')->nullable();
             $table->timestamps();
         });
     }

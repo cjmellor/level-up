@@ -7,7 +7,6 @@ use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\StreakStarted;
 use LevelUp\Experience\Events\StreakUnfroze;
 use LevelUp\Experience\Models\Activity;
-
 use function Pest\Laravel\travel;
 
 uses()->group('streaks');

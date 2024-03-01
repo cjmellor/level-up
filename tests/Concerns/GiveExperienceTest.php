@@ -369,3 +369,15 @@ it(description: 'dispatches an event after points have been added for the very f
 
     Event::assertDispatched(event: UserLevelledUp::class);
 });
+
+it('returns 0 when level is not set', function (): void {
+    $this->user->experience = null;
+
+    expect($this->user->getLevel())->toBe(0);
+});
+
+it('returns 0 when experience points are not set', function (): void {
+    $this->user->experience = null;
+
+    expect($this->user->getPoints())->toBe(0);
+});
