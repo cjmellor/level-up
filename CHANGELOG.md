@@ -2,6 +2,18 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.2.3 - 2024-03-01
+
+### What's Changed
+
+* Fixed one migration problem and  null level handling in getLevel() & getPoints(),  causing some error by @joydeep-bhowmik in https://github.com/cjmellor/level-up/pull/59
+
+### New Contributors
+
+* @joydeep-bhowmik made their first contribution in https://github.com/cjmellor/level-up/pull/59
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.2.2...v1.2.3
+
 ## v1.2.2 - 2024-02-28
 
 ### What's Changed
