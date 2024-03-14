@@ -19,7 +19,7 @@ class LeaderboardService
     public function generate(bool $paginate = false, int $limit = null): array|Collection|LengthAwarePaginator
     {
         return $this->userModel::query()
-            ->with(relations: ['experience', 'level'])
+            ->with(relations: ['experience'])
             ->orderByDesc(
                 column: Experience::select('experience_points')
                     ->whereColumn(config('level-up.user.foreign_key'), config('level-up.user.users_table').'.id')

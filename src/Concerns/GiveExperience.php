@@ -4,7 +4,6 @@ namespace LevelUp\Experience\Concerns;
 
 use Closure;
 use Exception;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
@@ -234,10 +233,5 @@ trait GiveExperience
         for ($lvl = $this->getLevel(); $lvl <= $to; $lvl++) {
             event(new UserLevelledUp(user: $this, level: $lvl));
         }
-    }
-
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(related: Level::class);
     }
 }
