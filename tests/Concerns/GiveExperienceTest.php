@@ -57,8 +57,7 @@ test(description: 'levels are associated on point increments', closure: function
 
     $this->user->addPoints(amount: 100);
 
-    expect($this->user)->level_id->toBe(expected: 2)
-        ->and($this->user)->getLevel()->toBe(expected: 2);
+    expect($this->user)->getLevel()->toBe(expected: 2);
 });
 
 it(description: 'can deduct points from a User', closure: function (): void {
@@ -350,15 +349,15 @@ test(description: 'the level is correct when adding more points than available o
     $this->user->setPoints(amount: 0);
 
     $this->user->addPoints(100);
-    expect($this->user)->level_id->toBe(expected: 2);
+    expect($this->user->getLevel())->toBe(expected: 2);
     $this->user->setPoints(amount: 0);
 
     $this->user->addPoints(250);
-    expect($this->user)->level_id->toBe(expected: 3);
+    expect($this->user->getLevel())->toBe(expected: 3);
     $this->user->setPoints(amount: 0);
 
     $this->user->addPoints(400);
-    expect($this->user)->level_id->toBe(expected: 4);
+    expect($this->user->getLevel())->toBe(expected: 4);
     $this->user->setPoints(amount: 0);
 });
 

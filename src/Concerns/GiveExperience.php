@@ -227,9 +227,6 @@ trait GiveExperience
             return;
         }
 
-        $this->fill(attributes: ['level_id' => $to])
-            ->save();
-
         $this->experience->status()->associate(model: $to);
         $this->experience->save();
 
