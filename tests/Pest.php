@@ -31,7 +31,7 @@ uses(TestCase::class, FastRefreshDatabase::class)
 
 // A custom expectation to check if a Carbon instance matches a given string
 // Stolen from https://github.com/spatie/pest-plugin-test-time
-expect()->extend(name: 'toBeCarbon', extend: function (string $expected, string $format = null) {
+expect()->extend(name: 'toBeCarbon', extend: function (string $expected, ?string $format = null) {
     if ($format === null) {
         $format = str_contains($expected, ':')
             ? 'Y-m-d H:i:s'
