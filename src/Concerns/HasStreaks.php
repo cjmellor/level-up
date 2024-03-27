@@ -135,7 +135,7 @@ trait HasStreaks
             ->isToday();
     }
 
-    public function freezeStreak(Activity $activity, int $days = null): bool
+    public function freezeStreak(Activity $activity, ?int $days = null): bool
     {
         $days = $days ?? config(key: 'level-up.freeze_duration');
 
