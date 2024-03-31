@@ -27,9 +27,9 @@ trait GiveExperience
 
     public function addPoints(
         int $amount,
-        int $multiplier = null,
-        string $type = null,
-        string $reason = null
+        ?int $multiplier = null,
+        ?string $type = null,
+        ?string $reason = null
     ): Experience {
         if ($type === null) {
             $type = AuditType::Add->value;
@@ -150,7 +150,7 @@ trait GiveExperience
         return $this->hasMany(related: ExperienceAudit::class);
     }
 
-    public function deductPoints(int $amount, string $reason = null): Experience
+    public function deductPoints(int $amount, ?string $reason = null): Experience
     {
         if ($this->experience()->doesntExist()) {
             return $this->experience;
@@ -195,7 +195,7 @@ trait GiveExperience
         return $this;
     }
 
-    public function nextLevelAt(int $checkAgainst = null, bool $showAsPercentage = false): int
+    public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
     {
         $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
 
