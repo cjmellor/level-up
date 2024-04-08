@@ -10,6 +10,12 @@ class Experience extends Model
 {
     // use HasFactory;
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.table');
+    }
+
     protected $guarded = [];
 
     public function user(): BelongsTo
