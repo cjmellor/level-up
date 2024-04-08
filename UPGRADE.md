@@ -1,5 +1,11 @@
 # Upgrade Guide
 
+## v1.2.3 -> v1.2.4
+
+#### New Migration to remove `level_id` column from `users` table
+
+The `level_id` column in the `users` table has been removed as it was no longer relevant. Run `php artisan vendor:publish --tag=level-up-migrations` to publish the new migration files. 
+
 ## v1.2.2 -> v1.2.3
 
 #### New Migration for Nullable `ended_at` Column
