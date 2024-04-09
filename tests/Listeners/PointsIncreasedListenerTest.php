@@ -87,11 +87,11 @@ test(description: 'user levels are correct', closure: function () {
     $this->user->addPoints(amount: 150);
 
     expect($this->user->getLevel())->toBe(expected: 3)
-        ->and($this->user->level_id)->toBe(expected: 3)
+        ->and($this->user->getLevel())->toBe(expected: 3)
         ->and($this->user->experience->status->level)->toBe(expected: 3);
 
-    $this->assertDatabaseHas(table: 'users', data: [
-        'id' => $this->user->id,
+    $this->assertDatabaseHas(table: 'experiences', data: [
+        'user_id' => $this->user->id,
         'level_id' => 3,
     ]);
 });

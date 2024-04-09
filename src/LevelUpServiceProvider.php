@@ -28,6 +28,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_streaks_table',
                 'create_streak_histories_table',
                 'add_streak_freeze_feature_columns_to_streaks_table',
+                'remove_level_id_column_from_users_table',
             ]);
     }
 
