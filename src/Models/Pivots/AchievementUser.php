@@ -8,11 +8,10 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 
 class AchievementUser extends Pivot
 {
-
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config('level-up.tables.achievements') . '_' . config('level-up.user.users_table');
+        $this->table = config('level-up.tables.achievement_user');
     }
 
     public function scopeWithProgress(Builder $query, int $progress): Collection

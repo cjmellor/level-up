@@ -21,9 +21,18 @@ return [
     |--------------------------------------------------------------------------
     |
     | This value is the name of the tables that will be used to store level up data.
+    | You can change the table names to fit your application.
+    |
+    | The default table names are set to the Laravel conventions.
+    |
+    | It is recommended to keep the table names as they are, only change them if
+    | you know what you are doing.
+    |
+    | 'typical_table_name' => 'new_table_name',
     |
      */
     'tables' => [
+        'achievement_user' => 'achievement_user', // pivot table
         'experiences' => 'experiences',
         'experience_audits' => 'experience_audits',
         'achievements' => 'achievements',

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create(config('level-up.tables.achievements') . '_' . config('level-up.user.users_table'), function (Blueprint $table) {
+        Schema::create(config('level-up.tables.achievement_user'), function (Blueprint $table) {
             $table->id();
             $table->foreignId(column: config('level-up.user.foreign_key'))->constrained(config('level-up.user.users_table'));
             $table->foreignId(column: 'achievement_id')->constrained(config('level-up.tables.achievements'));
