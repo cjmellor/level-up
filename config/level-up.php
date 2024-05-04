@@ -25,13 +25,13 @@ return [
      */
     'tables' => [
         'experiences' => 'experiences',
-        'achievements' => 'achievemnets',
+        'experience_audits' => 'experience_audits',
+        'achievements' => 'achievements',
         'levels' => 'levels',
         'streaks' => 'streaks',
         'streak_histories' => 'streak_histories',
         'streak_activities' => 'streak_activities',
-        ''
-    ]
+    ],
 
     /*
     |-----------------------------------------------------------------------

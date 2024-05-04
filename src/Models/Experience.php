@@ -13,7 +13,7 @@ class Experience extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->table = config(key: 'level-up.table');
+        $this->table = config(key: 'level-up.tables.experiences');
     }
 
     protected $guarded = [];

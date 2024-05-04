@@ -14,6 +14,12 @@ class ExperienceAudit extends Model
         'type' => AuditType::class,
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.tables.experience_audits');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(config(key: 'level-up.user.model'));

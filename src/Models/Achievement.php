@@ -12,6 +12,12 @@ class Achievement extends Model
 
     protected $guarded = [];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config('level-up.tables.achievements') ?: parent::getTable();
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.user.model'));
