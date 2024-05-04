@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('achievement_user', function (Blueprint $table) {
+        Schema::create(config('level-up.tables.achievements') . '_' . config('level-up.user.users_table'), function (Blueprint $table) {
             $table->id();
             $table->foreignId(column: config('level-up.user.foreign_key'))->constrained(config('level-up.user.users_table'));
-            $table->foreignId(column: 'achievement_id')->constrained();
+            $table->foreignId(column: 'achievement_id')->constrained(config('level-up.tables.achievements'));
             $table->integer(column: 'progress')->nullable()->index();
             $table->timestamps();
         });
@@ -18,6 +18,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('achievement_user');
+        Schema::dropIfExists(config('level-up.tables.achievements') . '_' . config('level-up.user.users_table'));
     }
 };

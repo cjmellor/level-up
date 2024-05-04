@@ -23,7 +23,15 @@ return [
     | This value is the name of the table that will be used to store experience data.
     |
      */
-    'table' => 'experiences',
+    'tables' => [
+        'experiences' => 'experiences',
+        'achievements' => 'achievemnets',
+        'levels' => 'levels',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
+        'streak_activities' => 'streak_activities',
+        ''
+    ]
 
     /*
     |-----------------------------------------------------------------------
