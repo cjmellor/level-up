@@ -48,10 +48,10 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Level Up Tables
+    | Table Names
     |--------------------------------------------------------------------------
     |
-    | This value is the name of the tables that will be used to store level up data.
+    | These values are the names of the tables that will be used to store the data.
     |
      */
     'tables' => [

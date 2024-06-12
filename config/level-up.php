@@ -17,18 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Level Up Tables
+    | Table Names
     |--------------------------------------------------------------------------
     |
     | This value is the name of the tables that will be used to store level up data.
     | You can change the table names to fit your application.
     |
-    | The default table names are set to the Laravel conventions.
+    | The default table names are using Laravel conventions.
     |
     | It is recommended to keep the table names as they are, only change them if
     | you know what you are doing.
     |
-    | 'typical_table_name' => 'new_table_name',
+    | example: 'typical_table_name' => 'new_table_name',
     |
      */
     'tables' => [
