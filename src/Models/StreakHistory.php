@@ -12,4 +12,10 @@ class StreakHistory extends Model
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
     ];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.tables.streak_history');
+    }
 }

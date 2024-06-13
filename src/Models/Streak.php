@@ -17,6 +17,12 @@ class Streak extends Model
         'frozen_until' => 'datetime',
     ];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.tables.streaks');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(config(key: 'level-up.user.model'));

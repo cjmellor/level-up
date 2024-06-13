@@ -48,13 +48,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Experience Table
+    | Table Names
     |--------------------------------------------------------------------------
     |
-    | This value is the name of the table that will be used to store experience data.
+    | These values are the names of the tables that will be used to store the data.
     |
      */
-    'table' => 'experiences',
+    'tables' => [
+        'experiences' => 'experiences',
+        'experience_audits' => 'experience_audits',
+        'achievements' => 'achievements',
+        'levels' => 'levels',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
+        'streak_activities' => 'streak_activities',
+    ],
 
     /*
     |-----------------------------------------------------------------------
