@@ -134,9 +134,6 @@ return [
 
 ## 💯 Experience Points (XP)
 
-> [!NOTE]
-> XP is enabled by default. You can disable it in the config
-
 Add the `GiveExperience` trait to your `User` model.
 
 ```php
