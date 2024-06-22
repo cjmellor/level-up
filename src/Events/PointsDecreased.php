@@ -14,6 +14,5 @@ class PointsDecreased
         public int $totalPoints,
         public ?string $reason,
         public Model $user,
-    ) {
-    }
+    ) {}
 }

@@ -14,6 +14,5 @@ class AchievementProgressionIncreased
         public Achievement $achievement,
         public Model $user,
         public int $amount,
-    ) {
-    }
+    ) {}
 }

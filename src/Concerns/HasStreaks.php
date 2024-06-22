@@ -25,10 +25,10 @@ trait HasStreaks
             return;
         }
 
-        $diffInDays = $this->getStreakLastActivity($activity)
+        $diffInDays = intval($this->getStreakLastActivity($activity)
             ->activity_at
             ->startOfDay()
-            ->diffInDays(now()->startOfDay());
+            ->diffInDays(now()->startOfDay()));
 
         // Checking to see if the streak is frozen
         if ($this->getStreakLastActivity($activity)->frozen_until && now()->lessThan($this->getStreakLastActivity($activity)->frozen_until)) {

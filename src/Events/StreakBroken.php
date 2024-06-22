@@ -15,6 +15,5 @@ class StreakBroken
         public Model $user,
         public Activity $activity,
         public Streak $streak,
-    ) {
-    }
+    ) {}
 }

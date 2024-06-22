@@ -9,8 +9,7 @@ class MultiplierService
     public function __construct(
         private readonly Collection $multipliers,
         private readonly array $data = [],
-    ) {
-    }
+    ) {}
 
     public function __invoke(int $points): int
     {

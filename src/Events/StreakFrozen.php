@@ -9,6 +9,5 @@ class StreakFrozen
     public function __construct(
         public int $frozenStreakLength,
         public Carbon $frozenUntil,
-    ) {
-    }
+    ) {}
 }
