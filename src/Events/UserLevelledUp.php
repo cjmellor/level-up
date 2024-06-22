@@ -12,6 +12,5 @@ class UserLevelledUp
     public function __construct(
         public Model $user,
         public int $level
-    ) {
-    }
+    ) {}
 }

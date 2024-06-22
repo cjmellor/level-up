@@ -13,6 +13,5 @@ class AchievementAwarded
     public function __construct(
         public Achievement $achievement,
         public Model $user,
-    ) {
-    }
+    ) {}
 }

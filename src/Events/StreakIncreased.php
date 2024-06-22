@@ -15,6 +15,5 @@ class StreakIncreased
         public Model $user,
         public Activity $activity,
         public Streak $streak,
-    ) {
-    }
+    ) {}
 }
