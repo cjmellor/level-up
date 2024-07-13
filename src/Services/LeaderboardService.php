@@ -20,6 +20,7 @@ class LeaderboardService
     {
         return $this->userModel::query()
             ->with(relations: ['experience'])
+            ->whereHas('experience', fn (Builder $query) => $query->whereNotNull(columns: 'experience_points'))
             ->orderByDesc(
                 column: Experience::select('experience_points')
                     ->whereColumn(config('level-up.user.foreign_key'), config('level-up.user.users_table').'.id')
