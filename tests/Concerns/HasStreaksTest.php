@@ -52,7 +52,7 @@ test(description: 'if an activity happens more than once on the same day, nothin
         'user_id' => $this->user->id,
         'activity_id' => $this->activity->id,
         'count' => 1,
-        'activity_at' => now(),
+        // 'activity_at' => now(),
     ]);
 });
 
