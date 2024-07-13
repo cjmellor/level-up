@@ -11,7 +11,6 @@ beforeEach(function () {
 });
 
 it(description: 'returns the correct data in the correct order', closure: function () {
-    // A User is also created in Pest.php, so we have 5 Users in total.
     tap(User::newFactory()->create())->addPoints(44);
     tap(User::newFactory()->create())->addPoints(123);
     tap(User::newFactory()->create())->addPoints(198);
@@ -22,6 +21,14 @@ it(description: 'returns the correct data in the correct order', closure: functi
             ->pluck(value: 'experience.experience_points')
             ->toArray()
     )
-        ->toBe([245, 198, 123, 44, null])
-        ->toHaveCount(count: 5);
+        ->toBe([245, 198, 123, 44])
+        ->toHaveCount(count: 4);
+});
+
+it(description: 'only shows users with experience points', closure: function () {
+    tap(User::newFactory()->create());
+    $userWithPoints = tap(User::newFactory()->create())->addPoints(44);
+
+    expect(Leaderboard::generate())->toHaveCount(count: 1)
+        ->and(Leaderboard::generate()->first()->id)->toEqual($userWithPoints->id);
 });
