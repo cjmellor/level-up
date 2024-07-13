@@ -2,6 +2,27 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.2.4 - 2024-07-13
+
+### What's Changed
+
+* build(deps): Bump dependabot/fetch-metadata from 1.6.0 to 2.0.0 by @dependabot in https://github.com/cjmellor/level-up/pull/68
+* fix: migrations roll back by @xmuntane in https://github.com/cjmellor/level-up/pull/71
+* fix: custom experiences table by @xmuntane in https://github.com/cjmellor/level-up/pull/74
+* Remove `level_id` From Table by @cjmellor in https://github.com/cjmellor/level-up/pull/75
+* Bump aglipanci/laravel-pint-action from 2.3.1 to 2.4 by @dependabot in https://github.com/cjmellor/level-up/pull/77
+* fix Remove 'level_id' migration by @xmuntane in https://github.com/cjmellor/level-up/pull/78
+* Bump dependabot/fetch-metadata from 2.0.0 to 2.1.0 by @dependabot in https://github.com/cjmellor/level-up/pull/79
+* fix: Wrap logic in intval by @cjmellor in https://github.com/cjmellor/level-up/pull/84
+* Bump dependabot/fetch-metadata from 2.1.0 to 2.2.0 by @dependabot in https://github.com/cjmellor/level-up/pull/85
+* fix: Users without XP don't show in Leaderboard by @cjmellor in https://github.com/cjmellor/level-up/pull/86
+
+### New Contributors
+
+* @xmuntane made their first contribution in https://github.com/cjmellor/level-up/pull/71
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.2.3...v1.2.4
+
 ## v1.2.3 - 2024-03-01
 
 ### What's Changed
