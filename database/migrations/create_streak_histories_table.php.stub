@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(table: 'streak_histories', callback: function (Blueprint $table) {
+        Schema::create(config('level-up.tables.streak_histories'), function (Blueprint $table) {
             $table->id();
             $table->foreignId(column: config(key: 'level-up.user.foreign_key'))->constrained(table: config(key: 'level-up.user.users_table'))->cascadeOnDelete();
             $table->foreignIdFor(model: Activity::class)->constrained(table: 'streak_activities');
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('streak_histories');
+        Schema::dropIfExists(config('level-up.tables.streak_histories'));
     }
 };

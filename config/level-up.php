@@ -17,13 +17,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Experience Table
+    | Table Names
     |--------------------------------------------------------------------------
     |
-    | This value is the name of the table that will be used to store experience data.
+    | This value is the name of the tables that will be used to store level up data.
+    | You can change the table names to fit your application.
+    |
+    | The default table names are using Laravel conventions.
+    |
+    | It is recommended to keep the table names as they are, only change them if
+    | you know what you are doing.
+    |
+    | example: 'typical_table_name' => 'new_table_name',
     |
      */
-    'table' => 'experiences',
+    'tables' => [
+        'achievement_user' => 'achievement_user', // pivot table
+        'experiences' => 'experiences',
+        'experience_audits' => 'experience_audits',
+        'achievements' => 'achievements',
+        'levels' => 'levels',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
+        'streak_activities' => 'streak_activities',
+    ],
 
     /*
     |-----------------------------------------------------------------------

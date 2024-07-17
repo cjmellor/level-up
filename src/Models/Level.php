@@ -11,6 +11,12 @@ class Level extends Model
 {
     protected $guarded = [];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.tables.levels');
+    }
+
     /**
      * @throws \LevelUp\Experience\Exceptions\LevelExistsException
      */

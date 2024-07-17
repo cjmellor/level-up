@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('experience_audits', function (Blueprint $table) {
+        Schema::create(config('level-up.tables.experience_audits'), function (Blueprint $table) {
             $table->id();
             $table->foreignId(config('level-up.user.foreign_key'))->constrained(config('level-up.user.users_table'));
             $table->integer('points')->index();
@@ -21,6 +21,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('experience_audits');
+        Schema::dropIfExists(config('level-up.tables.experience_audits'));
     }
 };

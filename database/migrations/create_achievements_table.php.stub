@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('achievements', function (Blueprint $table) {
+        Schema::create(config('level-up.tables.achievements'), function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->boolean('is_secret')->default(false);
@@ -19,6 +19,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('achievements');
+        Schema::dropIfExists(config('level-up.tables.achievements'));
     }
 };

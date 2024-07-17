@@ -10,7 +10,11 @@ class Activity extends Model
 {
     use HasFactory;
 
-    protected $table = 'streak_activities';
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config('level-up.tables.streak_activities') ?: parent::getTable();
+    }
 
     protected $guarded = [];
 
