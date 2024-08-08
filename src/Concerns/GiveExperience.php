@@ -64,14 +64,11 @@ trait GiveExperience
          */
         if ($this->experience()->doesntExist()) {
             $level = Level::query()
-                ->where(column: 'next_level_experience', operator: '<=', value: $amount)
-                ->orderByDesc(column: 'next_level_experience')
-                ->first();
+                ->firstWhere(column: 'next_level_experience', operator: '<=', value: $amount)
+                ->orderByDesc(column: 'next_level_experience');
 
             if ($level === null) {
-                $level = Level::query()
-                    ->where(column: 'level', operator: '=', value: config(key: 'level-up.starting_level'))
-                    ->first();
+                $level = Level::firstWhere(column: 'level', operator: '=', value: config(key: 'level-up.starting_level'));
             }
 
             $experience = $this->experience()->create(attributes: [
