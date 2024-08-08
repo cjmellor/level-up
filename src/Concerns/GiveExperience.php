@@ -68,8 +68,14 @@ trait GiveExperience
                 ->orderByDesc(column: 'next_level_experience')
                 ->first();
 
+            if ($level === null) {
+                $level = Level::query()
+                    ->where(column: 'level', operator: '=', value: config(key: 'level-up.starting_level'))
+                    ->first();
+            }
+
             $experience = $this->experience()->create(attributes: [
-                'level_id' => $level->level ?? config(key: 'level-up.starting_level'),
+                'level_id' => $level->id,
                 'experience_points' => $amount,
             ]);
 
