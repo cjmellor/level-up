@@ -9,8 +9,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Experience extends Model
 {
     // use HasFactory;
-
-    protected $table = 'experiences';
+    
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+        $this->table = config(key: 'level-up.table');
+    }
 
     protected $guarded = [];
 
