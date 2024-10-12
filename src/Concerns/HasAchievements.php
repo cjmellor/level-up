@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
 use LevelUp\Experience\Models\Achievement;
-use LevelUp\Experience\Models\Pivots\AchievementUser;
 
 trait HasAchievements
 {
@@ -33,7 +32,7 @@ trait HasAchievements
 
     public function achievements(): BelongsToMany
     {
-        return $this->belongsToMany(related:  config(key: 'level-up.models.achievement'))
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withTimestamps()
             ->withPivot(columns: 'progress')
             ->where('is_secret', false)

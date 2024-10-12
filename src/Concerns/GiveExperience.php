@@ -14,7 +14,6 @@ use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\ExperienceAudit;
 use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Services\MultiplierService;
 

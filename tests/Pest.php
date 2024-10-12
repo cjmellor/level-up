@@ -7,7 +7,7 @@ use Plannr\Laravel\FastRefreshDatabase\Traits\FastRefreshDatabase;
 
 uses(TestCase::class, FastRefreshDatabase::class)
     ->beforeEach(hook: function (): void {
-        $this->user = new User();
+        $this->user = new User;
 
         $this->user->fill(attributes: [
             'name' => 'Chris Mellor',

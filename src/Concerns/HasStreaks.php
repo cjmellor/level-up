@@ -12,7 +12,6 @@ use LevelUp\Experience\Events\StreakStarted;
 use LevelUp\Experience\Events\StreakUnfroze;
 use LevelUp\Experience\Models\Activity;
 use LevelUp\Experience\Models\Streak;
-use LevelUp\Experience\Models\StreakHistory;
 
 trait HasStreaks
 {
@@ -152,7 +151,7 @@ trait HasStreaks
 
     public function unFreezeStreak(Activity $activity): bool
     {
-        Event::dispatch(new StreakUnfroze());
+        Event::dispatch(new StreakUnfroze);
 
         return $this->getStreakLastActivity($activity)
             ->update(['frozen_until' => null]);
