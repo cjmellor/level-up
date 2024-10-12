@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Experience extends Model
 {
     // use HasFactory;
-    
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
