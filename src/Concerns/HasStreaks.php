@@ -68,7 +68,7 @@ trait HasStreaks
 
     public function streaks(): HasMany
     {
-        return $this->hasMany(related: Streak::class);
+        return $this->hasMany(related: config('level-up.models.streak'));
     }
 
     protected function startNewStreak(Activity $activity): Model|Streak
@@ -112,7 +112,9 @@ trait HasStreaks
     {
         $latestStreak = $this->getStreakLastActivity($activity);
 
-        StreakHistory::create([
+        $streakHistoryClass = config(key: 'level-up.models.streak_history');
+
+        $streakHistoryClass::create([
             config(key: 'level-up.streaks.foreign_key', default: 'user_id') => $this->id,
             'activity_id' => $activity->id,
             'count' => $latestStreak->count,

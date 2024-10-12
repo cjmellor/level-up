@@ -24,6 +24,6 @@ class Streak extends Model
 
     public function activity(): BelongsTo
     {
-        return $this->belongsTo(related: Activity::class);
+        return $this->belongsTo(related: config(key: 'level-up.models.activity'));
     }
 }

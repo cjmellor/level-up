@@ -10,11 +10,7 @@ class Experience extends Model
 {
     // use HasFactory;
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-        $this->table = config(key: 'level-up.table');
-    }
+    protected $table = 'experiences';
 
     protected $guarded = [];
 
@@ -25,6 +21,6 @@ class Experience extends Model
 
     public function status(): BelongsTo
     {
-        return $this->belongsTo(related: Level::class, foreignKey: 'level_id');
+        return $this->belongsTo(related: config('level-up.models.level'), foreignKey: 'level_id');
     }
 }

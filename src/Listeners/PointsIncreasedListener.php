@@ -9,6 +9,8 @@ class PointsIncreasedListener
 {
     public function __invoke(PointsIncreased $event): void
     {
+        $levelModel = config(key: 'level-up.models.level');
+
         if (config(key: 'level-up.audit.enabled')) {
             $event->user->experienceHistory()->create([
                 'points' => $event->pointsAdded,
@@ -17,15 +19,15 @@ class PointsIncreasedListener
             ]);
         }
 
-        if (Level::count() === 0) {
-            Level::add([
+        if ($levelModel::count() === 0) {
+            $levelModel::add([
                 'level' => config(key: 'level-up.starting_level'),
                 'next_level_experience' => null,
             ]);
         }
 
         // Get the next level experience needed for the user's current level
-        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
+        $nextLevel = $levelModel::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
 
         if (! $nextLevel) {
             // If there is no next level, return
@@ -35,7 +37,7 @@ class PointsIncreasedListener
         // Check if user's points are equal or greater than the next level's required experience
         if ($event->user->getPoints() >= $nextLevel->next_level_experience) {
             // Find the highest level the user can achieve with current points
-            $highestAchievableLevel = Level::query()
+            $highestAchievableLevel = $levelModel::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $event->user->getPoints())
                 ->orderByDesc(column: 'level')
                 ->first();
