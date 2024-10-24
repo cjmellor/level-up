@@ -1,6 +1,18 @@
 <?php
 
 return [
+
+    'models' => [
+        'achievement' => LevelUp\Experience\Models\Achievement::class,
+        'activity' => LevelUp\Experience\Models\Activity::class,
+        'experience' => LevelUp\Experience\Models\Experience::class,
+        'experience_audit' => LevelUp\Experience\Models\ExperienceAudit::class,
+        'level' => LevelUp\Experience\Models\Level::class,
+        'streak' => LevelUp\Experience\Models\Streak::class,
+        'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
+        'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | User Foreign Key

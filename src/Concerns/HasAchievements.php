@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
 use LevelUp\Experience\Models\Achievement;
-use LevelUp\Experience\Models\Pivots\AchievementUser;
 
 trait HasAchievements
 {
@@ -33,11 +32,11 @@ trait HasAchievements
 
     public function achievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: Achievement::class)
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withTimestamps()
             ->withPivot(columns: 'progress')
             ->where('is_secret', false)
-            ->using(AchievementUser::class);
+            ->using(config(key: 'level-up.models.achievement_user'));
     }
 
     public function incrementAchievementProgress(Achievement $achievement, int $amount = 1)
@@ -53,13 +52,13 @@ trait HasAchievements
 
     public function allAchievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: Achievement::class)
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withPivot(columns: 'progress');
     }
 
     public function achievementsWithProgress(): BelongsToMany
     {
-        return $this->belongsToMany(related: Achievement::class)
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withPivot(columns: 'progress')
             ->where('is_secret', false)
             ->wherePivotNotNull(column: 'progress');
@@ -67,7 +66,7 @@ trait HasAchievements
 
     public function secretAchievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: Achievement::class)
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withPivot(columns: 'progress')
             ->where('is_secret', true);
     }

@@ -25,6 +25,6 @@ class Experience extends Model
 
     public function status(): BelongsTo
     {
-        return $this->belongsTo(related: Level::class, foreignKey: 'level_id');
+        return $this->belongsTo(related: config('level-up.models.level'), foreignKey: 'level_id');
     }
 }

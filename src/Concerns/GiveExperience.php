@@ -14,7 +14,6 @@ use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\ExperienceAudit;
 use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Services\MultiplierService;
 
@@ -34,7 +33,9 @@ trait GiveExperience
             $type = AuditType::Add->value;
         }
 
-        $lastLevel = Level::orderByDesc(column: 'level')->first();
+        $levelClass = config(key: 'level-up.models.level');
+
+        $lastLevel = $levelClass::orderByDesc(column: 'level')->first();
         throw_if(
             condition: isset($lastLevel->next_level_experience) && $amount > $lastLevel->next_level_experience,
             message: 'Points exceed the last level\'s experience points.',
@@ -63,7 +64,7 @@ trait GiveExperience
          * If the User does not have an Experience record, create one.
          */
         if ($this->experience()->doesntExist()) {
-            $level = Level::query()
+            $level = $levelClass::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $amount)
                 ->orderByDesc(column: 'next_level_experience')
                 ->first();
@@ -118,7 +119,7 @@ trait GiveExperience
 
     public function experience(): HasOne
     {
-        return $this->hasOne(related: Experience::class);
+        return $this->hasOne(related: config('level-up.models.experience'));
     }
 
     protected function dispatchEvent(int $amount, string $type, ?string $reason): void
@@ -146,7 +147,7 @@ trait GiveExperience
 
     public function experienceHistory(): HasMany
     {
-        return $this->hasMany(related: ExperienceAudit::class);
+        return $this->hasMany(related: config('level-up.models.experience_audit'));
     }
 
     public function deductPoints(int $amount, ?string $reason = null): Experience
@@ -196,7 +197,9 @@ trait GiveExperience
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
     {
-        $nextLevel = Level::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
+        $levelClass = config(key: 'level-up.models.level');
+
+        $nextLevel = $levelClass::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
 
         if ($this->levelCapExceedsUserLevel()) {
             return 0;
@@ -206,7 +209,7 @@ trait GiveExperience
             return 0;
         }
 
-        $currentLevelExperience = Level::firstWhere(column: 'level', operator: '=', value: $this->getLevel())->next_level_experience;
+        $currentLevelExperience = $levelClass::firstWhere(column: 'level', operator: '=', value: $this->getLevel())->next_level_experience;
 
         if ($showAsPercentage) {
             return (int) ((($this->getPoints() - $currentLevelExperience) / ($nextLevel->next_level_experience - $currentLevelExperience)) * 100);

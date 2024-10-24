@@ -16,6 +16,6 @@ class Activity extends Model
 
     public function streaks(): HasMany
     {
-        return $this->hasMany(related: Streak::class);
+        return $this->hasMany(related: config(key: 'level-up.models.streak'));
     }
 }

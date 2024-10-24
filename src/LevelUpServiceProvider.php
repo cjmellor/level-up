@@ -37,7 +37,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->register(provider: EventServiceProvider::class);
-        $this->app->singleton(abstract: 'leaderboard', concrete: fn () => new LeaderboardService());
+        $this->app->singleton(abstract: 'leaderboard', concrete: fn () => new LeaderboardService);
         $this->app->register(provider: MultiplierServiceProvider::class);
     }
 }
