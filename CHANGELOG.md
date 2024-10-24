@@ -2,6 +2,18 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.3.0 - 2024-10-24
+
+### What's Changed
+
+* Allow model customisation by @Simoneu01 in https://github.com/cjmellor/level-up/pull/89
+
+### New Contributors
+
+* @Simoneu01 made their first contribution in https://github.com/cjmellor/level-up/pull/89
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.2.4...v1.3.0
+
 ## v1.2.4 - 2024-07-13
 
 ### What's Changed
