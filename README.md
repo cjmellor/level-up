@@ -370,18 +370,6 @@ Achievement::create([
 ]);
 ```
 
-### Revoke Achievement
-
-You can revoke an achievement from a user using the `revokeAchievement` method:
-
-```php
-$user->revokeAchievement($achievement);
-```
-
-The method will throw an exception if you try to revoke an achievement that the user doesn't have. You can revoke both standard and secret achievements, and it will also remove any associated progress.
-
-When an achievement is revoked, a `AchievementRevoked` event is dispatched.
-
 ### Gain Achievement
 
 To use Achievements in your User model, you must first add the Trait.
@@ -412,6 +400,18 @@ To retrieve your Achievements:
 ```php
 $user->achievements;
 ```
+
+### Revoke Achievement
+
+You can revoke an achievement from a user using the `revokeAchievement` method:
+
+```php
+$user->revokeAchievement($achievement);
+```
+
+The method will throw an exception if you try to revoke an achievement that the user doesn't have. You can revoke both standard and secret achievements, and it will also remove any associated progress.
+
+When an achievement is revoked, a `AchievementRevoked` event is dispatched.
 
 ### Add progress to Achievement
 
