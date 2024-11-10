@@ -436,11 +436,7 @@ $user->achievementsWithProgress()->get();
 Check Achievements that have a certain amount of progression:
 
 ```php
-$user->achievements
-    ->first()
-    ->pivot()
-    ->withProgress(25)
-    ->get();
+$user->achievementsWithSpecificProgress(25)->get();
 ```
 
 ### Increase Achievement Progression

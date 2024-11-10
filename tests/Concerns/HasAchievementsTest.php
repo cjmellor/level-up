@@ -80,7 +80,7 @@ it(description: 'can fetch Achievements that have a certain amount of progressio
     $this->user->grantAchievement($this->achievement, 50);
     $this->user->grantAchievement(Achievement::factory()->create(), 50);
 
-    expect($this->user)->getUserAchievements()->first()->pivot->withProgress(50)->toHaveCount(2);
+    expect($this->user->achievementsWithSpecificProgress(50)->get())->toHaveCount(count: 2);
 });
 
 it(description: 'can increment the progress of an Achievement', closure: function (): void {

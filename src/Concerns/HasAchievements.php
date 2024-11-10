@@ -71,6 +71,12 @@ trait HasAchievements
             ->wherePivotNotNull(column: 'progress');
     }
 
+    public function achievementsWithSpecificProgress(int $progress): BelongsToMany
+    {
+        return $this->achievements()
+            ->wherePivot(column: 'progress', operator: '>=', value: $progress);
+    }
+
     public function secretAchievements(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
