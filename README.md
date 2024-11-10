@@ -398,7 +398,7 @@ $user->grantAchievement($achievement);
 To retrieve your Achievements:
 
 ```php
-$user->achievements;
+$user->getUserAchievements();
 ```
 
 ### Revoke Achievement

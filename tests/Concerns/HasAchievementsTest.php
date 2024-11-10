@@ -13,7 +13,7 @@ uses()->group('achievements');
 test(description: 'a User can earn an Achievement', closure: function (): void {
     $this->user->grantAchievement($this->achievement);
 
-    expect($this->user)->achievements->toHaveCount(1);
+    expect($this->user)->getUserAchievements()->toHaveCount(1);
 
     $this->assertDatabaseHas(table: 'achievement_user', data: [
         'user_id' => $this->user->id,
@@ -24,7 +24,7 @@ test(description: 'a User can earn an Achievement', closure: function (): void {
 test(description: 'a User can earn an Achievement with progress', closure: function (): void {
     $this->user->grantAchievement($this->achievement, 50);
 
-    expect($this->user)->achievements->toHaveCount(1);
+    expect($this->user)->getUserAchievements()->toHaveCount(1);
 
     $this->assertDatabaseHas(table: 'achievement_user', data: [
         'user_id' => $this->user->id,
@@ -65,7 +65,7 @@ test(description: 'a User can see secret Achievements', closure: function (): vo
     $this->user->grantAchievement(Achievement::factory()->secret()->create());
 
     expect($this->user)->secretAchievements->toHaveCount(1)
-        ->and($this->user)->achievements->toHaveCount(0);
+        ->and($this->user)->getUserAchievements()->toHaveCount(0);
 });
 
 test(description: 'a User can see all Achievements', closure: function (): void {
@@ -80,7 +80,7 @@ it(description: 'can fetch Achievements that have a certain amount of progressio
     $this->user->grantAchievement($this->achievement, 50);
     $this->user->grantAchievement(Achievement::factory()->create(), 50);
 
-    expect($this->user)->achievements->first()->pivot->withProgress(50)->toHaveCount(2);
+    expect($this->user)->getUserAchievements()->first()->pivot->withProgress(50)->toHaveCount(2);
 });
 
 it(description: 'can increment the progress of an Achievement', closure: function (): void {
@@ -90,7 +90,7 @@ it(description: 'can increment the progress of an Achievement', closure: functio
 
     $this->user->incrementAchievementProgress($this->achievement, 1);
 
-    expect($this->user)->achievements->first()->pivot->progress->toBe(expected: 51);
+    expect($this->user)->getUserAchievements()->first()->pivot->progress->toBe(expected: 51);
 
     Event::assertDispatched(
         event: AchievementProgressionIncreased::class,
@@ -110,20 +110,20 @@ test(description: 'a User cannot be granted the same Achievement twice', closure
     $this->user->grantAchievement($this->achievement);
     $this->user->grantAchievement($this->achievement);
 
-    expect($this->user)->achievements->toHaveCount(count: 1);
+    expect($this->user)->getUserAchievements()->toHaveCount(count: 1);
 })->throws(exception: Exception::class, exceptionMessage: 'User already has this Achievement');
 
 test(description: 'a User can have an Achievement revoked', closure: function (): void {
     // First grant the achievement
     $this->user->grantAchievement($this->achievement);
 
-    expect($this->user)->achievements->toHaveCount(count: 1);
+    expect($this->user)->getUserAchievements()->toHaveCount(count: 1);
 
     // Now revoke it
     $this->user->revokeAchievement($this->achievement);
 
     expect($this->user->fresh())
-        ->achievements->toHaveCount(count: 0)
+        ->getUserAchievements()->toHaveCount(count: 0)
         ->and($this->user->achievements()->where('achievement_id', $this->achievement->id)->exists())->toBeFalse();
 
     $this->assertDatabaseMissing(table: 'achievement_user', data: [

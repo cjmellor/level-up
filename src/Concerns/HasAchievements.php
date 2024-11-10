@@ -4,6 +4,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
 use LevelUp\Experience\Events\AchievementRevoked;
@@ -55,6 +56,11 @@ trait HasAchievements
         event(new AchievementProgressionIncreased(achievement: $achievement, user: $this, amount: $amount));
 
         return $newProgress;
+    }
+
+    public function getUserAchievements(): Collection
+    {
+        return $this->achievements;
     }
 
     public function achievementsWithProgress(): BelongsToMany
