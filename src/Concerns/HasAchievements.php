@@ -28,7 +28,7 @@ trait HasAchievements
             'progress' => $progress ?? null,
         ]);
 
-        $this->when(value: ($progress === null) || ($progress === 100), callback: fn(): ?array => event(new AchievementAwarded(achievement: $achievement, user: $this)));
+        $this->when(value: ($progress === null) || ($progress === 100), callback: fn (): ?array => event(new AchievementAwarded(achievement: $achievement, user: $this)));
     }
 
     public function allAchievements(): BelongsToMany
