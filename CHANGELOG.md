@@ -2,6 +2,15 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.4.0 - 2024-11-10
+
+### What's Changed
+
+* feat: Add Revoke Achievmenet  by @cjmellor in https://github.com/cjmellor/level-up/pull/90
+* feat: Add Extra Methods by @cjmellor in https://github.com/cjmellor/level-up/pull/91
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.3.0...v1.4.0
+
 ## v1.3.0 - 2024-10-24
 
 ### What's Changed
