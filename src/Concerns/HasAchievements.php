@@ -4,6 +4,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
 use LevelUp\Experience\Events\AchievementRevoked;
@@ -57,12 +58,23 @@ trait HasAchievements
         return $newProgress;
     }
 
+    public function getUserAchievements(): Collection
+    {
+        return $this->achievements;
+    }
+
     public function achievementsWithProgress(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withPivot(columns: 'progress')
             ->where('is_secret', false)
             ->wherePivotNotNull(column: 'progress');
+    }
+
+    public function achievementsWithSpecificProgress(int $progress): BelongsToMany
+    {
+        return $this->achievements()
+            ->wherePivot(column: 'progress', operator: '>=', value: $progress);
     }
 
     public function secretAchievements(): BelongsToMany
