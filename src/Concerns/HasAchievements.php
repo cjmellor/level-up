@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
+use LevelUp\Experience\Events\AchievementRevoked;
 use LevelUp\Experience\Models\Achievement;
 
 trait HasAchievements
@@ -30,6 +31,12 @@ trait HasAchievements
         $this->when(value: ($progress === null) || ($progress === 100), callback: fn (): ?array => event(new AchievementAwarded(achievement: $achievement, user: $this)));
     }
 
+    public function allAchievements(): BelongsToMany
+    {
+        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
+            ->withPivot(columns: 'progress');
+    }
+
     public function achievements(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
@@ -50,12 +57,6 @@ trait HasAchievements
         return $newProgress;
     }
 
-    public function allAchievements(): BelongsToMany
-    {
-        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
-            ->withPivot(columns: 'progress');
-    }
-
     public function achievementsWithProgress(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
@@ -69,5 +70,19 @@ trait HasAchievements
         return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
             ->withPivot(columns: 'progress')
             ->where('is_secret', true);
+    }
+
+    /**
+     * Revoke an achievement from the user
+     */
+    public function revokeAchievement(Achievement $achievement): void
+    {
+        if (! $this->allAchievements()->find($achievement->id)) {
+            throw new Exception(message: 'User does not have this Achievement');
+        }
+
+        $this->achievements()->detach($achievement->id);
+
+        event(new AchievementRevoked(achievement: $achievement, user: $this));
     }
 }

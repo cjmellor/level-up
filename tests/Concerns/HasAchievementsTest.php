@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
+use LevelUp\Experience\Events\AchievementRevoked;
 use LevelUp\Experience\Models\Achievement;
 
 beforeEach(closure: fn (): Achievement => $this->achievement = Achievement::factory()->create());
@@ -105,9 +106,60 @@ it(description: 'can increment the progress of an Achievement', closure: functio
     ]);
 });
 
-test('a User cannot be granted the same Achievement twice', closure: function () {
+test(description: 'a User cannot be granted the same Achievement twice', closure: function () {
     $this->user->grantAchievement($this->achievement);
     $this->user->grantAchievement($this->achievement);
 
     expect($this->user)->achievements->toHaveCount(count: 1);
 })->throws(exception: Exception::class, exceptionMessage: 'User already has this Achievement');
+
+test(description: 'a User can have an Achievement revoked', closure: function (): void {
+    // First grant the achievement
+    $this->user->grantAchievement($this->achievement);
+
+    expect($this->user)->achievements->toHaveCount(count: 1);
+
+    // Now revoke it
+    $this->user->revokeAchievement($this->achievement);
+
+    expect($this->user->fresh())
+        ->achievements->toHaveCount(count: 0)
+        ->and($this->user->achievements()->where('achievement_id', $this->achievement->id)->exists())->toBeFalse();
+
+    $this->assertDatabaseMissing(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+    ]);
+});
+
+test(description: 'an Event runs when an Achievement is revoked', closure: function (): void {
+    Event::fake();
+
+    $this->user->grantAchievement($this->achievement);
+    $this->user->revokeAchievement($this->achievement);
+
+    Event::assertDispatched(AchievementRevoked::class);
+});
+
+it(description: 'throws an exception when revoking an unearned Achievement', closure: function (): void {
+    expect(fn () => $this->user->revokeAchievement($this->achievement))
+        ->toThrow(exception: Exception::class, exceptionMessage: 'User does not have this Achievement');
+});
+
+test(description: 'revoking an Achievement with progress removes the progress', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, 50);
+    expect($this->user->achievementsWithProgress)->toHaveCount(count: 1);
+
+    $this->user->revokeAchievement($this->achievement);
+    expect($this->user->fresh()->achievementsWithProgress)->toHaveCount(count: 0);
+});
+
+test(description: 'revoking a secret Achievement works correctly', closure: function (): void {
+    $secretAchievement = Achievement::factory()->secret()->create();
+    $this->user->grantAchievement($secretAchievement);
+
+    expect($this->user)->secretAchievements->toHaveCount(count: 1);
+
+    $this->user->revokeAchievement($secretAchievement);
+    expect($this->user->fresh())->secretAchievements->toHaveCount(count: 0);
+});
