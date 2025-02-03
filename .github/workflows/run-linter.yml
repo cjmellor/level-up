@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint with Pint
-        uses: aglipanci/laravel-pint-action@2.4
+        uses: aglipanci/laravel-pint-action@2.5
 
       - name: Commit linted files
         uses: stefanzweifel/git-auto-commit-action@v5
