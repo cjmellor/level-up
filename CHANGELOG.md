@@ -2,6 +2,20 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.4.1 - 2025-02-26
+
+### What's Changed
+
+* build(deps): bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in https://github.com/cjmellor/level-up/pull/92
+* build(deps): bump aglipanci/laravel-pint-action from 2.4 to 2.5 by @dependabot in https://github.com/cjmellor/level-up/pull/93
+* Laravel 12.x Compatibility by @laravel-shift in https://github.com/cjmellor/level-up/pull/94
+
+### New Contributors
+
+* @laravel-shift made their first contribution in https://github.com/cjmellor/level-up/pull/94
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.4.0...v1.4.1
+
 ## v1.4.0 - 2024-11-10
 
 ### What's Changed
