@@ -15,7 +15,7 @@ jobs:
         uses: aglipanci/laravel-pint-action@2.5
 
       - name: Commit linted files
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "fix: Files linted with Pint"
 
