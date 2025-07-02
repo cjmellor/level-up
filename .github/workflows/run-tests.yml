@@ -2,6 +2,9 @@ name: Run Tests
 
 on: pull_request
 
+env:
+  DB_FOREIGN_KEYS: false
+
 jobs:
   tests:
     runs-on: ubuntu-latest
