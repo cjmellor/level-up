@@ -2,6 +2,16 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.5.0 - 2025-07-02
+
+### What's Changed
+
+* build(deps): bump dependabot/fetch-metadata from 2.3.0 to 2.4.0 by @dependabot in https://github.com/cjmellor/level-up/pull/97
+* build(deps): bump stefanzweifel/git-auto-commit-action from 5 to 6 by @dependabot in https://github.com/cjmellor/level-up/pull/98
+* refactor(experience): move level tracking from user to experience model by @cjmellor in https://github.com/cjmellor/level-up/pull/100
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.4.1...v1.5.0
+
 ## v1.4.1 - 2025-02-26
 
 ### What's Changed
