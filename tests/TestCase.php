@@ -38,20 +38,21 @@ class TestCase extends Orchestra
             $table->timestamps();
         });
 
-        $migrationFiles = [
+        $migrations = [
             'create_levels_table',
             'create_experiences_table',
-            'add_level_relationship_to_users_table',
             'create_experience_audits_table',
             'create_achievements_table',
             'create_achievement_user_pivot_table',
-            'create_streak_activities_table',
             'create_streaks_table',
             'create_streak_histories_table',
+            'create_streak_activities_table',
             'add_streak_freeze_feature_columns_to_streaks_table',
+            'add_level_relationship_to_users_table',
+            'remove_level_id_column_from_users_table',
         ];
 
-        foreach ($migrationFiles as $migrationFile) {
+        foreach ($migrations as $migrationFile) {
             $migration = include __DIR__."/../database/migrations/$migrationFile.php.stub";
 
             $migration->up();

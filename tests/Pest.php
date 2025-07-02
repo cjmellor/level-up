@@ -1,11 +1,11 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Tests\Fixtures\User;
 use LevelUp\Experience\Tests\TestCase;
-use Plannr\Laravel\FastRefreshDatabase\Traits\FastRefreshDatabase;
 
-uses(TestCase::class, FastRefreshDatabase::class)
+uses(TestCase::class, RefreshDatabase::class)
     ->beforeEach(hook: function (): void {
         $this->user = new User;
 

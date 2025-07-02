@@ -37,8 +37,7 @@ test(description: 'when a User levels up more than once, an event runs for each 
 
     $this->user->addPoints(300);
 
-    expect($this->user)->experience->level_id->toBe(expected: 3)
-        ->and($this->user)->level_id->toBe(expected: 3);
+    expect($this->user)->experience->level_id->toBe(expected: 3);
 
     Event::assertDispatchedTimes(event: UserLevelledUp::class, times: 3);
 

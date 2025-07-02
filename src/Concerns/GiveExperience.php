@@ -64,25 +64,33 @@ trait GiveExperience
          * If the User does not have an Experience record, create one.
          */
         if ($this->experience()->doesntExist()) {
+            $startingLevel = config(key: 'level-up.starting_level');
+
+            // Find the appropriate level based on experience points
             $level = $levelClass::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $amount)
+                ->where(column: 'next_level_experience', operator: '!=', value: null)
                 ->orderByDesc(column: 'next_level_experience')
                 ->first();
 
+            // If no qualifying level found, use starting level
+            if (! $level) {
+                $level = $levelClass::firstOrCreate(
+                    ['level' => $startingLevel],
+                    ['next_level_experience' => null]
+                );
+            }
+
             $experience = $this->experience()->create(attributes: [
-                'level_id' => $level->level ?? config(key: 'level-up.starting_level'),
+                'level_id' => $level->id,
                 'experience_points' => $amount,
             ]);
 
-            /**
-             * This is updating the User's level_id column, which is not the same as the Experience's level_id column.
-             */
-            $this->fill([
-                'level_id' => $experience->level_id,
-            ])->save();
-
-            for ($lvl = config(key: 'level-up.starting_level'); $lvl <= $level?->level; $lvl++) {
-                Event::dispatch(event: new UserLevelledUp(user: $this, level: $lvl));
+            // Only dispatch UserLevelledUp events if the user is above the starting level
+            if ($level->level > $startingLevel) {
+                for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
+                    Event::dispatch(event: new UserLevelledUp(user: $this, level: $lvl));
+                }
             }
 
             $this->dispatchEvent($amount, $type, $reason);

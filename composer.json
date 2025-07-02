@@ -28,8 +28,7 @@
         "orchestra/testbench": "^8.0|^9.0|^10.0",
         "pestphp/pest": "^2.13|^3.7",
         "pestphp/pest-plugin-laravel": "^2.2|^3.1",
-        "pestphp/pest-plugin-type-coverage": "^2.0|^3.3",
-        "plannr/laravel-fast-refresh-database": "^1.0.2"
+        "pestphp/pest-plugin-type-coverage": "^2.0|^3.3"
     },
     "autoload": {
         "psr-4": {
@@ -39,14 +38,19 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "LevelUp\\Experience\\Tests\\": "tests/"
+            "LevelUp\\Experience\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/",
+            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
+            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
         }
     },
     "scripts": {
         "lint": "vendor/bin/pint",
         "format": "vendor/bin/rector process",
         "dry-format": "vendor/bin/rector process --dry-run",
-        "post-autoload-dump": "@php ./vendor/bin/testbench package:discover --ansi",
+        "post-autoload-dump": [
+            "@php ./vendor/bin/testbench package:discover --ansi"
+        ],
         "test": "vendor/bin/pest",
         "test-coverage": "vendor/bin/pest --coverage"
     },
