@@ -19,13 +19,6 @@ class PointsIncreasedListener
             ]);
         }
 
-        if ($levelModel::count() === 0) {
-            $levelModel::add([
-                'level' => config(key: 'level-up.starting_level'),
-                'next_level_experience' => null,
-            ]);
-        }
-
         // Get the next level experience needed for the user's current level
         $nextLevel = $levelModel::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
 

@@ -53,7 +53,7 @@ test(description: 'giving points to a User with an experience Model, updates the
 test(description: 'levels are associated on point increments', closure: function () {
     $this->user->addPoints(amount: 10);
 
-    expect($this->user)->level_id->toBe(expected: 1);
+    expect($this->user->experience)->level_id->toBe(expected: 1);
 
     $this->user->addPoints(amount: 100);
 
@@ -345,7 +345,7 @@ test(description: 'the level is correct when adding more points than available o
     // Levels have been added, up to Level 5, needing to reach 600 points to get there
     // User is initially given 400 points, so should directly go to Level 4
     $this->user->addPoints(amount: 10);
-    expect($this->user)->level_id->toBe(expected: 1);
+    expect($this->user->experience)->level_id->toBe(expected: 1);
     $this->user->setPoints(amount: 0);
 
     $this->user->addPoints(100);
