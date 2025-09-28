@@ -14,7 +14,6 @@ use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Services\MultiplierService;
 
 trait GiveExperience
@@ -86,14 +85,14 @@ trait GiveExperience
                 'experience_points' => $amount,
             ]);
 
+            $this->dispatchEvent($amount, $type, $reason);
+
             // Only dispatch UserLevelledUp events if the user is above the starting level
             if ($level->level > $startingLevel) {
                 for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
                     Event::dispatch(event: new UserLevelledUp(user: $this, level: $lvl));
                 }
             }
-
-            $this->dispatchEvent($amount, $type, $reason);
 
             return $this->experience;
         }
