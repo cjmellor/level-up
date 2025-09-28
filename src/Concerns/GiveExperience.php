@@ -236,8 +236,18 @@ trait GiveExperience
             return;
         }
 
-        $this->experience->status()->associate(model: $to);
-        $this->experience->save();
+        $levelClass = config(key: 'level-up.models.level');
+        $level = $levelClass::firstWhere(column: 'level', operator: '=', value: $to);
+
+        if ($level) {
+            $this->experience->status()->associate(model: $level);
+            $this->experience->save();
+        }
+
+        // TODO: In next major version, enforce strict behavior by throwing when level is missing.
+        // if (! $level) {
+        //     throw new InvalidArgumentException("Level {$to} does not exist");
+        // }
 
         // Fire an event for each level gained
         for ($lvl = $this->getLevel(); $lvl <= $to; $lvl++) {
