@@ -2,6 +2,17 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v1.5.1 - 2025-09-28
+
+### What's Changed
+
+* build(deps): bump aglipanci/laravel-pint-action from 2.5 to 2.6 by @dependabot[bot] in https://github.com/cjmellor/level-up/pull/101
+* build(deps): bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/cjmellor/level-up/pull/102
+* fix: Re-order Events by @cjmellor in https://github.com/cjmellor/level-up/pull/107
+* fix(experience): associate experience status with existing level by @cjmellor in https://github.com/cjmellor/level-up/pull/108
+
+**Full Changelog**: https://github.com/cjmellor/level-up/compare/v1.5.0...v1.5.1
+
 ## v1.5.0 - 2025-07-02
 
 ### What's Changed
