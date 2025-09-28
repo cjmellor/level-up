@@ -380,3 +380,84 @@ it('returns 0 when experience points are not set', function (): void {
 
     expect($this->user->getPoints())->toBe(0);
 });
+
+test(description: 'events fire in chronological order when creating new experience record', closure: function (): void {
+    $eventsDispatched = [];
+
+    // Listen for PointsIncreased event
+    Event::listen(PointsIncreased::class, function (PointsIncreased $event) use (&$eventsDispatched) {
+        $eventsDispatched[] = [
+            'type' => 'PointsIncreased',
+            'timestamp' => microtime(true),
+            'points' => $event->pointsAdded,
+            'total_points' => $event->totalPoints,
+        ];
+    });
+
+    // Listen for UserLevelledUp event
+    Event::listen(UserLevelledUp::class, function (UserLevelledUp $event) use (&$eventsDispatched) {
+        $eventsDispatched[] = [
+            'type' => 'UserLevelledUp',
+            'timestamp' => microtime(true),
+            'level' => $event->level,
+        ];
+    });
+
+    // Add enough points to trigger multiple level-ups (250 points reaches level 3)
+    $this->user->addPoints(amount: 250);
+
+    // Verify events were dispatched: 1 PointsIncreased + 3 UserLevelledUp (levels 1, 2, 3)
+    expect($eventsDispatched)->toHaveCount(4)
+        ->and($eventsDispatched[0]['type'])->toBe('PointsIncreased')
+        ->and($eventsDispatched[0]['points'])->toBe(250)
+        ->and($eventsDispatched[0]['total_points'])->toBe(250)
+        ->and($eventsDispatched[1]['type'])->toBe('UserLevelledUp')
+        ->and($eventsDispatched[1]['level'])->toBe(1)
+        ->and($eventsDispatched[2]['type'])->toBe('UserLevelledUp')
+        ->and($eventsDispatched[2]['level'])->toBe(2)
+        ->and($eventsDispatched[3]['type'])->toBe('UserLevelledUp')
+        ->and($eventsDispatched[3]['level'])->toBe(3)
+        ->and($eventsDispatched[0]['timestamp'])->toBeLessThanOrEqual($eventsDispatched[1]['timestamp'])
+        ->and($eventsDispatched[1]['timestamp'])->toBeLessThanOrEqual($eventsDispatched[2]['timestamp'])
+        ->and($eventsDispatched[2]['timestamp'])->toBeLessThanOrEqual($eventsDispatched[3]['timestamp']);
+});
+
+test(description: 'PointsIncreased event fires before UserLevelledUp when leveling up from starting level', closure: function (): void {
+    $eventsOrder = [];
+
+    Event::listen(PointsIncreased::class, function () use (&$eventsOrder) {
+        $eventsOrder[] = 'PointsIncreased';
+    });
+
+    Event::listen(UserLevelledUp::class, function () use (&$eventsOrder) {
+        $eventsOrder[] = 'UserLevelledUp';
+    });
+
+    // Add points to trigger level up from starting level (100 points reaches level 2)
+    $this->user->addPoints(amount: 100);
+
+    // Verify correct order: PointsIncreased before UserLevelledUp events
+    // Should fire: PointsIncreased, UserLevelledUp(1), UserLevelledUp(2)
+    expect($eventsOrder)->toBe(['PointsIncreased', 'UserLevelledUp', 'UserLevelledUp'])
+        ->and($this->user)->getLevel()->toBe(2);
+});
+
+test(description: 'no UserLevelledUp events fire when staying at starting level but PointsIncreased still fires', closure: function (): void {
+    $eventsOrder = [];
+
+    Event::listen(PointsIncreased::class, function () use (&$eventsOrder) {
+        $eventsOrder[] = 'PointsIncreased';
+    });
+
+    Event::listen(UserLevelledUp::class, function () use (&$eventsOrder) {
+        $eventsOrder[] = 'UserLevelledUp';
+    });
+
+    // Add points that don't reach next level (50 points stays at level 1)
+    $this->user->addPoints(amount: 50);
+
+    // Only PointsIncreased should fire, no UserLevelledUp
+    expect($eventsOrder)->toBe(['PointsIncreased'])
+        ->and($this->user)->getLevel()->toBe(1)
+        ->and($this->user)->getPoints()->toBe(50);
+});
