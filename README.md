@@ -1,704 +1,521 @@
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/cjmellor/level-up?color=rgb%2856%20189%20248%29&label=release&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/cjmellor/level-up/run-tests.yml?branch=main&label=tests&style=for-the-badge&color=rgb%28134%20239%20128%29)](https://github.com/cjmellor/level-up/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/cjmellor/level-up.svg?color=rgb%28249%20115%2022%29&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
-![Packagist PHP Version](https://img.shields.io/packagist/dependency-v/cjmellor/level-up/php?color=rgb%28165%20180%20252%29&logo=php&logoColor=rgb%28165%20180%20252%29&style=for-the-badge)
-![Laravel Version](https://img.shields.io/badge/laravel-^10-rgb(235%2068%2050)?style=for-the-badge&logo=laravel)
+<img width="1664" height="384" alt="Fal AI Laravel SDK Banner" src="https://github.com/user-attachments/assets/17a91407-7135-4a21-b9ed-43529ce7fa77" />
 
-This package allows users to gain experience points (XP) and progress through levels by performing actions on your site. It can provide a simple way to track user progress and implement gamification elements into your application
+# Fal.ai Laravel Package
 
-![Banner](https://banners.beyondco.de/Level%20Up.png?theme=dark&packageManager=composer+require&packageName=cjmellor%2Flevel-up&pattern=ticTacToe&style=style_1&description=Enable+gamification+via+XP%2C+levels%2C+leaderboards%2C+achievements%2C+and+dynamic+multipliers&md=1&showWatermark=0&fontSize=100px&images=puzzle&widths=auto)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/cjmellor/fal-ai-laravel?color=rgb%2856%20189%20248%29&label=release&style=for-the-badge)](https://packagist.org/packages/cjmellor/fal-ai-laravel)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/cjmellor/fal-ai-laravel/run-pest.yml?branch=main&label=tests&style=for-the-badge&color=rgb%28134%20239%20128%29)](https://github.com/cjmellor/fal-ai-laravel/actions?query=workflow%3Arun-pest+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/cjmellor/fal-ai-laravel.svg?color=rgb%28249%20115%2022%29&style=for-the-badge)](https://packagist.org/packages/cjmellor/fal-ai-laravel)
+![Packagist PHP Version](https://img.shields.io/packagist/dependency-v/cjmellor/fal-ai-laravel/php?color=rgb%28165%20180%20252%29&logo=php&logoColor=rgb%28165%20180%20252%29&style=for-the-badge)
+![Laravel Version](https://img.shields.io/badge/laravel-^12-rgb(235%2068%2050)?style=for-the-badge&logo=laravel)
 
-# Installation
+A Laravel package for integrating with the Fal.ai API, providing a fluent interface for AI model interactions with built-in webhook support.
 
-You can install the package via composer:
+## ✨ Features
 
+- 🚀 **Fluent API** - Chainable methods for easy request building
+- 🔗 **Webhook Support** - Secure webhook handling with ED25519 signature verification
+- ⚡ **Queue & Sync Modes** - Support for both immediate and queued requests
+- 📡 **Real-time Streaming** - Server-Sent Events (SSE) support for progressive AI model responses
+- 🛡️ **Security** - Built-in webhook verification middleware
+- 🧪 **Well Tested** - Comprehensive test suite
+- 📝 **Laravel Integration** - Native Laravel middleware and service provider
+- 🛣️ **Built-in Routes** - Pre-configured webhook endpoints ready to use
+
+## 📦 Installation
+
+Install the package via Composer:
+
+```bash
+composer require fal-ai/laravel
 ```
-composer require cjmellor/level-up
+
+Publish the configuration file:
+
+```bash
+php artisan vendor:publish --provider="FalAi\FalAiServiceProvider"
 ```
 
-You can publish and run the migrations with:
+Add your Fal.ai API key to your `.env` file:
 
-```
-php artisan vendor:publish --tag="level-up-migrations"
-php artisan migrate
-```
-
-You can publish the config file with:
-
-```
-php artisan vendor:publish --tag="level-up-config"
+```env
+FAL_API_KEY=your_fal_api_key_here
 ```
 
-This is the contents of the published config file:
+## 🚀 Basic Usage
+
+### 🎯 Simple Request
+
+```php
+use FalAi\FalAi;
+
+$falAi = new FalAi();
+
+$response = $falAi->model('fal-ai/flux/schnell')
+    ->prompt('A beautiful sunset over mountains')
+    ->imageSize('landscape_4_3')
+    ->run();
+```
+
+### ⚡ Queue vs Sync Modes
+
+> [!TIP]
+> **Queue mode** is the default and recommended for most use cases. It's perfect for complex generations that take time to process.
+
+#### 📋 Queue Mode (Default)
+
+```php
+$response = $falAi->model('fal-ai/flux/dev')
+    ->prompt('A futuristic cityscape')
+    ->queue() // Explicit queue mode (optional, it's the default)
+    ->run();
+
+// Returns: ['request_id' => 'req_123...', 'status' => 'IN_QUEUE']
+```
+
+**Use queue mode when:**
+- Generating high-quality images with many inference steps
+- Processing multiple images in batch
+- You don't need immediate results
+- Working with complex prompts or large image sizes
+
+#### ⚡ Sync Mode
+
+```php
+$response = $falAi->model('fal-ai/flux/schnell')
+    ->prompt('A beautiful landscape')
+    ->sync() // Switch to sync mode
+    ->run();
+
+// Returns the complete result immediately
+```
+
+**Use sync mode when:**
+- You need immediate results
+- Generating simple images with few inference steps
+- Building interactive applications
+- Testing and development
+
+> [!WARNING]
+> Sync mode may timeout for complex requests. Use queue mode for production applications.
+
+#### 🛰️ Polling Request Status
+You can poll the status of a queued request (useful when not using webhooks). Set includeLogs to true to retrieve execution logs.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$status = FalAi::status('req_123456789', includeLogs: true);
+
+if ($status->isInProgress()) {
+    $logs = $status->getLogs();
+}
+```
+
+#### 📦 Fetching Results by ID
+Fetch the final result payload for a completed request and use convenient accessors.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$result = FalAi::result('req_123456789');
+
+$firstImageUrl = $result->firstImageUrl; // Convenience accessor
+$all = $result->json();                  // Raw payload if you prefer
+```
+
+#### ⛔ Cancelling a Queued Request
+Cancel a queued request that hasn’t started processing yet.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+FalAi::cancel('req_123456789', modelId: 'fal-ai/flux/schnell');
+```
+
+#### 🧭 Submit Response Helpers
+Access useful URLs directly from the initial submit response.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$response = FalAi::model('fal-ai/flux/schnell')
+    ->prompt('A photorealistic fox in a forest')
+    ->queue()
+    ->run();
+
+$requestId = $response->getRequestId();
+$statusUrl = $response->getStatusUrl();
+$cancelUrl = $response->getCancelUrl();
+```
+
+## 🔗 Webhook Support
+
+### 📤 Making Requests with Webhooks
+
+When you add a webhook URL to your request, it automatically switches to queue mode:
+
+```php
+$response = $falAi->model('fal-ai/flux/schnell')
+    ->withWebhook('https://myapp.com/webhooks/fal')
+    ->prompt('A beautiful sunset over mountains')
+    ->imageSize('landscape_4_3')
+    ->run();
+
+// Returns: ['request_id' => 'req_123...', 'status' => 'IN_QUEUE']
+```
+
+### 📋 Webhook URL Requirements
+
+- Must be a valid HTTPS URL
+- Must be publicly accessible
+- Should respond with 2xx status codes
+
+### 🛠️ Setting Up Webhook Endpoints
+
+You have two options for handling webhooks: use the built-in route or create your own custom endpoint.
+
+#### 🎯 Option 1: Built-in Webhook Route (Easiest)
+
+The package includes a pre-configured webhook route at `/webhooks/fal` that handles basic webhook processing:
+
+```php
+// This route is automatically registered by the package
+// POST /webhooks/fal
+
+// Use it in your requests:
+$response = $falAi->model('fal-ai/flux/schnell')
+    ->withWebhook(url('/webhooks/fal')) // Uses the built-in route
+    ->prompt('Your prompt here')
+    ->run();
+```
+
+> [!TIP]
+> The built-in route automatically verifies webhooks and returns appropriate responses. Perfect for getting started quickly!
+
+#### 🏭 Option 2: Custom Webhook Endpoint (Recommended for Production)
+
+```php
+use FalAi\Middleware\VerifyFalWebhook;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/webhooks/fal', function (Request $request) {
+    $payload = $request->json()->all();
+    
+    if ($payload['status'] === 'OK') {
+        $images = $payload['data']['images'];
+        // Process successful results
+        foreach ($images as $image) {
+            // Save image URL: $image['url']
+        }
+    } elseif ($payload['status'] === 'ERROR') {
+        $error = $payload['error'];
+        // Handle error
+    }
+    
+    return response()->json(['status' => 'processed']);
+})->middleware(VerifyFalWebhook::class);
+```
+
+For production applications, create a custom webhook endpoint with your own processing logic:
+
+```php
+use FalAi\Middleware\VerifyFalWebhook;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/webhooks/fal-custom', function (Request $request) {
+    $payload = $request->json()->all();
+    
+    if ($payload['status'] === 'OK') {
+        $images = $payload['data']['images'];
+        // Process successful results
+        foreach ($images as $image) {
+            // Save image URL: $image['url']
+            // Custom processing logic here
+        }
+    } elseif ($payload['status'] === 'ERROR') {
+        $error = $payload['error'];
+        // Handle error with custom logic
+    }
+    
+    return response()->json(['status' => 'processed']);
+})->middleware(VerifyFalWebhook::class);
+```
+
+#### 🔧 Option 3: Manual Verification (Advanced)
+
+For complete control over the verification process:
+
+```php
+use FalAi\Services\WebhookVerifier;
+use FalAi\Exceptions\WebhookVerificationException;
+
+Route::post('/webhooks/fal-manual', function (Request $request) {
+    $verifier = new WebhookVerifier();
+    
+    try {
+        $verifier->verify($request);
+        
+        // Webhook is valid, process payload
+        $payload = $request->json()->all();
+        
+        return response()->json(['status' => 'verified']);
+        
+    } catch (WebhookVerificationException $e) {
+        return response()->json([
+            'error' => 'Unauthorized',
+            'message' => 'Webhook verification failed'
+        ], 401);
+    }
+});
+```
+
+### 📄 Webhook Payload Examples
+
+#### ✅ Successful Completion
+
+```json
+{
+    "request_id": "req_123456789",
+    "status": "OK",
+    "data": {
+        "images": [
+            {
+                "url": "https://fal.media/files/generated-image.jpg",
+                "width": 1024,
+                "height": 768,
+                "content_type": "image/jpeg"
+            }
+        ],
+        "seed": 12345,
+        "has_nsfw_concepts": [false],
+        "prompt": "A beautiful sunset over mountains"
+    }
+}
+```
+
+#### ❌ Error
+
+```json
+{
+    "request_id": "req_123456789",
+    "status": "ERROR",
+    "error": {
+        "type": "ValidationError",
+        "message": "Invalid prompt provided"
+    }
+}
+```
+
+## 📡 Streaming
+
+The Fal.ai Laravel package supports real-time streaming responses using Server-Sent Events (SSE). This is particularly useful for AI models that generate content progressively, such as text generation or image creation with intermediate steps.
+
+### 🎯 Basic Streaming Usage
+
+To use streaming, call the `stream()` method instead of `run()` or `queue()`:
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$streamResponse = FalAi::model('fal-ai/flux/schnell')
+    ->prompt('A beautiful sunset over mountains')
+    ->imageSize('landscape_4_3')
+    ->stream();
+
+    $streamResponse->getResponse();
+}
+```
+
+### 📊 Streaming vs Regular Requests
+
+| Feature         | Regular Request     | Streaming Request        |
+|-----------------|---------------------|--------------------------|
+| Response Time   | Wait for completion | Real-time updates        |
+| User Experience | Loading spinner     | Progress indicators      |
+| Resource Usage  | Lower               | Slightly higher          |
+| Complexity      | Simple              | Moderate                 |
+| Best For        | Simple workflows    | Interactive applications |
+
+### 📝 Important Notes
+
+- Streaming requests always use the `https://fal.run` endpoint regardless of configuration
+- Not all Fal.ai models support streaming - check the model documentation
+- Streaming responses cannot be cached like regular responses
+- Consider implementing proper error handling for network interruptions
+- Use streaming for models that benefit from progressive updates (text generation, multi-step image creation)
+
+## ⚙️ Configuration
+
+> [!NOTE]
+> You can customise the package behaviour by publishing and modifying the configuration file.
+
+The configuration file `config/fal-ai.php` contains the following options:
 
 ```php
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | User Foreign Key
-    |--------------------------------------------------------------------------
-    |
-    | This value is the foreign key that will be used to relate the Experience model to the User model.
-    |
-     */
-    'user' => [
-        'foreign_key' => 'user_id',
-        'model' => App\Models\User::class,
+    'api_key' => env('FAL_API_KEY'),
+    'base_url' => 'https://queue.fal.run',
+    'default_model' => '',
+    
+    'webhook' => [
+        // JWKS cache TTL in seconds (max 24 hours)
+        'jwks_cache_ttl' => env('FAL_WEBHOOK_JWKS_CACHE_TTL', 86400),
+        
+        // Timestamp tolerance in seconds (prevents replay attacks)
+        'timestamp_tolerance' => env('FAL_WEBHOOK_TIMESTAMP_TOLERANCE', 300),
+        
+        // HTTP timeout for JWKS fetching
+        'verification_timeout' => env('FAL_WEBHOOK_VERIFICATION_TIMEOUT', 10),
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Experience Table
-    |--------------------------------------------------------------------------
-    |
-    | This value is the name of the table that will be used to store experience data.
-    |
-     */
-    'table' => 'experiences',
-
-    /*
-    |-----------------------------------------------------------------------
-    | Starting Level
-    |-----------------------------------------------------------------------
-    |
-    | The level that a User starts with.
-    |
-    */
-    'starting_level' => 1,
-
-    /*
-    |-----------------------------------------------------------------------
-    | Multiplier Paths
-    |-----------------------------------------------------------------------
-    |
-    | Set the path and namespace for the Multiplier classes.
-    |
-    */
-    'multiplier' => [
-        'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
-        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
-        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
-    ],
-
-    /*
-    |-----------------------------------------------------------------------
-    | Level Cap
-    |-----------------------------------------------------------------------
-    |
-    | Set the maximum level a User can reach.
-    |
-    */
-    'level_cap' => [
-        'enabled' => env(key: 'LEVEL_CAP_ENABLED', default: true),
-        'level' => env(key: 'LEVEL_CAP', default: 100),
-        'points_continue' => env(key: 'LEVEL_CAP_POINTS_CONTINUE', default: true),
-    ],
-
-    /*
-    | -------------------------------------------------------------------------
-    | Audit
-    | -------------------------------------------------------------------------
-    |
-    | Set the audit configuration.
-    |
-    */
-    'audit' => [
-        'enabled' => env(key: 'AUDIT_POINTS', default: false),
-    ],
-
-    /*
-    | -------------------------------------------------------------------------
-    | Record streak history
-    | -------------------------------------------------------------------------
-    |
-    | Set the streak history configuration.
-    |
-    */
-    'archive_streak_history' => [
-        'enabled' => env(key: 'ARCHIVE_STREAK_HISTORY_ENABLED', default: true),
-    ],
-
-    /*
-     | -------------------------------------------------------------------------
-     | Default Streak Freeze Time
-     | -------------------------------------------------------------------------
-     |
-     | Set the default time in days that a streak will be frozen for.
-     |
-     */
-    'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
 ];
 ```
 
-# Usage
+### Environment Variables
 
-## 💯 Experience Points (XP)
+```env
+# Required
+FAL_API_KEY=your_fal_api_key_here
 
-Add the `GiveExperience` trait to your `User` model.
+# Optional webhook configuration
+FAL_WEBHOOK_JWKS_CACHE_TTL=86400
+FAL_WEBHOOK_TIMESTAMP_TOLERANCE=300
+FAL_WEBHOOK_VERIFICATION_TIMEOUT=10
+```
+
+### 🎯 Using a Default Model
+Set a default model in config and omit the model ID in your calls.
 
 ```php
-use LevelUp\Experience\Concerns\GiveExperience;
+// config/fal-ai.php
+// 'default_model' => 'fal-ai/flux/schnell'
 
-class User extends Model
-{
-    use GiveExperience;
+use Cjmellor\FalAi\Facades\FalAi;
 
-    // ...
+$response = FalAi::model()
+    ->prompt('A cozy cabin in the woods')
+    ->run();
+```
+
+### 🌐 Overriding the Base URL
+If you need to direct a request to a specific Fal endpoint manually, you can override the base URL for a single call. The fluent builder already switches between queue and sync automatically in most cases.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$response = FalAi::runWithBaseUrl(
+    ['prompt' => 'A watercolor skyline at dawn'],
+    modelId: 'fal-ai/flux/schnell',
+    baseUrlOverride: 'https://queue.fal.run',
+    webhookUrl: 'https://example.com/webhooks/fal'
+);
+```
+
+## 🔗 Fluent API Methods
+
+### 🛠️ Common Methods
+
+```php
+$request = $falAi->model('fal-ai/flux/schnell')
+    ->prompt('Your prompt here')           // Set the text prompt
+    ->imageSize('landscape_4_3')           // Set image dimensions
+    ->numImages(2)                         // Number of images to generate
+    ->seed(12345)                          // Set random seed
+    ->withWebhook('https://...')           // Add webhook URL
+    ->queue()                              // Use queue mode
+    ->sync();                              // Use sync mode
+```
+
+### 🧰 Adding and Inspecting Payload Data
+Enrich the request body with `with([...])` and dynamic setters. You can also inspect what will be sent.
+
+```php
+use Cjmellor\FalAi\Facades\FalAi;
+
+$request = FalAi::model('fal-ai/flux/schnell')
+    ->with(['num_images' => 2])
+    ->imageSize('square_hd')
+    ->prompt('An astronaut riding a horse');
+
+$payload = $request->toArray();
+$response = $request->run();
+```
+
+## ⚠️ Error Handling
+
+> [!IMPORTANT]
+> Always implement proper error handling in production applications to gracefully handle API failures and webhook verification issues.
+
+```php
+use FalAi\Exceptions\WebhookVerificationException;
+use InvalidArgumentException;
+
+try {
+    $response = $falAi->model('fal-ai/flux/schnell')
+        ->withWebhook('https://myapp.com/webhook')
+        ->prompt('Test prompt')
+        ->run();
+        
+    if (!$response->successful()) {
+        throw new Exception('API request failed: ' . $response->body());
+    }
+    
+} catch (InvalidArgumentException $e) {
+    // Invalid webhook URL or other validation errors
+    echo "Validation error: " . $e->getMessage();
+} catch (WebhookVerificationException $e) {
+    // Webhook verification failed (in webhook endpoints)
+    echo "Webhook error: " . $e->getMessage();
+} catch (Exception $e) {
+    // Other errors (network, API, etc.)
+    echo "Error: " . $e->getMessage();
 }
 ```
 
-**Give XP points to a User**
+## 🧪 Testing
 
-```php
-$user->addPoints(10);
-```
-
-A new record will be added to the `experiences` table which stores the Users’ points. If a record already exists, it will be updated instead. All new records will be given a `level_id` of `1`.
-
-> [!NOTE]
-> If you didn't set up your Level structure yet, a default Level of `1` will be added to get you started.
-
-**Deduct XP points from a User**
-
-```php
-$user->deductPoints(10);
-```
-
-**Set XP points to a User**
-
-For an event where you just want to directly add a certain number of points to a User. Points can only be ***set*** if the User has an Experience Model.
-
-```php
-$user->setPoints(10);
-```
-
-**Retrieve a Users’ points**
-
-```php
-$user->getPoints();
-```
-
-### Multipliers
-
-Point multipliers can be used to modify the experience point value of an event by a certain multiplier, such as doubling or tripling the point value. This can be useful for implementing temporary events or promotions that offer bonus points.
-
-To get started, you can use an Artisan command to crease a new Multiplier.
+Run the test suite:
 
 ```bash
-php artisan level-up:multiplier IsMonthDecember
-```
-
-This will create a file at `app\Multipliers\IsMonthDecember.php`.
-
-Here is how the class looks:
-
-```php
-<?php
-
-namespace LevelUp\Experience\Tests\Fixtures\Multipliers;
-
-use LevelUp\Experience\Contracts\Multiplier;
-
-class IsMonthDecember implements Multiplier
-{
-    public bool $enabled = true;
-    
-    public function qualifies(array $data): bool
-    {
-        return now()->month === 12;
-    }
-
-    public function setMultiplier(): int
-    {
-        return 2;
-    }
-}
-```
-
-Multipliers are enabled by default, but you can change the `$enabled` variable to `false` so that it won’t even run.
-
-The `qualifies` method is where you put your logic to check against and multiply if the result is true.
-
-This can be as simple as checking that the month is December.
-
-```php
-public function qualifies(array $data): bool
-{
-    return now()->month === 12;
-}
-```
-
-Or passing extra data along to check against. This is a bit more complex.
-
-You can pass extra data along when you're adding points to a User. Any enabled Multiplier can then use that data to check against.
-
-```php
-$user
-    ->withMultiplierData([
-        'event_id' => 222,
-    ])
-    ->addPoints(10);
-
-//
-
-public function qualifies(array $data): bool
-{
-    return isset($data['event_id']) && $data['event_id'] === 222;
-}
-```
-
-**Conditional Multipliers**
-
-If you don't want to use the class based method to check conditionals to add multipliers, you can do this inline by giving the method a callback with the conditional. When using this method, make sure you have the multiplier set as an argument in the `addPoints` method, otherwise an error will occur. See example below:
-
-```php
-$user
-    ->withMultiplierData(fn () => true)
-    ->addPoints(amount: 10, multiplier: 2);
-```
-
-The `setMultiplier` method expects an `int` which is the number it will be multiplied by.
-
-**Multiply Manually**
-
-You can skip this altogether and just multiply the points manually if you desire.
-
-```php
-$user->addPoints(
-    amount: 10, 
-    multiplier: 2
-);
-```
-
-### Events
-
-**PointsIncrease** - When points are added.
-
-```php
-public int $pointsAdded,
-public int $totalPoints,
-public string $type,
-public ?string $reason,
-public Model $user,
-```
-
-**PointsDecreased** - When points are decreased.
-
-```php
-public int $pointsDecreasedBy,
-public int $totalPoints,
-public ?string $reason,
-public Model $user,
-```
-
-## ⬆️ Levelling
-
-> [!NOTE]
-> If you add points before setting up your levelling structure, a default Level of `1` will be added to get you started.
-
-### Set up your levelling structure
-
-The package has a handy facade to help you create your levels.
-
-```php
-Level::add(
-    ['level' => 1, 'next_level_experience' => null],
-    ['level' => 2, 'next_level_experience' => 100],
-    ['level' => 3, 'next_level_experience' => 250],
-);
-```
-
-**Level 1** should always be `null` for the `next_level_experience` as it is the default starting point.
-
-As soon as a User gains the correct number of points listed for the next level, they will level-up.
-
-> [!TIP]
-> a User gains 50 points, they’ll still be on Level 1, but gets another 50 points, so the User will now move onto Level 2
-
-**See how many points until the next level**
-
-```php
-$user->nextLevelAt();
-```
-
-**Get the Users’ current Level**
-
-```php
-$user->getLevel();
-```
-
-### Level Cap
-
-A level cap sets the maximum level that a user can reach. Once a user reaches the level cap, they will not be able to gain any more levels, even if they continue to earn experience points. The level cap is enabled by default and capped to level `100`. These
-options can be changed in the packages config file at `config/level-up.php` or by adding them to your `.env` file.
-
-```
-LEVEL_CAP_ENABLED=
-LEVEL_CAP=
-LEVEL_CAP_POINTS_CONTINUE
-```
-
-By default, even when a user hits the level cap, they will continue to earn experience points. To freeze this, so points do not increase once the cap is hit, turn on the `points_continue` option in the config file, or set it in the `.env`.
-
-### Events
-
-**UserLevelledUp** - When a User levels-up
-
-```php
-public Model $user,
-public int $level
-```
-
-## 🏆 Achievements
-
-This is a feature that allows you to recognise and reward users for completing specific tasks or reaching certain milestones.
-You can define your own achievements and criteria for earning them.
-Achievements can be static or have progression.
-Static meaning the achievement can be earned instantly.
-Achievements with progression can be earned in increments, like an achievement can only be obtained once the progress is 100% complete.
-
-### Creating Achievements
-
-There is no built-in methods for creating achievements, there is just an `Achievement` model that you can use as normal:
-
-```php
-Achievement::create([
-    'name' => 'Hit Level 20',
-    'is_secret' => false,
-    'description' => 'When a User hits Level 20',
-    'image' => 'storage/app/achievements/level-20.png',
-]);
-```
-
-### Gain Achievement
-
-To use Achievements in your User model, you must first add the Trait.
-
-```php
-// App\Models\User.php
-
-use LevelUp\Experience\Concerns\HasAchievements;
-
-class User extends Authenticable
-{
-	use HasAchievements;
-	
-	// ...
-}
-```
-
-Then you can start using its methods, like to grant a User an Achievement:
-
-```php
-$achievement = Achievement::find(1);
-
-$user->grantAchievement($achievement);
-```
-
-To retrieve your Achievements:
-
-```php
-$user->getUserAchievements();
-```
-
-### Revoke Achievement
-
-You can revoke an achievement from a user using the `revokeAchievement` method:
-
-```php
-$user->revokeAchievement($achievement);
-```
-
-The method will throw an exception if you try to revoke an achievement that the user doesn't have. You can revoke both standard and secret achievements, and it will also remove any associated progress.
-
-When an achievement is revoked, a `AchievementRevoked` event is dispatched.
-
-### Add progress to Achievement
-
-```php
-$user->grantAchievement(
-    achievement: $achievement, 
-    progress: 50 // 50%
-);
-```
-
-> [!NOTE]
-> Achievement progress is capped to 100%
-
-### Check Achievement Progression
-
-Check at what progression your Achievements are at.
-
-```php
-$user->achievementsWithProgress()->get();
-```
-
-Check Achievements that have a certain amount of progression:
-
-```php
-$user->achievementsWithSpecificProgress(25)->get();
-```
-
-### Increase Achievement Progression
-
-You can increment the progression of an Achievement up to 100.
-
-```php
-$user->incrementAchievementProgress(
-    achievement: $achievement, 
-    amount: 10
-);
-```
-
-A `AchievementProgressionIncreased` Event runs on method execution.
-
-### Secret Achievements
-
-Secret achievements are achievements that are hidden from users until they are unlocked.
-
-Secret achievements are made secret when created. If you want to make a non-secret Achievement secret, you can just update the Model.
-
-```php
-$achievement->update(['is_secret' => true]);
-```
-
-You can retrieve the secret Achievements.
-
-```php
-$user->secretAchievements;
-```
-
-To view *********all********* Achievements, both secret and non-secret:
-
-```php
-$user->allAchievements;
-```
-
-### Events
-
-**AchievementAwarded** - When an Achievement is attached to the User
-
-```php
-public Achievement $achievement,
-public Model $user,
-```
-
-> [!NOTE]
-> This event only runs if the progress of the Achievement is 100%
-
-**AchievementRevoked** - When an Achievement is detached from the User
-
-```php
-public Achievement $achievement,
-public Model $user,
-```
-
-**AchievementProgressionIncreased** - When a Users’ progression for an Achievement is increased.
-
-```php
-public Achievement $achievement,
-public Model $user,
-public int $amount,
-```
-
-## 📈 Leaderboard
-
-The package also includes a leaderboard feature to track and display user rankings based on their experience points.
-
-The Leaderboard comes as a Service.
-
-```php
-Leaderboard::generate();
-```
-
-This generates a User model along with its Experience and Level data and ordered by the Users’ experience points.
-
-> The Leaderboard is very basic and has room for improvement
->
-
-## 🔍 Auditing
-
-You can enable an Auditing feature in the config, which keeps a track each time a User gains points, levels up and what level to.
-
-The `type` and `reason` fields will be populated automatically based on the action taken, but you can overwrite these when adding points to a User
-
-```php
-$user->addPoints(
-    amount: 50,
-    multiplier: 2,
-    type: AuditType::Add->value,
-    reason: "Some reason here",
-);
-```
-
-> [!NOTE]
-> Auditing happens when the `addPoints` and `deductPoints` methods are called. Auditing must be enabled in the config file.
-
-**View a Users’ Audit Experience**
-
-```php
-$user->experienceHistory;
-```
-
-## 🔥 Streaks
-
-With the Streaks feature, you can track and motivate user engagement by monitoring consecutive daily activities. Whether it's logging in, completing tasks, or any other daily activity, maintaining streaks encourages users to stay active and engaged.
-
-Streaks are controlled in a Trait, so only use the trait if you want to use this feature. Add the Trait to you `User` model
-
-```php
-use LevelUp\Experience\Concerns\HasStreaks;
-
-class User extends Model
-{
-	use HasStreaks;
-
-	// ...
-}
-```
-
-### Activities
-
-Use the `Activies` model to add new activities that you want to track. Here’s some examples:
-
-- Logs into a website
-- Posts an article
-
-### Record a Streak
-
-```php
-$activity = Activity::find(1);
-
-$user->recordStreak($activity);
-```
-
-This will increment the streak count for the User on this activity. An `Event is ran on increment.
-
-### Break a Streak
-
-Streaks can be broken, both automatically and manually. This puts the count back to `1` to start again. An Event is ran when a streak is broken.
-
-For example, if your streak has had a successful run of 5 days, but a day is skipped and you run the activity on day 7, the streak will be broken and reset back to `1`. Currently, this happens automatically.
-
-### Reset a Streak
-
-You can reset a streak manually if you desire. If `level-up.archive_streak_history.enabled` is true, the streak history will be recorded.
-
-```php
-$activity = Activity::find(1);
-
-$user->resetStreak($activity);
-```
-
-### Archive Streak Histories
-
-Streaks are recorded, or “archived” by default. When a streak is broken, a record of the streak is recorded. A Model is supplied to use this data.
-
-```php
-use LevelUp\Experience\Models\StreakHistory;
-
-StreakHistory::all();
-```
-
-### Get Current Streak Count
-
-See the streak count for an activity for a User
-
-```php
-$user->getCurrentStreakCount($activity); // 2
-```
-
-### Check User Streak Activity
-
-Check if the User has performed a streak for the day
-
-```php
-$user->hasStreakToday($activity);
-```
-
-### Events
-
-**StreakIncreased** - If an activity happens on a day after the previous day, the streak is increased.
-
-```php
-public int $pointsAdded,
-public int $totalPoints,
-public string $type,
-public ?string $reason,
-public Model $user,
-```
-
-**StreakBroken** - When a streak is broken and the counter is reset.
-
-```php
-public Model $user,
-public Activity $activity,
-public Streak $streak,
-```
-
-## 🥶 Streak Freezing
-
-Streaks can be frozen, which means they will not be broken if a day is skipped. This is useful for when you want to allow users to take a break from an activity without losing their streak.
-
-The freeze duration is a configurable option in the config file.
-
-```php
-'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
-```
-
-### Freeze a Streak
-
-Fetch the activity you want to freeze and pass it to the `freezeStreak` method. A second parameter can be passed to set the duration of the freeze. The default is `1` day (as set in the config)
-
-A `StreakFrozen` Event is ran when a streak is frozen.
-
-```php
-$user->freezeStreak(activity: $activity);
-
-$user->freezeStreak(activity: $activity, days: 5); // freeze for 5 days
-```
-
-### Unfreeze a Streak
-
-The opposite of freezing a streak is unfreezing it. This will allow the streak to be broken again.
-
-A `StreakUnfrozen` Event is run when a streak is unfrozen.
-
-```php
-$user->unfreezeStreak($activity);
-```
-
-### Check if a Streak is Frozen
-
-```php
-$user->isStreakFrozen($activity);
-```
-
-### Events
-
-**StreakFrozen** - When a streak is frozen.
-
-```php
-public int $frozenStreakLength,
-public Carbon $frozenUntil,
-```
-
-**StreakUnfrozen** - When a streak is unfrozen.
-
-```
-No data is sent with this event
-```
-
-# Testing
-
-```
 composer test
 ```
 
-# Changelog
+## 🔒 Security
 
-Please see [CHANGELOG](notion://www.notion.so/CHANGELOG.md) for more information on what has changed recently.
+> [!CAUTION]
+> Webhook security is critical for protecting your application from malicious requests. Always use the provided verification mechanisms.
 
-# License
+### 🔐 Webhook Security
 
-The MIT Licence (MIT). Please see [Licence File](notion://www.notion.so/LICENSE.md) for more information.
+This package implements Fal.ai's webhook verification using:
+
+- **ED25519 signature verification** using Fal.ai's public keys
+- **Timestamp validation** to prevent replay attacks
+- **JWKS caching** for performance
+- **Automatic header extraction** and validation
+
+### 💡 Best Practices
+
+> [!TIP]
+> Follow these security practices to ensure your webhook endpoints are secure:
+
+1. **Always use HTTPS** for webhook URLs
+2. **Use the provided middleware** for automatic verification
+3. **Validate webhook payloads** in your application logic
+4. **Implement proper error handling** and logging
+5. **Monitor webhook endpoints** for suspicious activity
+6. **Use rate limiting** on webhook routes
+7. **Keep your API keys secure** and rotate them regularly
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This package is open-sourced software licensed under the [MIT license](LICENSE).
+
+## 💬 Support
+
+For support, please open an issue on GitHub or contact the maintainers.
