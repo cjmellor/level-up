@@ -16,7 +16,7 @@ jobs:
         laravel: ['12.*', '13.*']
         stability: [prefer-stable]
 
-    name: |
+    name: >
       PHP: v${{ matrix.php }} [${{ matrix.stability }}]
 
     steps:
