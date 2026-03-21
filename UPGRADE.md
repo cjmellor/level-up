@@ -1,5 +1,63 @@
 # Upgrade Guide
 
+## v1.x -> v2.0
+
+### Requirements
+
+- **PHP 8.3+** is now required (was PHP 8.1+)
+- **Laravel 12 or 13** is now required (was Laravel 10, 11, or 12)
+
+### Breaking Changes
+
+#### `levelUp()` now throws on invalid levels
+
+Previously, calling `$user->levelUp(to: 999)` with a non-existent level would silently do nothing. In v2, it throws an `InvalidArgumentException`.
+
+#### `deductPoints()` now throws when no experience record exists
+
+Previously, calling `$user->deductPoints(50)` on a user with no experience record would silently return. In v2, it throws an `Exception`, matching the behaviour of `setPoints()`.
+
+#### `Level::add()` only accepts arrays
+
+The scalar form `Level::add(level: 1, pointsToNextLevel: 100)` has been removed. Use the array form instead:
+
+```php
+// Before (v1)
+Level::add(level: 1, pointsToNextLevel: 100);
+
+// After (v2)
+Level::add(['level' => 1, 'next_level_experience' => 100]);
+```
+
+#### `incrementAchievementProgress()` now throws when user lacks the achievement
+
+Previously, calling this method on an achievement the user didn't have would cause a null dereference error. In v2, it throws a clear `Exception` with a helpful message.
+
+#### `grantAchievement()` progress parameter is now typed
+
+The `$progress` parameter is now typed as `?int`. If you were passing non-integer values (e.g. strings), they will now cause a `TypeError` under strict types.
+
+#### `getStreakLastActivity()` return type changed
+
+The method now returns `?Streak` instead of `Streak`. If you were calling this method directly, you may need to handle the `null` case.
+
+#### `AchievementUser::scopeWithProgress()` removed
+
+This scope was unused and has been removed. If you were using it, use `achievementsWithSpecificProgress()` instead.
+
+### Bug Fixes Included
+
+- `levelUp()` now correctly fires `UserLevelledUp` events for all intermediate levels (previously only fired for the final level)
+- `StreakBroken` event now correctly filters by activity (previously could return the wrong streak)
+- `nextLevelAt()` no longer crashes when the current level is missing from the database
+- `freezeStreak()` no longer causes a `TypeError` when `STREAK_FREEZE_DURATION` is set via `.env`
+- `Level::add()` now catches `UniqueConstraintViolationException` specifically instead of all `Throwable`
+
+### Other Changes
+
+- `declare(strict_types=1)` has been added to all PHP files
+- All source files have been modernised with Rector (PHP 8.3 rules) and Pint (Laravel preset)
+
 ## v1.2.3 -> v1.2.4
 
 #### New Migration to remove `level_id` column from `users` table
