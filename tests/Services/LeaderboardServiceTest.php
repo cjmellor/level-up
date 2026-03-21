@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 uses()->group('leaderboard');
 
 use LevelUp\Experience\Facades\Leaderboard;
 use LevelUp\Experience\Tests\Fixtures\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['level-up.user.model' => User::class]);
     config(['level-up.multiplier.enabled' => false]);
 });
 
-it(description: 'returns the correct data in the correct order', closure: function () {
+it(description: 'returns the correct data in the correct order', closure: function (): void {
     tap(User::newFactory()->create())->addPoints(44);
     tap(User::newFactory()->create())->addPoints(123);
     tap(User::newFactory()->create())->addPoints(198);
@@ -25,7 +27,7 @@ it(description: 'returns the correct data in the correct order', closure: functi
         ->toHaveCount(count: 4);
 });
 
-it(description: 'only shows users with experience points', closure: function () {
+it(description: 'only shows users with experience points', closure: function (): void {
     tap(User::newFactory()->create());
     $userWithPoints = tap(User::newFactory()->create())->addPoints(44);
 

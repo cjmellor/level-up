@@ -28,7 +28,7 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        app('db')->connection()->getSchemaBuilder()->create('users', function ($table): void {
+        \Illuminate\Support\Facades\Schema::create('users', function ($table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();

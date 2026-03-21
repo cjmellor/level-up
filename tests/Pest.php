@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Tests\Fixtures\User;
@@ -16,9 +18,6 @@ uses(TestCase::class, RefreshDatabase::class)
             'email_verified_at' => now(),
         ])->save();
 
-        /**
-         * Adds Levels to the database.
-         */
         Level::add(
             ['level' => 1, 'next_level_experience' => null],
             ['level' => 2, 'next_level_experience' => 100],
@@ -29,9 +28,7 @@ uses(TestCase::class, RefreshDatabase::class)
     })
     ->in(__DIR__);
 
-// A custom expectation to check if a Carbon instance matches a given string
-// Stolen from https://github.com/spatie/pest-plugin-test-time
-expect()->extend(name: 'toBeCarbon', extend: function (string $expected, ?string $format = null) {
+expect()->extend(name: 'toBeCarbon', extend: function (string $expected, ?string $format = null): object {
     if ($format === null) {
         $format = str_contains($expected, ':')
             ? 'Y-m-d H:i:s'
