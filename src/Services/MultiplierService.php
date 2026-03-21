@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Services;
 
 use Illuminate\Support\Collection;
@@ -15,7 +17,7 @@ class MultiplierService
     {
         /** @var \LevelUp\Experience\Contracts\Multiplier $multiplier */
         return $this->multipliers->reduce(
-            callback: fn (int $amount, $multiplier) => $multiplier->qualifies($this->getMultiplierData()->toArray())
+            callback: fn (int $amount, $multiplier): int => $multiplier->qualifies($this->getMultiplierData()->toArray())
                 ? $amount * $multiplier->setMultiplier()
                 : $amount,
             initial: $points

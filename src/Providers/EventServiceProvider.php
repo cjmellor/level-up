@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -23,14 +25,4 @@ class EventServiceProvider extends ServiceProvider
             UserLevelledUpListener::class,
         ],
     ];
-
-    public function register(): void
-    {
-        parent::register();
-    }
-
-    public function boot(): void
-    {
-        parent::boot();
-    }
 }

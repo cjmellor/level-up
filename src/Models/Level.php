@@ -1,43 +1,35 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use LevelUp\Experience\Exceptions\LevelExistsException;
-use Throwable;
 
 class Level extends Model
 {
     protected $guarded = [];
 
     /**
-     * @throws \LevelUp\Experience\Exceptions\LevelExistsException
+     * @param  array{level: int, next_level_experience: int|null}  ...$levels
+     *
+     * @throws LevelExistsException
      */
-    public static function add(...$levels): array
+    public static function add(array ...$levels): array
     {
         $newLevels = [];
 
         foreach ($levels as $level) {
-            if (is_array($level)) {
-                $levelNumber = $level['level'];
-                $pointsToNextLevel = $level['next_level_experience'];
-            } else {
-                $levelNumber = $level;
-                $pointsToNextLevel = $levels[1] ?? 0;
-            }
-
             try {
-                $newLevels[] = self::create([
-                    'level' => $levelNumber,
-                    'next_level_experience' => $pointsToNextLevel,
+                $newLevels[] = self::query()->create([
+                    'level' => $level['level'],
+                    'next_level_experience' => $level['next_level_experience'],
                 ]);
-            } catch (Throwable) {
-                throw LevelExistsException::handle(levelNumber: $levelNumber);
-            }
-
-            if (! is_array($level)) {
-                break;
+            } catch (UniqueConstraintViolationException) {
+                throw LevelExistsException::handle(levelNumber: $level['level']);
             }
         }
 

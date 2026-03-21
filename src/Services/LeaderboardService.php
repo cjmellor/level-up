@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Services;
 
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -9,7 +11,7 @@ use LevelUp\Experience\Models\Experience;
 
 class LeaderboardService
 {
-    private mixed $userModel;
+    private readonly string $userModel;
 
     public function __construct()
     {
@@ -22,7 +24,7 @@ class LeaderboardService
             ->with(relations: ['experience'])
             ->whereHas('experience', fn (Builder $query) => $query->whereNotNull(columns: 'experience_points'))
             ->orderByDesc(
-                column: Experience::select('experience_points')
+                column: Experience::query()->select('experience_points')
                     ->whereColumn(config('level-up.user.foreign_key'), config('level-up.user.users_table').'.id')
                     ->latest()
             )
