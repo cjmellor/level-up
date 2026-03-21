@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
-use InvalidArgumentException;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
