@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience;
 
 use LevelUp\Experience\Commands\MakeMultiplierCommand;
@@ -37,7 +39,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->register(provider: EventServiceProvider::class);
-        $this->app->singleton(abstract: 'leaderboard', concrete: fn () => new LeaderboardService);
+        $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
         $this->app->register(provider: MultiplierServiceProvider::class);
     }
 }

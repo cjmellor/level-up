@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Commands;
 
 use Illuminate\Console\GeneratorCommand;

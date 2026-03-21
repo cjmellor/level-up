@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -7,6 +9,9 @@ use LevelUp\Experience\Models\Activity;
 use LevelUp\Experience\Models\Streak;
 use LevelUp\Experience\Tests\Fixtures\User;
 
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\LevelUp\Experience\Models\Streak>
+ */
 class StreakFactory extends Factory
 {
     protected $model = Streak::class;
