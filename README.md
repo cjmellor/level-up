@@ -127,6 +127,13 @@ return [
      |
      */
     'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
+
+    'tiers' => [
+        'enabled' => env(key: 'TIERS_ENABLED', default: true),
+        'demotion' => env(key: 'TIER_DEMOTION', default: false),
+        'multipliers' => [],
+        'streak_freeze_days' => [],
+    ],
 ];
 ```
 
@@ -690,6 +697,120 @@ public Carbon $frozenUntil,
 
 ```
 No data is sent with this event
+```
+
+## 🏅 Tiers
+
+Tiers provide named status brackets based on experience points — think Bronze, Silver, Gold, Platinum. Unlike levels (which are numeric progression), tiers represent **status** and can integrate with multipliers, achievements, streaks, and leaderboards.
+
+Add the `HasTiers` trait to your `User` model:
+
+```php
+use LevelUp\Experience\Concerns\HasTiers;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers;
+}
+```
+
+### Define Tiers
+
+```php
+use LevelUp\Experience\Models\Tier;
+
+Tier::add(
+    ['name' => 'Bronze', 'experience' => 0],
+    ['name' => 'Silver', 'experience' => 500],
+    ['name' => 'Gold', 'experience' => 2000],
+    ['name' => 'Platinum', 'experience' => 5000, 'metadata' => ['color' => '#E5E4E2']],
+);
+```
+
+The `metadata` column is a flexible JSON field — store whatever you need (colours, icons, descriptions).
+
+### Query Tiers
+
+```php
+$user->getTier();           // Current tier (Tier model or null)
+$user->getNextTier();       // Next tier above current
+$user->tierProgress();      // Percentage (0-100) through current bracket
+$user->nextTierAt();        // XP remaining until next tier
+$user->isAtTier('Gold');    // Check exact tier
+$user->isAtOrAboveTier('Silver'); // Check tier hierarchy
+```
+
+### Demotion
+
+By default, tiers use a **high-water mark** — once a user reaches Gold, they stay Gold even if points decrease. To enable demotion (tier drops when points drop):
+
+```
+TIER_DEMOTION=true
+```
+
+### Tier Multipliers
+
+Automatically scale points earned based on the user's tier:
+
+```php
+// config/level-up.php
+'tiers' => [
+    'multipliers' => [
+        'Bronze' => 1,
+        'Silver' => 1.5,
+        'Gold' => 2,
+    ],
+],
+```
+
+### Tier-Gated Achievements
+
+Restrict achievements to users who have reached a certain tier:
+
+```php
+$goldTier = Tier::where('name', 'Gold')->first();
+
+Achievement::create([
+    'name' => 'Golden Streak',
+    'tier_id' => $goldTier->id,
+]);
+```
+
+Attempting to grant this achievement to a user below Gold will throw `TierRequirementNotMet`.
+
+### Tier-Scaled Streak Freezes
+
+Higher tiers can get longer freeze durations:
+
+```php
+// config/level-up.php
+'tiers' => [
+    'streak_freeze_days' => [
+        'Bronze' => 1,
+        'Silver' => 2,
+        'Gold' => 3,
+        'Platinum' => 7,
+    ],
+],
+```
+
+### Tier-Scoped Leaderboards
+
+Filter leaderboards by tier:
+
+```php
+Leaderboard::forTier('Gold')->generate();
+```
+
+### Events
+
+**UserTierUpdated** — When a user's tier changes (promotion or demotion).
+
+```php
+public Model $user,
+public ?Tier $previousTier,
+public ?Tier $newTier,
+public TierDirection $direction, // TierDirection::Promoted or TierDirection::Demoted
 ```
 
 # Testing

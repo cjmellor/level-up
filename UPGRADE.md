@@ -53,6 +53,33 @@ This scope was unused and has been removed. If you were using it, use `achieveme
 - `freezeStreak()` no longer causes a `TypeError` when `STREAK_FREEZE_DURATION` is set via `.env`
 - `Level::add()` now catches `UniqueConstraintViolationException` specifically instead of all `Throwable`
 
+### New: Tiers Feature
+
+v2.0 introduces a Tiers system for named status brackets (e.g. Bronze, Silver, Gold). Tiers are **enabled by default**.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_tiers_table` — creates the `tiers` table
+- `add_tier_id_to_experiences_table` — adds `tier_id` foreign key to experiences
+- `add_tier_id_to_achievements_table` — adds `tier_id` foreign key to achievements
+- `alter_experience_audits_type_to_string` — converts the `type` column from `enum` to `string` (required for new `tier_up`/`tier_down` audit types)
+
+**Add the `HasTiers` trait** to your User model to use tier features:
+
+```php
+use LevelUp\Experience\Concerns\HasTiers;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers;
+}
+```
+
+> [!NOTE]
+> The `HasTiers` trait is optional. If you don't add it, the existing features (points, achievements, streaks) continue to work without tiers. The package guards against missing `HasTiers` with `method_exists` checks.
+
+**To disable tiers entirely**, set `TIERS_ENABLED=false` in your `.env` file.
+
 ### Other Changes
 
 - `declare(strict_types=1)` has been added to all PHP files
