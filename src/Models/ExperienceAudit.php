@@ -14,6 +14,7 @@ class ExperienceAudit extends Model
 
     protected $casts = [
         'type' => AuditType::class,
+        'multipliers' => 'array',
     ];
 
     public function user(): BelongsTo
