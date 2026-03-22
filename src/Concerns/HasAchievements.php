@@ -10,6 +10,7 @@ use Illuminate\Support\Collection;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
 use LevelUp\Experience\Events\AchievementRevoked;
+use LevelUp\Experience\Exceptions\TierRequirementNotMet;
 use LevelUp\Experience\Models\Achievement;
 
 trait HasAchievements
@@ -20,6 +21,20 @@ trait HasAchievements
     public function grantAchievement(Achievement $achievement, ?int $progress = null): void
     {
         throw_if($progress > 100, Exception::class, message: 'Progress cannot be greater than 100');
+
+        if (config(key: 'level-up.tiers.enabled') && $achievement->tier_id) {
+            $userTier = $this->getTier();
+            $requiredTier = $achievement->tier;
+
+            throw_unless($requiredTier, Exception::class, message: sprintf(
+                'Achievement "%s" references a tier that no longer exists.', $achievement->name,
+            ));
+
+            throw_unless(
+                $userTier && $userTier->experience >= $requiredTier->experience,
+                TierRequirementNotMet::handle(tierName: $requiredTier->name),
+            );
+        }
 
         throw_if($this->allAchievements()->find($achievement->id), Exception::class, message: 'User already has this Achievement');
 

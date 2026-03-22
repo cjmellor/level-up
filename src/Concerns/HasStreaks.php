@@ -84,7 +84,7 @@ trait HasStreaks
 
     public function freezeStreak(Activity $activity, ?int $days = null): bool
     {
-        $days ??= (int) config(key: 'level-up.freeze_duration');
+        $days ??= $this->getFreezeDurationForTier();
         $frozenUntil = now()->addDays(value: $days)->startOfDay();
 
         event(new StreakFrozen(
@@ -136,6 +136,25 @@ trait HasStreaks
             ->whereBelongsTo(related: $activity)
             ->latest(column: 'activity_at')
             ->first();
+    }
+
+    protected function getFreezeDurationForTier(): int
+    {
+        $default = (int) config(key: 'level-up.freeze_duration');
+
+        if (! config(key: 'level-up.tiers.enabled')) {
+            return $default;
+        }
+
+        $tierFreezeDays = config(key: 'level-up.tiers.streak_freeze_days');
+
+        if (blank($tierFreezeDays)) {
+            return $default;
+        }
+
+        $tierName = $this->getTier()?->name;
+
+        return (int) ($tierFreezeDays[$tierName] ?? $default);
     }
 
     protected function archiveStreak(Activity $activity): void
