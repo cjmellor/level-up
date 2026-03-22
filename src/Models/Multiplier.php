@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -61,9 +62,10 @@ class Multiplier extends Model
         return $this;
     }
 
-    public function scopeActive(Builder $query): Builder
+    #[Scope]
+    protected function active(Builder $query): void
     {
-        return $query
+        $query
             ->where('is_active', true)
             ->where(fn (Builder $q): Builder => $q
                 ->whereNull('starts_at')
@@ -75,11 +77,12 @@ class Multiplier extends Model
             );
     }
 
-    public function scopeForUser(Builder $query, Model $user): Builder
+    #[Scope]
+    protected function forUser(Builder $query, Model $user): void
     {
         $tierId = $user->experience?->tier_id;
 
-        return $query->where(fn (Builder $q) => $q
+        $query->where(fn (Builder $q) => $q
             ->whereDoesntHave('scopes')
             ->orWhereHas('scopes', fn (Builder $q) => $q
                 ->where(fn (Builder $q) => $q
@@ -98,17 +101,19 @@ class Multiplier extends Model
         );
     }
 
-    public function scopeScheduled(Builder $query): Builder
+    #[Scope]
+    protected function scheduled(Builder $query): void
     {
-        return $query
+        $query
             ->where('is_active', true)
             ->whereNotNull('starts_at')
             ->where('starts_at', '>', now());
     }
 
-    public function scopeExpired(Builder $query): Builder
+    #[Scope]
+    protected function expired(Builder $query): void
     {
-        return $query
+        $query
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now());
     }
