@@ -37,6 +37,8 @@ trait GiveExperience
         $originalAmount = $amount;
         $appliedMultipliers = collect();
 
+        $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
+
         if (config(key: 'level-up.multiplier.enabled')) {
             $multiplierClass = config(key: 'level-up.models.multiplier');
             $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
@@ -48,7 +50,7 @@ trait GiveExperience
             }
 
             if ($allValues->isNotEmpty()) {
-                $amount = $this->applyStackingStrategy($amount, $allValues);
+                $amount = $this->applyStackingStrategy($amount, $allValues, $strategy);
             }
 
             if ($appliedMultipliers->isNotEmpty() || $multiplier !== null) {
@@ -57,7 +59,7 @@ trait GiveExperience
                     multipliers: $appliedMultipliers,
                     originalAmount: $originalAmount,
                     finalAmount: $amount,
-                    strategy: config(key: 'level-up.multiplier.stack_strategy', default: 'compound'),
+                    strategy: $strategy,
                 ));
             }
         } elseif ($multiplier !== null) {
@@ -140,9 +142,6 @@ trait GiveExperience
         return $this->experience;
     }
 
-    /**
-     * @throws Exception
-     */
     public function setPoints(int $amount): Experience
     {
         throw_unless($this->experience()->exists(), Exception::class, message: 'User has no experience record.');
@@ -212,10 +211,8 @@ trait GiveExperience
         }
     }
 
-    protected function applyStackingStrategy(int $amount, Collection $multiplierValues): int
+    protected function applyStackingStrategy(int $amount, Collection $multiplierValues, string $strategy): int
     {
-        $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
-
         return (int) round(match ($strategy) {
             'compound' => $amount * $multiplierValues->reduce(fn (float $carry, float $value): float => $carry * $value, 1.0),
             'additive' => $amount * $multiplierValues->sum(),
