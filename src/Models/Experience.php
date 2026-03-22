@@ -26,4 +26,9 @@ class Experience extends Model
     {
         return $this->belongsTo(related: config('level-up.models.level'), foreignKey: 'level_id');
     }
+
+    public function tier(): BelongsTo
+    {
+        return $this->belongsTo(related: config('level-up.models.tier'));
+    }
 }
