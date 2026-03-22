@@ -129,10 +129,7 @@ $multiplier = Multiplier::create([
     'is_active' => true,
 ]);
 
-$multiplier->scopes()->create([
-    'scopeable_type' => Tier::class,
-    'scopeable_id' => Tier::where('name', 'Gold')->first()->id,
-]);
+$multiplier->tiers()->attach(Tier::where('name', 'Gold')->first());
 ```
 
 ### Other Changes

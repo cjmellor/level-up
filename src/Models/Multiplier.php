@@ -7,6 +7,7 @@ namespace LevelUp\Experience\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
 
 class Multiplier extends Model
@@ -36,6 +37,28 @@ class Multiplier extends Model
     public function scopes(): HasMany
     {
         return $this->hasMany(config(key: 'level-up.models.multiplier_scope'));
+    }
+
+    public function tiers(): MorphToMany
+    {
+        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', 'multiplier_scopes');
+    }
+
+    public function users(): MorphToMany
+    {
+        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', 'multiplier_scopes');
+    }
+
+    public function scopeTo(Model ...$models): static
+    {
+        foreach ($models as $model) {
+            $this->scopes()->create([
+                'scopeable_type' => $model->getMorphClass(),
+                'scopeable_id' => $model->getKey(),
+            ]);
+        }
+
+        return $this;
     }
 
     public function scopeActive(Builder $query): Builder

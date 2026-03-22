@@ -209,23 +209,22 @@ Active multipliers are automatically applied when a User earns points via `addPo
 
 **Scope Multipliers to Users or Tiers**
 
-By default, a multiplier applies to all Users. You can restrict it to specific Users or Tiers using the polymorphic scoping system:
+By default, a multiplier applies to all Users. You can restrict it to specific Users or Tiers:
 
 ```php
 // Scope to specific tiers
-$multiplier->scopes()->createMany([
-    [‘scopeable_type’ => Tier::class, ‘scopeable_id’ => $premiumTier->id],
-    [‘scopeable_type’ => Tier::class, ‘scopeable_id’ => $diamondTier->id],
-]);
+$multiplier->tiers()->attach([$premiumTier->id, $diamondTier->id]);
 
 // Scope to a specific user
-$multiplier->scopes()->create([
-    ‘scopeable_type’ => User::class,
-    ‘scopeable_id’ => $user->id,
-]);
+$multiplier->users()->attach($user->id);
+
+// Or use the convenience method with any model
+$multiplier->scopeTo($premiumTier, $diamondTier, $user);
 ```
 
 If a multiplier has no scopes, it applies to everyone. If it has scopes, it only applies to Users who match (either directly or via their Tier).
+
+You can also use `detach()` and `sync()` on the `tiers()` and `users()` relationships.
 
 **Query Multipliers**
 
@@ -747,10 +746,7 @@ $goldMultiplier = Multiplier::create([
     'is_active' => true,
 ]);
 
-$goldMultiplier->scopes()->create([
-    'scopeable_type' => Tier::class,
-    'scopeable_id' => Tier::where('name', 'Gold')->first()->id,
-]);
+$goldMultiplier->tiers()->attach(Tier::where('name', 'Gold')->first());
 ```
 
 ### Tier-Gated Achievements
