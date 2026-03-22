@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Event;
+use LevelUp\Experience\Events\MultiplierApplied;
+use LevelUp\Experience\Models\Multiplier;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
@@ -121,24 +122,166 @@ test(description: 'when using a multiplier, times the points by it', closure: fu
     ]);
 });
 
-test(description: 'points can be multiplied', closure: function (): void {
+test(description: 'DB multipliers are applied automatically when active', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
-    config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
-    config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
 
-    Date::setTestNow(Date::create(month: 12));
+    Multiplier::create([
+        'name' => 'Double XP',
+        'multiplier' => 2,
+        'is_active' => true,
+    ]);
 
     $this->user->addPoints(amount: 10);
 
     expect(value: $this->user->experience)
-        ->experience_points->toBe(expected: 50)
+        ->experience_points->toBe(expected: 20)
         ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
         'level_id' => 1,
-        'experience_points' => 50,
+        'experience_points' => 20,
     ]);
+});
+
+test(description: 'inactive DB multipliers are not applied', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+
+    Multiplier::create([
+        'name' => 'Inactive Bonus',
+        'multiplier' => 5,
+        'is_active' => false,
+    ]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 10);
+});
+
+test(description: 'time-based multiplier applies within window', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+
+    Multiplier::create([
+        'name' => 'Weekend Bonus',
+        'multiplier' => 3,
+        'is_active' => true,
+        'starts_at' => now()->subHour(),
+        'expires_at' => now()->addHour(),
+    ]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 30);
+});
+
+test(description: 'expired multiplier is not applied', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+
+    Multiplier::create([
+        'name' => 'Expired Bonus',
+        'multiplier' => 3,
+        'is_active' => true,
+        'starts_at' => now()->subDays(2),
+        'expires_at' => now()->subDay(),
+    ]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 10);
+});
+
+test(description: 'scheduled multiplier is not applied before start time', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+
+    Multiplier::create([
+        'name' => 'Future Bonus',
+        'multiplier' => 3,
+        'is_active' => true,
+        'starts_at' => now()->addDay(),
+        'expires_at' => now()->addDays(2),
+    ]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 10);
+});
+
+test(description: 'compound stacking multiplies multipliers together', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.stack_strategy', value: 'compound');
+
+    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 100);
+});
+
+test(description: 'additive stacking sums multiplier values', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.stack_strategy', value: 'additive');
+
+    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 70);
+});
+
+test(description: 'highest stacking uses only the largest multiplier', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.stack_strategy', value: 'highest');
+
+    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 50);
+});
+
+test(description: 'inline multiplier stacks with DB multipliers', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.stack_strategy', value: 'compound');
+
+    Multiplier::create(['name' => 'DB Bonus', 'multiplier' => 3, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10, multiplier: 2);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 60);
+});
+
+test(description: 'float inline multiplier works', closure: function (): void {
+    $this->user->addPoints(amount: 10, multiplier: 1.5);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 15);
+});
+
+test(description: 'MultiplierApplied event fires when multipliers are applied', closure: function (): void {
+    Event::fake([MultiplierApplied::class]);
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+
+    Multiplier::create(['name' => 'Bonus', 'multiplier' => 2, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+
+    Event::assertDispatched(MultiplierApplied::class, function (MultiplierApplied $event): bool {
+        return $event->originalAmount === 10
+            && $event->finalAmount === 20
+            && $event->multipliers->count() === 1;
+    });
+});
+
+test(description: 'no multipliers applied when multiplier feature is disabled', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: false);
+
+    Multiplier::create(['name' => 'Bonus', 'multiplier' => 5, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->experience)->experience_points->toBe(expected: 10);
 });
 
 test('a User can see how many more points are needed until they can level up', closure: function (): void {
@@ -268,50 +411,6 @@ test('a Users level is restored if the level cap is re-enabled and points contin
         ->experience_points->toBe(expected: 400)
         ->and($this->user)->getLevel()->toBe(expected: 4);
 });
-
-test('A multiplier can use data that was passed through to it', closure: function (): void {
-    config()->set(key: 'level-up.multiplier.enabled', value: true);
-    config()->set(key: 'level-up.multiplier.path', value: 'tests/Fixtures/Multipliers');
-    config()->set(key: 'level-up.multiplier.namespace', value: 'LevelUp\\Experience\\Tests\\Fixtures\\Multipliers\\');
-
-    $this->user
-        ->withMultiplierData([
-            'event_id' => 2,
-        ])
-        ->addPoints(amount: 10);
-
-    expect($this->user->experience)
-        ->experience_points->toBe(expected: 50)
-        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
-
-    $this->assertDatabaseHas(table: 'experiences', data: [
-        'user_id' => $this->user->id,
-        'level_id' => 1,
-        'experience_points' => 50,
-    ]);
-});
-
-test(description: 'an anonymous function can be used as a multiplier condition', closure: function (): void {
-    $this->user
-        ->withMultiplierData(fn (): true => true)
-        ->addPoints(amount: 10, multiplier: 2);
-
-    expect($this->user)
-        ->experience->experience_points->toBe(expected: 20)
-        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
-
-    $this->user
-        ->withMultiplierData(fn (): false => false)
-        ->addPoints(amount: 10, multiplier: 2);
-
-    expect($this->user)
-        ->experience->experience_points->toBe(expected: 30)
-        ->and($this->user)->experience->toBeInstanceOf(class: Experience::class);
-});
-
-test(description: 'a multiplier must be added when using multiplier closures')
-    ->defer(fn () => $this->user->withMultiplierData(fn (): true => true)->addPoints(amount: 10))
-    ->throws(exception: InvalidArgumentException::class, exceptionMessage: 'Multiplier is not set');
 
 test(description: 'Add default level if not applied before trying to add points', closure: function (): void {
     Level::query()->truncate();

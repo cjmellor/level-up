@@ -86,6 +86,8 @@ trait GiveExperience
                 'experience_points' => $amount,
             ]);
 
+            $this->load('experience');
+
             $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
 
             if ($level->level > $startingLevel) {
