@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use LevelUp\Experience\Concerns\GiveExperience;
 use LevelUp\Experience\Concerns\HasAchievements;
 use LevelUp\Experience\Concerns\HasStreaks;
+use LevelUp\Experience\Concerns\HasTiers;
 use LevelUp\Experience\Tests\Fixtures\Factories\UserFactory;
 
 class User extends Model
@@ -18,6 +19,7 @@ class User extends Model
     use HasAchievements;
     use HasFactory;
     use HasStreaks;
+    use HasTiers;
 
     protected $guarded = [];
 
