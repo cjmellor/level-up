@@ -80,6 +80,61 @@ class User extends Model
 
 **To disable tiers entirely**, set `TIERS_ENABLED=false` in your `.env` file.
 
+### New: DB-Backed Multiplier System
+
+The class-based multiplier system has been replaced with a database-backed Eloquent model. Multipliers are now managed at runtime via the database — no PHP classes needed.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_multipliers_table` — creates the `multipliers` table
+- `create_multiplier_scopes_table` — polymorphic scoping for user/tier targeting
+- `add_multipliers_column_to_experience_audits_table` — adds multiplier audit trail
+
+**Breaking changes:**
+
+- The `Multiplier` contract (`LevelUp\Experience\Contracts\Multiplier`) has been removed
+- The `MultiplierService` and `MultiplierServiceProvider` have been removed
+- The `level-up:multiplier` artisan command has been removed
+- The `withMultiplierData()` method has been removed from the `GiveExperience` trait
+- The `multiplier.path` and `multiplier.namespace` config keys have been replaced with `multiplier.stack_strategy`
+- The `tiers.multipliers` config key has been removed (use DB-scoped multipliers instead)
+- The `addPoints()` `multiplier` parameter type changed from `?int` to `int|float|null`
+
+**Migrating from class-based multipliers:**
+
+If you had class-based multipliers (e.g. `app/Multipliers/IsMonthDecember.php`), replace them with database records:
+
+```php
+// Before (v1): PHP class with qualifies() logic
+// After (v2): Database record
+Multiplier::create([
+    'name' => 'December Holiday Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+    'starts_at' => '2026-12-01',
+    'expires_at' => '2026-12-31',
+]);
+```
+
+For multipliers that had complex `qualifies()` logic (checking user state, external APIs, etc.), create the DB record and toggle `is_active` programmatically from your application code.
+
+**Migrating from config-based tier multipliers:**
+
+If you used the `tiers.multipliers` config (e.g. `['Gold' => 2]`), create DB multipliers scoped to tiers instead:
+
+```php
+$multiplier = Multiplier::create([
+    'name' => 'Gold Tier Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+]);
+
+$multiplier->scopes()->create([
+    'scopeable_type' => Tier::class,
+    'scopeable_id' => Tier::where('name', 'Gold')->first()->id,
+]);
+```
+
 ### Other Changes
 
 - `declare(strict_types=1)` has been added to all PHP files
