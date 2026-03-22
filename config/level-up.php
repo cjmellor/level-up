@@ -13,6 +13,7 @@ return [
         'streak' => LevelUp\Experience\Models\Streak::class,
         'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
+        'tier' => LevelUp\Experience\Models\Tier::class,
     ],
 
     /*
@@ -110,4 +111,36 @@ return [
      |
      */
     'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
+
+    /*
+    | -------------------------------------------------------------------------
+    | Tiers
+    | -------------------------------------------------------------------------
+    |
+    | Configure the tier system. Tiers provide named status brackets
+    | (e.g. Bronze, Silver, Gold) based on experience points.
+    |
+    */
+    'tiers' => [
+        'enabled' => env(key: 'TIERS_ENABLED', default: true),
+        'demotion' => env(key: 'TIER_DEMOTION', default: false),
+
+        /*
+        | Tier-based multipliers. Map tier names to multiplier values.
+        | When set, users in that tier automatically receive the
+        | multiplier on all points earned.
+        |
+        | Example: ['Bronze' => 1, 'Silver' => 1.5, 'Gold' => 2]
+        */
+        'multipliers' => [],
+
+        /*
+        | Tier-based streak freeze duration (in days). Map tier names
+        | to the number of days a streak can be frozen.
+        | Falls back to the global 'freeze_duration' if not set.
+        |
+        | Example: ['Bronze' => 1, 'Silver' => 2, 'Gold' => 3]
+        */
+        'streak_freeze_days' => [],
+    ],
 ];

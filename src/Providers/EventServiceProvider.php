@@ -8,9 +8,11 @@ use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvi
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
+use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Listeners\PointsDecreasedListener;
 use LevelUp\Experience\Listeners\PointsIncreasedListener;
 use LevelUp\Experience\Listeners\UserLevelledUpListener;
+use LevelUp\Experience\Listeners\UserTierUpdatedListener;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         UserLevelledUp::class => [
             UserLevelledUpListener::class,
+        ],
+        UserTierUpdated::class => [
+            UserTierUpdatedListener::class,
         ],
     ];
 }
