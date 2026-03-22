@@ -14,6 +14,8 @@ return [
         'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
+        'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
     ],
 
     /*
@@ -52,16 +54,19 @@ return [
 
     /*
     |-----------------------------------------------------------------------
-    | Multiplier Paths
+    | Multipliers
     |-----------------------------------------------------------------------
     |
-    | Set the path and namespace for the Multiplier classes.
+    | Configure the multiplier system. Multipliers are managed via the
+    | database and can be scoped to specific users or tiers.
     |
     */
     'multiplier' => [
         'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
-        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
-        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
+        'stack_strategy' => env(key: 'MULTIPLIER_STACK', default: 'compound'),
+        // 'compound'  — multipliers multiply each other: 2 × 5 = 10x
+        // 'additive'  — multipliers sum:              2 + 5 = 7x
+        // 'highest'   — only the largest applies:  max(2, 5) = 5x
     ],
 
     /*
@@ -124,15 +129,6 @@ return [
     'tiers' => [
         'enabled' => env(key: 'TIERS_ENABLED', default: true),
         'demotion' => env(key: 'TIER_DEMOTION', default: false),
-
-        /*
-        | Tier-based multipliers. Map tier names to multiplier values.
-        | When set, users in that tier automatically receive the
-        | multiplier on all points earned.
-        |
-        | Example: ['Bronze' => 1, 'Silver' => 1.5, 'Gold' => 2]
-        */
-        'multipliers' => [],
 
         /*
         | Tier-based streak freeze duration (in days). Map tier names
