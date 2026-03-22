@@ -6,6 +6,8 @@ namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Exceptions\TierExistsException;
 
 class Tier extends Model
@@ -33,10 +35,19 @@ class Tier extends Model
             throw TierExistsException::handle(tierName: $existing);
         }
 
-        return array_map(fn (array $tier) => self::query()->create([
-            'name' => $tier['name'],
-            'experience' => $tier['experience'],
-            'metadata' => $tier['metadata'] ?? null,
-        ]), $tiers);
+        return DB::transaction(fn () => array_map(fn (array $tier) => self::createTier($tier), $tiers));
+    }
+
+    private static function createTier(array $tier): static
+    {
+        try {
+            return self::query()->create([
+                'name' => $tier['name'],
+                'experience' => $tier['experience'],
+                'metadata' => $tier['metadata'] ?? null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw TierExistsException::handle(tierName: $tier['name']);
+        }
     }
 }

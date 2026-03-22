@@ -240,7 +240,7 @@ trait GiveExperience
     {
         $tierMultipliers = config(key: 'level-up.tiers.multipliers');
 
-        if (! config(key: 'level-up.tiers.enabled') || blank($tierMultipliers)) {
+        if (! config(key: 'level-up.tiers.enabled') || blank($tierMultipliers) || ! method_exists($this, 'getTier')) {
             return $amount;
         }
 

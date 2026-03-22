@@ -22,7 +22,7 @@ trait HasAchievements
     {
         throw_if($progress > 100, Exception::class, message: 'Progress cannot be greater than 100');
 
-        if (config(key: 'level-up.tiers.enabled') && $achievement->tier_id) {
+        if (config(key: 'level-up.tiers.enabled') && $achievement->tier_id && method_exists($this, 'getTier')) {
             $userTier = $this->getTier();
             $requiredTier = $achievement->tier;
 

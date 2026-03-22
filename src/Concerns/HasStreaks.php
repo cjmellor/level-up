@@ -142,7 +142,7 @@ trait HasStreaks
     {
         $default = (int) config(key: 'level-up.freeze_duration');
 
-        if (! config(key: 'level-up.tiers.enabled')) {
+        if (! config(key: 'level-up.tiers.enabled') || ! method_exists($this, 'getTier')) {
             return $default;
         }
 
