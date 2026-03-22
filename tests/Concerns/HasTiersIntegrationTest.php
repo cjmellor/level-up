@@ -21,8 +21,6 @@ beforeEach(closure: function (): void {
     );
 });
 
-// --- Tier-Gated Achievements ---
-
 test(description: 'a tier-gated achievement can be granted when user meets the tier', closure: function (): void {
     $goldTier = Tier::where('name', 'Gold')->first();
     $achievement = Achievement::factory()->create(['tier_id' => $goldTier->id]);
@@ -55,8 +53,6 @@ test(description: 'an achievement without a tier can be granted to any user', cl
     expect($this->user->fresh())->getUserAchievements()->toHaveCount(1);
 });
 
-// --- Tier-Based Multipliers ---
-
 test(description: 'tier multiplier is applied when earning points', closure: function (): void {
     config()->set('level-up.tiers.multipliers', [
         'Bronze' => 1,
@@ -65,10 +61,8 @@ test(description: 'tier multiplier is applied when earning points', closure: fun
 
     $this->user->addPoints(amount: 550);
 
-    // User is now Silver tier, subsequent points get 2x
     $this->user->addPoints(amount: 50);
 
-    // 550 (initial, Bronze 1x) + 100 (50 * 2x Silver) = 650
     expect($this->user->fresh()->getPoints())->toBe(expected: 650);
 });
 
@@ -80,8 +74,6 @@ test(description: 'tier multiplier is not applied when no multiplier is configur
 
     expect($this->user->fresh()->getPoints())->toBe(expected: 600);
 });
-
-// --- Tier-Scaled Streak Freeze ---
 
 test(description: 'streak freeze duration uses tier-specific days', closure: function (): void {
     config()->set('level-up.tiers.streak_freeze_days', [
@@ -120,8 +112,6 @@ test(description: 'streak freeze falls back to global duration when tier has no 
         expected: now()->addDays(2)->startOfDay()->toDateString()
     );
 });
-
-// --- Tier-Scoped Leaderboard ---
 
 test(description: 'leaderboard can be filtered by tier', closure: function (): void {
     $this->user->addPoints(amount: 550);

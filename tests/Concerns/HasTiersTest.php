@@ -83,7 +83,6 @@ test(description: 'getNextTier returns the lowest tier when user has no tier', c
 test(description: 'tierProgress returns percentage through current bracket', closure: function (): void {
     $this->user->addPoints(amount: 250);
 
-    // Bronze (0) → Silver (500), user at 250 = 50%
     expect($this->user->fresh()->tierProgress())->toBe(expected: 50);
 });
 
@@ -108,7 +107,6 @@ test(description: 'tierProgress returns 0 when user has no tier', closure: funct
 test(description: 'nextTierAt returns XP remaining until next tier', closure: function (): void {
     $this->user->addPoints(amount: 250);
 
-    // Next tier (Silver) requires 500, user at 250 = 250 remaining
     expect($this->user->fresh()->nextTierAt())->toBe(expected: 250);
 });
 
@@ -149,8 +147,6 @@ test(description: 'getTier returns null when tiers are disabled', closure: funct
     expect($this->user->fresh()->getTier())->toBeNull();
 });
 
-// --- Tier Promotion Events ---
-
 test(description: 'UserTierUpdated event fires on tier promotion', closure: function (): void {
     Event::fake([UserTierUpdated::class]);
 
@@ -186,8 +182,6 @@ test(description: 'UserTierUpdated does not fire when staying in same tier', clo
     Event::assertNotDispatched(event: UserTierUpdated::class);
 });
 
-// --- High-Water Mark (Demotion Disabled) ---
-
 test(description: 'tier is preserved when points are deducted and demotion is disabled', closure: function (): void {
     config()->set('level-up.tiers.demotion', false);
 
@@ -199,8 +193,6 @@ test(description: 'tier is preserved when points are deducted and demotion is di
 
     expect($this->user->fresh()->getTier())->name->toBe(expected: 'Silver');
 });
-
-// --- Demotion Enabled ---
 
 test(description: 'tier drops when points are deducted and demotion is enabled', closure: function (): void {
     config()->set('level-up.tiers.demotion', true);
@@ -242,8 +234,6 @@ test(description: 'demotion event does not fire when demotion is disabled', clos
 
     Event::assertNotDispatched(event: UserTierUpdated::class);
 });
-
-// --- Tier Relationship ---
 
 test(description: 'the stored tier_id is set on the experience record', closure: function (): void {
     $this->user->addPoints(amount: 550);
