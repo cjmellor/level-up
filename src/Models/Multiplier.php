@@ -22,19 +22,6 @@ class Multiplier extends Model
         'expires_at' => 'datetime',
     ];
 
-    protected static function booted(): void
-    {
-        static::saving(function (Multiplier $multiplier): void {
-            if ((float) $multiplier->multiplier <= 0) {
-                throw new InvalidArgumentException('Multiplier value must be greater than 0.');
-            }
-
-            if ($multiplier->starts_at && $multiplier->expires_at && $multiplier->starts_at->gte($multiplier->expires_at)) {
-                throw new InvalidArgumentException('starts_at must be before expires_at.');
-            }
-        });
-    }
-
     public function scopes(): HasMany
     {
         return $this->hasMany(config(key: 'level-up.models.multiplier_scope'));
@@ -60,6 +47,19 @@ class Multiplier extends Model
         }
 
         return $this;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Multiplier $multiplier): void {
+            if ((float) $multiplier->multiplier <= 0) {
+                throw new InvalidArgumentException('Multiplier value must be greater than 0.');
+            }
+
+            if ($multiplier->starts_at && $multiplier->expires_at && $multiplier->starts_at->gte($multiplier->expires_at)) {
+                throw new InvalidArgumentException('starts_at must be before expires_at.');
+            }
+        });
     }
 
     #[Scope]
