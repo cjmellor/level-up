@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->unique(['multiplier_id', 'scopeable_type', 'scopeable_id'], 'multiplier_scopes_unique');
+            $table->index(['scopeable_type', 'scopeable_id']);
         });
     }
 

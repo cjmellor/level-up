@@ -24,6 +24,8 @@ trait GiveExperience
         ?string $type = null,
         ?string $reason = null
     ): Experience {
+        throw_if($multiplier !== null && $multiplier <= 0, InvalidArgumentException::class, message: 'Multiplier must be greater than 0.');
+
         $type ??= AuditType::Add->value;
 
         $levelClass = config(key: 'level-up.models.level');
