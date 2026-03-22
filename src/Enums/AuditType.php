@@ -10,4 +10,6 @@ enum AuditType: string
     case Remove = 'remove';
     case Reset = 'reset';
     case LevelUp = 'level_up';
+    case TierUp = 'tier_up';
+    case TierDown = 'tier_down';
 }

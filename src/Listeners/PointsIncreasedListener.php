@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Listeners;
 
+use LevelUp\Experience\Enums\TierDirection;
 use LevelUp\Experience\Events\PointsIncreased;
+use LevelUp\Experience\Events\UserTierUpdated;
 
 class PointsIncreasedListener
 {
@@ -22,11 +24,7 @@ class PointsIncreasedListener
 
         $nextLevel = $levelModel::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
 
-        if (! $nextLevel) {
-            return;
-        }
-
-        if ($event->user->getPoints() >= $nextLevel->next_level_experience) {
+        if ($nextLevel && $event->user->getPoints() >= $nextLevel->next_level_experience) {
             $highestAchievableLevel = $levelModel::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $event->user->getPoints())
                 ->orderByDesc(column: 'level')
@@ -36,5 +34,45 @@ class PointsIncreasedListener
                 $event->user->levelUp(to: $highestAchievableLevel->level);
             }
         }
+
+        $this->checkTierPromotion($event);
+    }
+
+    protected function checkTierPromotion(PointsIncreased $event): void
+    {
+        if (! config(key: 'level-up.tiers.enabled')) {
+            return;
+        }
+
+        $tierClass = config(key: 'level-up.models.tier');
+        $newTier = $tierClass::query()
+            ->where(column: 'experience', operator: '<=', value: $event->totalPoints)
+            ->orderByDesc(column: 'experience')
+            ->first();
+
+        if (! $newTier) {
+            return;
+        }
+
+        $currentTierId = $event->user->experience?->tier_id;
+
+        if ($currentTierId === $newTier->id) {
+            return;
+        }
+
+        $previousTier = $currentTierId ? $tierClass::find($currentTierId) : null;
+
+        if ($previousTier && $newTier->experience <= $previousTier->experience) {
+            return;
+        }
+
+        $event->user->experience->update(['tier_id' => $newTier->id]);
+
+        event(new UserTierUpdated(
+            user: $event->user,
+            previousTier: $previousTier,
+            newTier: $newTier,
+            direction: TierDirection::Promoted,
+        ));
     }
 }

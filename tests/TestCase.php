@@ -50,6 +50,10 @@ class TestCase extends Orchestra
             'add_streak_freeze_feature_columns_to_streaks_table',
             'add_level_relationship_to_users_table',
             'remove_level_id_column_from_users_table',
+            'alter_experience_audits_type_to_string',
+            'create_tiers_table',
+            'add_tier_id_to_experiences_table',
+            'add_tier_id_to_achievements_table',
         ];
 
         foreach ($migrations as $migrationFile) {
