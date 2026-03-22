@@ -13,10 +13,10 @@ class MultiplierApplied
     use Dispatchable;
 
     public function __construct(
-        public Model $user,
-        public Collection $multipliers,
-        public int $originalAmount,
-        public int $finalAmount,
-        public string $strategy,
+        public readonly Model $user,
+        public readonly Collection $multipliers,
+        public readonly int $originalAmount,
+        public readonly int $finalAmount,
+        public readonly string $strategy,
     ) {}
 }

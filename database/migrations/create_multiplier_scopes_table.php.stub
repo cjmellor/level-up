@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('scopeable_id');
             $table->timestamps();
 
-            $table->index(['multiplier_id', 'scopeable_type', 'scopeable_id'], 'multiplier_scopes_composite_index');
+            $table->unique(['multiplier_id', 'scopeable_type', 'scopeable_id'], 'multiplier_scopes_unique');
         });
     }
 

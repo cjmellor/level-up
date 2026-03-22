@@ -23,8 +23,12 @@ class Multiplier extends Model
     protected static function booted(): void
     {
         static::saving(function (Multiplier $multiplier): void {
-            if ($multiplier->multiplier <= 0) {
+            if ((float) $multiplier->multiplier <= 0) {
                 throw new InvalidArgumentException('Multiplier value must be greater than 0.');
+            }
+
+            if ($multiplier->starts_at && $multiplier->expires_at && $multiplier->starts_at->gte($multiplier->expires_at)) {
+                throw new InvalidArgumentException('starts_at must be before expires_at.');
             }
         });
     }
@@ -62,7 +66,7 @@ class Multiplier extends Model
                     ])
                     ->when($tierId, fn (Builder $q) => $q
                         ->orWhere([
-                            'scopeable_type' => config(key: 'level-up.models.tier'),
+                            'scopeable_type' => app(config(key: 'level-up.models.tier'))->getMorphClass(),
                             'scopeable_id' => $tierId,
                         ])
                     )

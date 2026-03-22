@@ -17,5 +17,6 @@ class PointsIncreased
         public string $type,
         public ?string $reason,
         public Model $user,
+        public ?array $multipliers = null,
     ) {}
 }

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\MultiplierApplied;
-use LevelUp\Experience\Models\Multiplier;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
 use LevelUp\Experience\Models\Level;
+use LevelUp\Experience\Models\Multiplier;
 
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);

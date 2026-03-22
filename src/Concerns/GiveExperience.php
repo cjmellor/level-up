@@ -39,10 +39,9 @@ trait GiveExperience
 
         if (config(key: 'level-up.multiplier.enabled')) {
             $multiplierClass = config(key: 'level-up.models.multiplier');
-            $dbMultipliers = $multiplierClass::active()->forUser($this)->get();
-            $appliedMultipliers = $dbMultipliers;
+            $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
 
-            $allValues = $dbMultipliers->pluck('multiplier')->map(fn ($v) => (float) $v);
+            $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v) => (float) $v);
 
             if ($multiplier !== null) {
                 $allValues->push((float) $multiplier);
@@ -51,18 +50,18 @@ trait GiveExperience
             if ($allValues->isNotEmpty()) {
                 $amount = $this->applyStackingStrategy($amount, $allValues);
             }
+
+            if ($appliedMultipliers->isNotEmpty() || $multiplier !== null) {
+                event(new MultiplierApplied(
+                    user: $this,
+                    multipliers: $appliedMultipliers,
+                    originalAmount: $originalAmount,
+                    finalAmount: $amount,
+                    strategy: config(key: 'level-up.multiplier.stack_strategy', default: 'compound'),
+                ));
+            }
         } elseif ($multiplier !== null) {
             $amount = (int) round($amount * $multiplier);
-        }
-
-        if ($appliedMultipliers->isNotEmpty() || $multiplier !== null) {
-            event(new MultiplierApplied(
-                user: $this,
-                multipliers: $appliedMultipliers,
-                originalAmount: $originalAmount,
-                finalAmount: $amount,
-                strategy: config(key: 'level-up.multiplier.stack_strategy', default: 'compound'),
-            ));
         }
 
         if ($this->experience()->doesntExist()) {
@@ -218,9 +217,10 @@ trait GiveExperience
         $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
 
         return (int) round(match ($strategy) {
+            'compound' => $amount * $multiplierValues->reduce(fn (float $carry, float $value): float => $carry * $value, 1.0),
             'additive' => $amount * $multiplierValues->sum(),
             'highest' => $amount * $multiplierValues->max(),
-            default => $amount * $multiplierValues->reduce(fn (float $carry, float $value): float => $carry * $value, 1.0),
+            default => throw new InvalidArgumentException("Unknown multiplier stack strategy: {$strategy}"),
         });
     }
 
@@ -248,6 +248,7 @@ trait GiveExperience
             type: $type,
             reason: $reason,
             user: $this,
+            multipliers: $auditData,
         ));
     }
 

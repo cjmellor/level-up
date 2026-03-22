@@ -73,7 +73,7 @@ test(description: 'forUser scope filters by user scope', closure: function (): v
         'scopeable_id' => $this->user->id,
     ]);
 
-    $otherUser = User::create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt('password')]);
+    $otherUser = User::create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt(value: 'password')]);
 
     $forUser = Multiplier::active()->forUser($this->user)->count();
     $forOther = Multiplier::active()->forUser($otherUser)->count();

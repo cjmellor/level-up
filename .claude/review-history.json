@@ -1,0 +1,29 @@
+{
+  "branch": "feature/multiplier-refactor",
+  "reviewed_at": "2026-03-22T21:45:00Z",
+  "head_commit": "411683cfaacd124e6392d613fe55b18c90d9da98",
+  "pass": 1,
+  "fixed_files": [
+    "src/Concerns/GiveExperience.php",
+    "src/Models/Multiplier.php",
+    "src/Events/MultiplierApplied.php",
+    "src/Events/PointsIncreased.php",
+    "src/Listeners/PointsIncreasedListener.php",
+    "database/migrations/create_multiplier_scopes_table.php.stub",
+    "tests/Concerns/GiveExperienceTest.php",
+    "tests/Models/MultiplierTest.php"
+  ],
+  "findings": [
+    {"id": "f1", "file": "src/Concerns/GiveExperience.php", "lines": "229-243", "agents": ["all"], "action": "change", "summary": "Wire $auditData through PointsIncreased event to audit trail", "status": "applied"},
+    {"id": "f2", "file": "src/Models/Multiplier.php", "lines": "64-66", "agents": ["feature-reviewer", "laravel-reviewer", "code-reviewer"], "action": "change", "summary": "Use getMorphClass() instead of FQCN for tier scope matching", "status": "applied"},
+    {"id": "f3", "file": "tests/Concerns/GiveExperienceTest.php", "lines": "5-12", "agents": ["code-reviewer", "standards-reviewer"], "action": "change", "summary": "Fix import order to alphabetical", "status": "applied"},
+    {"id": "f4", "file": "src/Concerns/GiveExperience.php", "lines": "54-66", "agents": ["simplifier", "feature-reviewer", "code-reviewer", "standards-reviewer"], "action": "change", "summary": "Suppress MultiplierApplied event when multiplier system disabled", "status": "applied"},
+    {"id": "f5", "file": "database/migrations/create_multiplier_scopes_table.php.stub", "lines": "17", "agents": ["feature-reviewer", "type-analyzer"], "action": "change", "summary": "Upgrade composite index to unique constraint", "status": "applied"},
+    {"id": "f6", "file": "src/Models/Multiplier.php", "lines": "26", "agents": ["code-reviewer", "standards-reviewer"], "action": "change", "summary": "Explicit float cast before <= 0 comparison", "status": "applied"},
+    {"id": "f7", "file": "src/Concerns/GiveExperience.php", "lines": "220", "agents": ["laravel-reviewer", "type-analyzer"], "action": "change", "summary": "Throw on invalid stack strategy instead of silent fallback", "status": "applied"},
+    {"id": "f8", "file": "src/Models/Multiplier.php", "lines": "23-29", "agents": ["type-analyzer"], "action": "add", "summary": "Add temporal ordering validation (starts_at < expires_at)", "status": "applied"},
+    {"id": "f9", "file": "src/Events/MultiplierApplied.php", "lines": "14-19", "agents": ["type-analyzer"], "action": "change", "summary": "Make event properties readonly", "status": "applied"},
+    {"id": "f10", "file": "tests/Models/MultiplierTest.php", "lines": "78", "agents": ["standards-reviewer"], "action": "change", "summary": "Use named parameter bcrypt(value:)", "status": "applied"},
+    {"id": "f11", "file": "src/Concerns/GiveExperience.php", "lines": "42-43", "agents": ["simplifier"], "action": "change", "summary": "Remove redundant $dbMultipliers intermediate variable", "status": "applied"}
+  ]
+}
