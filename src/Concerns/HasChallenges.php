@@ -54,7 +54,9 @@ trait HasChallenges
             return null;
         }
 
-        return $pivot->progress;
+        $progress = $pivot->progress;
+
+        return is_string($progress) ? json_decode(json: $progress, associative: true) : $progress;
     }
 
     protected function initializeChallengeProgress(Challenge $challenge): array

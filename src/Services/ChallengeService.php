@@ -22,6 +22,12 @@ class ChallengeService
             return;
         }
 
+        $challengeModel = config(key: 'level-up.models.challenge');
+
+        if ($challengeModel::query()->doesntExist()) {
+            return;
+        }
+
         $enrolledChallenges = $this->getEnrolledChallenges(user: $user, conditionTypes: $conditionTypes);
 
         $autoEnrollChallenges = $this->getAutoEnrollChallenges(
@@ -91,14 +97,14 @@ class ChallengeService
     {
         try {
             $challenge->users()->attach($user->id, [
-                'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge)),
+                'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: false)),
             ]);
         } catch (UniqueConstraintViolationException) {
             // Already enrolled via a concurrent event — safe to continue
         }
     }
 
-    protected function initializeProgress(Model $user, Challenge $challenge): array
+    protected function initializeProgress(Model $user, Challenge $challenge, bool $useCurrentBaseline = true): array
     {
         $progress = [];
 
@@ -108,8 +114,10 @@ class ChallengeService
                 'completed' => false,
             ];
 
-            if ($condition['type'] === 'points_earned' && method_exists($user, 'getPoints')) {
-                $entry['baseline'] = $user->getPoints();
+            if ($condition['type'] === 'points_earned') {
+                $entry['baseline'] = $useCurrentBaseline && method_exists($user, 'getPoints')
+                    ? $user->getPoints()
+                    : 0;
             }
 
             $progress[$index] = $entry;
@@ -130,7 +138,10 @@ class ChallengeService
             return;
         }
 
-        $progress = $pivot->progress ?? $this->initializeProgress(user: $user, challenge: $challenge);
+        $rawProgress = $pivot->progress;
+        $progress = is_string($rawProgress)
+            ? json_decode(json: $rawProgress, associative: true)
+            : ($rawProgress ?? $this->initializeProgress(user: $user, challenge: $challenge));
 
         if (empty($challenge->conditions)) {
             return;
@@ -153,7 +164,7 @@ class ChallengeService
         }
 
         $challenge->users()->updateExistingPivot($user->id, attributes: [
-            'progress' => $progress,
+            'progress' => json_encode(value: $progress),
         ]);
 
         if ($allComplete) {
@@ -305,7 +316,7 @@ class ChallengeService
     protected function resetChallenge(Model $user, Challenge $challenge): void
     {
         $challenge->users()->updateExistingPivot($user->id, attributes: [
-            'progress' => $this->initializeProgress(user: $user, challenge: $challenge),
+            'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge)),
             'completed_at' => null,
         ]);
     }

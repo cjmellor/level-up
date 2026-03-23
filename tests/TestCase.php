@@ -54,6 +54,8 @@ class TestCase extends Orchestra
             'create_tiers_table',
             'add_tier_id_to_experiences_table',
             'add_tier_id_to_achievements_table',
+            'create_challenges_table',
+            'create_challenge_user_table',
         ];
 
         foreach ($migrations as $migrationFile) {
