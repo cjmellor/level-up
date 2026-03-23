@@ -22,7 +22,11 @@ class ChallengeProgressListener
         $user = $event->user;
         $conditionTypes = $this->mapEventToConditionTypes(event: $event);
 
-        app(abstract: ChallengeService::class)->evaluateForUser(user: $user, conditionTypes: $conditionTypes);
+        try {
+            app(abstract: ChallengeService::class)->evaluateForUser(user: $user, conditionTypes: $conditionTypes);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     protected function mapEventToConditionTypes(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated $event): array

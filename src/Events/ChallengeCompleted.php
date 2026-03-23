@@ -13,7 +13,7 @@ class ChallengeCompleted
     use Dispatchable;
 
     public function __construct(
-        public Challenge $challenge,
-        public Model $user,
+        public readonly Challenge $challenge,
+        public readonly Model $user,
     ) {}
 }

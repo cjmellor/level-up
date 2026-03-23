@@ -4,20 +4,28 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Services;
 
+use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Contracts\ChallengeCondition;
 use LevelUp\Experience\Events\ChallengeCompleted;
 use LevelUp\Experience\Models\Challenge;
 
 class ChallengeService
 {
+    protected static bool $evaluating = false;
+
     /**
      * @param  array<string>  $conditionTypes
      */
     public function evaluateForUser(Model $user, array $conditionTypes): void
     {
+        if (self::$evaluating) {
+            return;
+        }
+
         if (! config(key: 'level-up.challenges.enabled')) {
             return;
         }
@@ -28,23 +36,51 @@ class ChallengeService
             return;
         }
 
-        $enrolledChallenges = $this->getEnrolledChallenges(user: $user, conditionTypes: $conditionTypes);
+        self::$evaluating = true;
 
-        $autoEnrollChallenges = $this->getAutoEnrollChallenges(
-            user: $user,
-            conditionTypes: $conditionTypes,
-            excludeIds: $enrolledChallenges->pluck('id')->all(),
-        );
+        try {
+            $enrolledChallenges = $this->getEnrolledChallenges(user: $user, conditionTypes: $conditionTypes);
 
-        foreach ($autoEnrollChallenges as $challenge) {
-            $this->enrollUser(user: $user, challenge: $challenge);
+            $autoEnrollChallenges = $this->getAutoEnrollChallenges(
+                user: $user,
+                conditionTypes: $conditionTypes,
+                excludeIds: $enrolledChallenges->pluck('id')->all(),
+            );
+
+            foreach ($autoEnrollChallenges as $challenge) {
+                $this->enrollUser(user: $user, challenge: $challenge);
+            }
+
+            $allChallenges = $enrolledChallenges->merge($autoEnrollChallenges);
+
+            foreach ($allChallenges as $challenge) {
+                $this->evaluateChallenge(user: $user, challenge: $challenge);
+            }
+        } finally {
+            self::$evaluating = false;
+        }
+    }
+
+    public function initializeProgress(Model $user, Challenge $challenge, bool $useCurrentBaseline = true): array
+    {
+        $progress = [];
+
+        foreach ($challenge->conditions as $index => $condition) {
+            $entry = [
+                'type' => $condition['type'],
+                'completed' => false,
+            ];
+
+            if ($condition['type'] === 'points_earned') {
+                $entry['baseline'] = $useCurrentBaseline && method_exists($user, 'getPoints')
+                    ? $user->getPoints()
+                    : 0;
+            }
+
+            $progress[$index] = $entry;
         }
 
-        $allChallenges = $enrolledChallenges->merge($autoEnrollChallenges);
-
-        foreach ($allChallenges as $challenge) {
-            $this->evaluateChallenge(user: $user, challenge: $challenge);
-        }
+        return $progress;
     }
 
     protected function getEnrolledChallenges(Model $user, array $conditionTypes): Collection
@@ -102,28 +138,6 @@ class ChallengeService
         } catch (UniqueConstraintViolationException) {
             // Already enrolled via a concurrent event — safe to continue
         }
-    }
-
-    protected function initializeProgress(Model $user, Challenge $challenge, bool $useCurrentBaseline = true): array
-    {
-        $progress = [];
-
-        foreach ($challenge->conditions as $index => $condition) {
-            $entry = [
-                'type' => $condition['type'],
-                'completed' => false,
-            ];
-
-            if ($condition['type'] === 'points_earned') {
-                $entry['baseline'] = $useCurrentBaseline && method_exists($user, 'getPoints')
-                    ? $user->getPoints()
-                    : 0;
-            }
-
-            $progress[$index] = $entry;
-        }
-
-        return $progress;
     }
 
     protected function evaluateChallenge(Model $user, Challenge $challenge): void
@@ -212,7 +226,7 @@ class ChallengeService
         }
 
         return $user->allAchievements()
-            ->wherePivot('achievement_id', $condition['achievement_id'] ?? 0)
+            ->where('achievements.id', $condition['achievement_id'] ?? 0)
             ->exists();
     }
 
@@ -249,20 +263,24 @@ class ChallengeService
             return false;
         }
 
-        $instance = app(abstract: $class);
-
-        if (! $instance instanceof ChallengeCondition) {
+        if (! is_subclass_of($class, ChallengeCondition::class)) {
             return false;
         }
 
-        return $instance->check(user: $user, condition: $condition);
+        return app(abstract: $class)->check(user: $user, condition: $condition);
     }
 
     protected function completeChallenge(Model $user, Challenge $challenge): void
     {
-        $challenge->users()->updateExistingPivot($user->id, attributes: [
-            'completed_at' => now(),
-        ]);
+        $affected = DB::table('challenge_user')
+            ->where(config(key: 'level-up.user.foreign_key'), $user->id)
+            ->where('challenge_id', $challenge->id)
+            ->whereNull('completed_at')
+            ->update(['completed_at' => now()]);
+
+        if ($affected === 0) {
+            return;
+        }
 
         $this->dispatchRewards(user: $user, challenge: $challenge);
 
@@ -279,7 +297,9 @@ class ChallengeService
             match ($reward['type']) {
                 'points' => $this->rewardPoints(user: $user, reward: $reward),
                 'achievement' => $this->rewardAchievement(user: $user, reward: $reward),
-                default => null,
+                default => report(new Exception(
+                    "Unknown challenge reward type '{$reward['type']}' for challenge #{$challenge->id}"
+                )),
             };
         }
     }
@@ -306,11 +326,11 @@ class ChallengeService
             return;
         }
 
-        try {
-            $user->grantAchievement(achievement: $achievement);
-        } catch (\Exception) {
-            // Achievement may already be granted — silently skip
+        if ($user->allAchievements()->where('achievements.id', $achievement->id)->exists()) {
+            return;
         }
+
+        $user->grantAchievement(achievement: $achievement);
     }
 
     protected function resetChallenge(Model $user, Challenge $challenge): void

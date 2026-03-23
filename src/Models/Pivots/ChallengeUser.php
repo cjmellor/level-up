@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 class ChallengeUser extends Pivot
 {
     protected $casts = [
-        'progress' => 'array',
         'completed_at' => 'datetime',
     ];
 }
