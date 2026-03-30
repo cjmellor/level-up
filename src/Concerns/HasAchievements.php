@@ -13,7 +13,7 @@ use LevelUp\Experience\Models\Achievement;
 trait HasAchievements
 {
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function grantAchievement(Achievement $achievement, $progress = null): void
     {
