@@ -12,7 +12,7 @@ class Level extends Model
     protected $guarded = [];
 
     /**
-     * @throws \LevelUp\Experience\Exceptions\LevelExistsException
+     * @throws LevelExistsException
      */
     public static function add(...$levels): array
     {

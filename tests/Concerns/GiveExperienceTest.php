@@ -98,7 +98,7 @@ it(description: 'can set points to a User', closure: function (): void {
 
 test(description: 'it throws an error if points cannot be set', closure: function (): void {
     $this->user->setPoints(amount: 5);
-})->throws(exception: \Exception::class, exceptionMessage: 'User has no experience record.');
+})->throws(exception: Exception::class, exceptionMessage: 'User has no experience record.');
 
 it(description: "can retrieve the Users' points", closure: function (): void {
     $this->user->addPoints(amount: 10);
@@ -339,7 +339,7 @@ test(description: 'Add default level if not applied before trying to add points'
 
 it(description: 'throws an error when points added exceed the last levels experience requirement')
     ->defer(fn () => $this->user->addPoints(amount: 1000))
-    ->throws(exception: \Exception::class);
+    ->throws(exception: Exception::class);
 
 test(description: 'the level is correct when adding more points than available on initial experience gain', closure: function () {
     // Levels have been added, up to Level 5, needing to reach 600 points to get there

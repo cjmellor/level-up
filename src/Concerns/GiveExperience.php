@@ -47,7 +47,7 @@ trait GiveExperience
             $amount = $this->getMultipliers(amount: $amount);
         }
 
-        if ($this->multiplierCondition instanceof \Closure && is_null($multiplier)) {
+        if ($this->multiplierCondition instanceof Closure && is_null($multiplier)) {
             throw new InvalidArgumentException(message: 'Multiplier is not set');
         }
 
@@ -176,7 +176,7 @@ trait GiveExperience
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function setPoints(int $amount): Experience
     {
