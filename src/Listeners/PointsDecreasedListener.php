@@ -45,10 +45,7 @@ class PointsDecreasedListener
             return;
         }
 
-        $newTier = $tierClass::query()
-            ->where(column: 'experience', operator: '<=', value: $event->totalPoints)
-            ->orderByDesc(column: 'experience')
-            ->first();
+        $newTier = $tierClass::forPoints(points: $event->totalPoints);
 
         if ($newTier && $newTier->id === $currentTierId) {
             return;

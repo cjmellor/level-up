@@ -15,7 +15,7 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('experience_audits', function (Blueprint $table) {
-            $table->enum('type', ['add', 'remove', 'reset', 'level_up'])->change();
+            $table->enum('type', ['add', 'remove', 'reset', 'level_up', 'tier_up', 'tier_down'])->change();
         });
     }
 };

@@ -38,6 +38,14 @@ class Tier extends Model
         return DB::transaction(fn () => array_map(fn (array $tier) => self::createTier($tier), $tiers));
     }
 
+    public static function forPoints(int $points): ?static
+    {
+        return self::query()
+            ->where(column: 'experience', operator: '<=', value: $points)
+            ->orderByDesc(column: 'experience')
+            ->first();
+    }
+
     private static function createTier(array $tier): static
     {
         try {
