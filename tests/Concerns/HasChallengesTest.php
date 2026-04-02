@@ -169,19 +169,19 @@ test(description: 'getChallengeCompletionPercentage returns null for unenrolled 
 });
 
 test(description: 'ChallengeEnrolled event fires on enrollment', closure: function (): void {
-    Event::fake(eventsToFake: [\LevelUp\Experience\Events\ChallengeEnrolled::class]);
+    Event::fake(eventsToFake: [LevelUp\Experience\Events\ChallengeEnrolled::class]);
 
     $this->user->enrollInChallenge(challenge: $this->challenge);
 
-    Event::assertDispatched(\LevelUp\Experience\Events\ChallengeEnrolled::class);
+    Event::assertDispatched(LevelUp\Experience\Events\ChallengeEnrolled::class);
 });
 
 test(description: 'ChallengeUnenrolled event fires on unenrollment', closure: function (): void {
     $this->user->enrollInChallenge(challenge: $this->challenge);
 
-    Event::fake(eventsToFake: [\LevelUp\Experience\Events\ChallengeUnenrolled::class]);
+    Event::fake(eventsToFake: [LevelUp\Experience\Events\ChallengeUnenrolled::class]);
 
     $this->user->unenrollFromChallenge(challenge: $this->challenge);
 
-    Event::assertDispatched(\LevelUp\Experience\Events\ChallengeUnenrolled::class);
+    Event::assertDispatched(LevelUp\Experience\Events\ChallengeUnenrolled::class);
 });

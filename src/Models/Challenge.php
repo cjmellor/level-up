@@ -42,20 +42,20 @@ class Challenge extends Model
         'achievement' => ['achievement_id'],
     ];
 
-    protected static function booted(): void
-    {
-        static::saving(function (Challenge $challenge): void {
-            $challenge->validateConditions();
-            $challenge->validateRewards();
-        });
-    }
-
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: 'challenge_user')
             ->using(config(key: 'level-up.models.challenge_user'))
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Challenge $challenge): void {
+            $challenge->validateConditions();
+            $challenge->validateRewards();
+        });
     }
 
     #[Scope]

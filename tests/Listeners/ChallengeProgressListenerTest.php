@@ -90,9 +90,9 @@ test(description: 'auto-enroll does not duplicate on subsequent events', closure
 });
 
 test(description: 'listener isolates exceptions and does not propagate', closure: function (): void {
-    $this->mock(\LevelUp\Experience\Services\ChallengeService::class)
+    $this->mock(LevelUp\Experience\Services\ChallengeService::class)
         ->shouldReceive('evaluateForUser')
-        ->andThrow(new \RuntimeException('Service failure'));
+        ->andThrow(new RuntimeException('Service failure'));
 
     $challenge = Challenge::factory()->create([
         'conditions' => [['type' => 'points_earned', 'amount' => 10]],
