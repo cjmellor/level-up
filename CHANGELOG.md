@@ -6,6 +6,12 @@ All notable changes to `level-up` will be documented in this file.
 
 ### Added
 
+- **DB-backed multiplier system** with `Multiplier` and `MultiplierScope` models, replacing the class-based approach
+- Multipliers can be scoped to specific users or tiers via polymorphic `scopeTo()` method
+- Three stacking strategies: `compound` (multiply together), `additive` (sum values), `highest` (largest only)
+- Time-windowed multipliers with `starts_at`/`expires_at` and automatic active/expired/scheduled scoping
+- `MultiplierApplied` event fires when multipliers modify point awards, including audit trail data
+- Multiplier data stored in experience audit records for full traceability
 - **Tier system** with automatic promotion/demotion based on points, tier-gated achievements, tier multipliers, streak freeze durations, and leaderboard filtering
 - **Challenge system** with multi-condition goals (points earned, level reached, achievement earned, streak count, tier reached, custom), auto-enrollment, repeatable challenges with baseline tracking, and reward dispatch (points, achievements)
 - **Custom challenge conditions** via `ChallengeCondition` contract for extensible goal types
@@ -22,11 +28,23 @@ All notable changes to `level-up` will be documented in this file.
 ### Changed
 
 - **Minimum PHP 8.3**, **minimum Laravel 12**
+- Replaced class-based multiplier system (contracts, service provider, artisan command, stubs) with database-driven `Multiplier` model
+- Multiplier configuration simplified to `enabled` and `stack_strategy` options
+- Inline multipliers now stack with DB multipliers when the feature is enabled
 - Modernized to Laravel conventions: `Scope` attribute, typed config, `throw_unless`/`throw_if` helpers
 - Replaced `app()` calls with `resolve()` throughout
 - Leaderboard service now filters by `Tier` instance check instead of truthy value
 - Applied strict types and Rector/Pint modernisation across the codebase
 - Updated GitHub Actions test matrix for Laravel 13
+
+### Removed
+
+- `MakeMultiplierCommand` artisan command
+- `Multiplier` contract interface
+- `MultiplierServiceProvider`
+- `MultiplierService`
+- `Multiplier.stub` template
+- Class-based multiplier fixtures (`HasExternalData`, `IsMonthDecember`)
 
 ### Fixed
 
