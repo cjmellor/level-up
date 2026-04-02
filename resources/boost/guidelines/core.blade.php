@@ -3,7 +3,7 @@
 - This application uses `cjmellor/level-up` for gamification — experience points (XP), levels, tiers, achievements, streaks, multipliers, leaderboards, and auditing.
 - Users gain XP via `addPoints()`, automatically progress through levels, and earn named tier status (Bronze, Silver, Gold, etc.) based on XP thresholds.
 - Achievements can be instant or progressive (0-100%), optionally gated by tier. Streaks track consecutive daily activities with freeze support.
-- Use the `search-docs` tool if available to look up Laravel-specific patterns for working with gamification.
+- Refer to the package README for Laravel-specific patterns for working with gamification.
 
 ### Key Traits
 

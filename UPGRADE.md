@@ -80,6 +80,31 @@ class User extends Model
 
 **To disable tiers entirely**, set `TIERS_ENABLED=false` in your `.env` file.
 
+### New: Challenges Feature
+
+v2.0 introduces a Challenges system for multi-condition goals with rewards. Users can enroll in challenges, track progress across multiple conditions (points earned, levels, achievements, streaks, tiers, custom), and earn rewards on completion.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_challenges_table` — creates the `challenges` table
+- `create_challenge_user_table` — creates the `challenge_user` pivot table with progress tracking
+
+**Add the `HasChallenges` trait** to your User model to use challenge features:
+
+```php
+use LevelUp\Experience\Concerns\HasChallenges;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers, HasChallenges;
+}
+```
+
+> [!NOTE]
+> The `HasChallenges` trait is optional. If you don't add it, the existing features (points, achievements, streaks, tiers) continue to work without challenges. Challenges are evaluated automatically when relevant events fire (PointsIncreased, AchievementAwarded, etc.), but only if the config is enabled and the trait is present.
+
+**To disable challenges entirely**, set `CHALLENGES_ENABLED=false` in your `.env` file.
+
 ### Other Changes
 
 - `declare(strict_types=1)` has been added to all PHP files
