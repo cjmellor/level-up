@@ -6,6 +6,8 @@ namespace LevelUp\Experience\Concerns;
 
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use LevelUp\Experience\Events\ChallengeEnrolled;
+use LevelUp\Experience\Events\ChallengeUnenrolled;
 use LevelUp\Experience\Models\Challenge;
 use LevelUp\Experience\Services\ChallengeService;
 
@@ -36,18 +38,56 @@ trait HasChallenges
             message: 'This challenge has expired.',
         );
 
+        $existingPivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
+
+        if ($existingPivot && $existingPivot->completed_at !== null && $challenge->is_repeatable) {
+            $this->challenges()->updateExistingPivot($challenge->id, [
+                'progress' => $this->freshChallengeProgress($challenge),
+                'completed_at' => null,
+            ]);
+
+            event(new ChallengeEnrolled(challenge: $challenge, user: $this));
+
+            return;
+        }
+
         throw_if(
-            condition: $this->challenges()->where('challenge_id', $challenge->id)->exists(),
+            condition: $existingPivot !== null,
             exception: Exception::class,
-            message: 'User is already enrolled in this challenge.',
+            message: $existingPivot?->completed_at !== null
+                ? 'This challenge is completed and not repeatable.'
+                : 'User is already enrolled in this challenge.',
         );
 
         $this->challenges()->attach($challenge->id, [
-            'progress' => json_encode(value: app(abstract: ChallengeService::class)->initializeProgress(
-                user: $this,
-                challenge: $challenge,
-            )),
+            'progress' => $this->freshChallengeProgress($challenge),
         ]);
+
+        event(new ChallengeEnrolled(challenge: $challenge, user: $this));
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function unenrollFromChallenge(Challenge $challenge): void
+    {
+        $pivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
+
+        throw_if(
+            condition: ! $pivot,
+            exception: Exception::class,
+            message: 'User is not enrolled in this challenge.',
+        );
+
+        throw_if(
+            condition: $pivot->completed_at !== null,
+            exception: Exception::class,
+            message: 'Cannot unenroll from a completed challenge.',
+        );
+
+        $this->challenges()->detach($challenge->id);
+
+        event(new ChallengeUnenrolled(challenge: $challenge, user: $this));
     }
 
     public function activeChallenges(): BelongsToMany
@@ -66,12 +106,27 @@ trait HasChallenges
     {
         $pivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
 
-        if (! $pivot) {
+        return $pivot?->getDecodedProgress();
+    }
+
+    public function getChallengeCompletionPercentage(Challenge $challenge): ?float
+    {
+        $progress = $this->getChallengeProgress(challenge: $challenge);
+
+        if (empty($progress)) {
             return null;
         }
 
-        $progress = $pivot->progress;
+        $completed = count(array_filter($progress, fn (array $entry): bool => $entry['completed'] ?? false));
 
-        return is_string($progress) ? json_decode(json: $progress, associative: true) : $progress;
+        return round(num: ($completed / count($progress)) * 100, precision: 1);
+    }
+
+    private function freshChallengeProgress(Challenge $challenge): string
+    {
+        return json_encode(value: app(abstract: ChallengeService::class)->initializeProgress(
+            user: $this,
+            challenge: $challenge,
+        ));
     }
 }
