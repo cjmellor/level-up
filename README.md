@@ -68,16 +68,16 @@ return [
 
     /*
     |-----------------------------------------------------------------------
-    | Multiplier Paths
+    | Multipliers
     |-----------------------------------------------------------------------
     |
-    | Set the path and namespace for the Multiplier classes.
+    | Configure the multiplier system. Multipliers are managed via the
+    | database and can be scoped to specific users or tiers.
     |
     */
     'multiplier' => [
         'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
-        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
-        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
+        'stack_strategy' => env(key: 'MULTIPLIER_STACK', default: 'compound'),
     ],
 
     /*
@@ -131,7 +131,6 @@ return [
     'tiers' => [
         'enabled' => env(key: 'TIERS_ENABLED', default: true),
         'demotion' => env(key: 'TIER_DEMOTION', default: false),
-        'multipliers' => [],
         'streak_freeze_days' => [],
     ],
 
@@ -194,99 +193,76 @@ $user->getPoints();
 
 ### Multipliers
 
-Point multipliers can be used to modify the experience point value of an event by a certain multiplier, such as doubling or tripling the point value. This can be useful for implementing temporary events or promotions that offer bonus points.
+Multipliers modify the experience points a User earns. They are managed via the database, so you can create, schedule, and toggle multipliers at runtime — no code deployments needed. This makes them ideal for building admin panels or managing promotional events.
 
-To get started, you can use an Artisan command to crease a new Multiplier.
-
-```bash
-php artisan level-up:multiplier IsMonthDecember
-```
-
-This will create a file at `app\Multipliers\IsMonthDecember.php`.
-
-Here is how the class looks:
+**Create a Multiplier**
 
 ```php
-<?php
+use LevelUp\Experience\Models\Multiplier;
 
-namespace LevelUp\Experience\Tests\Fixtures\Multipliers;
-
-use LevelUp\Experience\Contracts\Multiplier;
-
-class IsMonthDecember implements Multiplier
-{
-    public bool $enabled = true;
-    
-    public function qualifies(array $data): bool
-    {
-        return now()->month === 12;
-    }
-
-    public function setMultiplier(): int
-    {
-        return 2;
-    }
-}
+Multiplier::create([
+    ‘name’ => ‘WrestleMania Weekend’,
+    ‘multiplier’ => 5,
+    ‘is_active’ => true,
+    ‘starts_at’ => ‘2026-04-05 00:00:00’,
+    ‘expires_at’ => ‘2026-04-07 23:59:59’,
+]);
 ```
 
-Multipliers are enabled by default, but you can change the `$enabled` variable to `false` so that it won’t even run.
+Active multipliers are automatically applied when a User earns points via `addPoints()`. Time-based multipliers activate and deactivate based on `starts_at` and `expires_at`. Non-time-based multipliers (like "Man UTD Win the League") are toggled via `is_active`.
 
-The `qualifies` method is where you put your logic to check against and multiply if the result is true.
+**Scope Multipliers to Users or Tiers**
 
-This can be as simple as checking that the month is December.
+By default, a multiplier applies to all Users. You can restrict it to specific Users or Tiers:
 
 ```php
-public function qualifies(array $data): bool
-{
-    return now()->month === 12;
-}
+// Scope to specific tiers
+$multiplier->tiers()->attach([$premiumTier->id, $diamondTier->id]);
+
+// Scope to a specific user
+$multiplier->users()->attach($user->id);
+
+// Or use the convenience method with any model
+$multiplier->scopeTo($premiumTier, $diamondTier, $user);
 ```
 
-Or passing extra data along to check against. This is a bit more complex.
+If a multiplier has no scopes, it applies to everyone. If it has scopes, it only applies to Users who match (either directly or via their Tier).
 
-You can pass extra data along when you're adding points to a User. Any enabled Multiplier can then use that data to check against.
+You can also use `detach()` and `sync()` on the `tiers()` and `users()` relationships.
+
+**Query Multipliers**
 
 ```php
-$user
-    ->withMultiplierData([
-        'event_id' => 222,
-    ])
-    ->addPoints(10);
-
-//
-
-public function qualifies(array $data): bool
-{
-    return isset($data['event_id']) && $data['event_id'] === 222;
-}
+Multiplier::active()->get();               // Currently active
+Multiplier::active()->forUser($user)->get(); // Active for a specific user
+Multiplier::scheduled()->get();             // Armed but starts_at is in the future
+Multiplier::expired()->get();               // Past their expires_at
 ```
 
-**Conditional Multipliers**
+**Stacking Strategy**
 
-If you don't want to use the class based method to check conditionals to add multipliers, you can do this inline by giving the method a callback with the conditional. When using this method, make sure you have the multiplier set as an argument in the `addPoints` method, otherwise an error will occur. See example below:
+When multiple multipliers are active, you can control how they combine via the `stack_strategy` config:
 
-```php
-$user
-    ->withMultiplierData(fn () => true)
-    ->addPoints(amount: 10, multiplier: 2);
+```
+MULTIPLIER_STACK=compound   # 2x × 5x = 10x (default)
+MULTIPLIER_STACK=additive   # 2x + 5x = 7x
+MULTIPLIER_STACK=highest    # max(2x, 5x) = 5x
 ```
 
-The `setMultiplier` method expects an `int` which is the number it will be multiplied by.
+**Inline Multipliers**
 
-**Multiply Manually**
-
-You can skip this altogether and just multiply the points manually if you desire.
+You can also pass a one-off multiplier directly when adding points. This participates in the configured stacking strategy alongside any active DB multipliers:
 
 ```php
 $user->addPoints(
-    amount: 10, 
+    amount: 10,
     multiplier: 2
 );
 ```
 
 ### Events
 
-**PointsIncrease** - When points are added.
+**PointsIncreased** - When points are added.
 
 ```php
 public int $pointsAdded,
@@ -294,6 +270,17 @@ public int $totalPoints,
 public string $type,
 public ?string $reason,
 public Model $user,
+public ?array $multipliers, // Applied multipliers (if any)
+```
+
+**MultiplierApplied** - When multipliers are applied during point addition.
+
+```php
+public Model $user,
+public Collection $multipliers,   // DB multiplier models that were applied
+public int $originalAmount,       // Points before multipliers
+public int $finalAmount,          // Points after multipliers
+public string $strategy,          // 'compound', 'additive', or 'highest'
 ```
 
 **PointsDecreased** - When points are decreased.
@@ -752,19 +739,18 @@ By default, tiers use a **high-water mark** — once a user reaches Gold, they s
 TIER_DEMOTION=true
 ```
 
-### Tier Multipliers
+### Tier-Scoped Multipliers
 
-Automatically scale points earned based on the user's tier:
+You can create multipliers that only apply to Users in specific tiers using the polymorphic scoping system (see the [Multipliers](#multipliers) section above):
 
 ```php
-// config/level-up.php
-'tiers' => [
-    'multipliers' => [
-        'Bronze' => 1,
-        'Silver' => 1.5,
-        'Gold' => 2,
-    ],
-],
+$goldMultiplier = Multiplier::create([
+    'name' => 'Gold Tier Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+]);
+
+$goldMultiplier->tiers()->attach(Tier::where('name', 'Gold')->first());
 ```
 
 ### Tier-Gated Achievements

@@ -6,17 +6,17 @@ namespace LevelUp\Experience\Events;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Support\Collection;
 
-class PointsIncreased
+class MultiplierApplied
 {
     use Dispatchable;
 
     public function __construct(
-        public int $pointsAdded,
-        public int $totalPoints,
-        public string $type,
-        public ?string $reason,
         public Model $user,
-        public ?array $multipliers = null,
+        public Collection $multipliers,
+        public int $originalAmount,
+        public int $finalAmount,
+        public string $strategy,
     ) {}
 }

@@ -19,6 +19,7 @@ class PointsIncreasedListener
                 'points' => $event->pointsAdded,
                 'type' => $event->type,
                 'reason' => $event->reason,
+                'multipliers' => $event->multipliers,
             ]);
         }
 

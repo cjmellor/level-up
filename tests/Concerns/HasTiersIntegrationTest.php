@@ -53,28 +53,6 @@ test(description: 'an achievement without a tier can be granted to any user', cl
     expect($this->user->fresh())->getUserAchievements()->toHaveCount(1);
 });
 
-test(description: 'tier multiplier is applied when earning points', closure: function (): void {
-    config()->set('level-up.tiers.multipliers', [
-        'Bronze' => 1,
-        'Silver' => 2,
-    ]);
-
-    $this->user->addPoints(amount: 550);
-
-    $this->user->addPoints(amount: 50);
-
-    expect($this->user->fresh()->getPoints())->toBe(expected: 650);
-});
-
-test(description: 'tier multiplier is not applied when no multiplier is configured', closure: function (): void {
-    config()->set('level-up.tiers.multipliers', []);
-
-    $this->user->addPoints(amount: 550);
-    $this->user->addPoints(amount: 50);
-
-    expect($this->user->fresh()->getPoints())->toBe(expected: 600);
-});
-
 test(description: 'streak freeze duration uses tier-specific days', closure: function (): void {
     config()->set('level-up.tiers.streak_freeze_days', [
         'Bronze' => 1,
