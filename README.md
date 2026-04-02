@@ -133,6 +133,10 @@ return [
         'demotion' => env(key: 'TIER_DEMOTION', default: false),
         'streak_freeze_days' => [],
     ],
+
+    'challenges' => [
+        'enabled' => env(key: 'CHALLENGES_ENABLED', default: true),
+    ],
 ];
 ```
 
@@ -797,6 +801,162 @@ public Model $user,
 public ?Tier $previousTier,
 public ?Tier $newTier,
 public TierDirection $direction, // TierDirection::Promoted or TierDirection::Demoted
+```
+
+## 🎯 Challenges
+
+Challenges are multi-condition goals that users can enroll in and complete for rewards. Think "Earn 100 XP and reach Level 5 to unlock a bonus." Challenges support auto-enrollment, time windows, repeatable completion, and custom condition logic.
+
+Add the `HasChallenges` trait to your `User` model:
+
+```php
+use LevelUp\Experience\Concerns\HasChallenges;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers, HasChallenges;
+}
+```
+
+### Creating Challenges
+
+```php
+use LevelUp\Experience\Models\Challenge;
+
+Challenge::create([
+    'name' => 'Welcome Warrior',
+    'description' => 'Complete these tasks to earn a bonus!',
+    'conditions' => [
+        ['type' => 'points_earned', 'amount' => 100],
+        ['type' => 'level_reached', 'level' => 5],
+    ],
+    'rewards' => [
+        ['type' => 'points', 'amount' => 500],
+    ],
+    'auto_enroll' => true,
+    'is_repeatable' => false,
+    'starts_at' => '2026-04-01 00:00:00', // optional
+    'expires_at' => '2026-04-30 23:59:59', // optional
+]);
+```
+
+> [!NOTE]
+> Conditions and rewards are validated on creation. Invalid types or missing required keys will throw an `InvalidArgumentException`.
+
+### Condition Types
+
+| Type | Required Keys | What it checks |
+|------|--------------|----------------|
+| `points_earned` | `amount` | Points earned since enrollment |
+| `level_reached` | `level` | User's current level >= target |
+| `achievement_earned` | `achievement_id` | User has the achievement |
+| `streak_count` | `activity`, `count` | Current streak count for the activity |
+| `tier_reached` | `tier` | User is at or above the named tier |
+| `custom` | `class` | Your own class implementing `ChallengeCondition` |
+
+### Reward Types
+
+| Type | Required Keys | What happens |
+|------|--------------|--------------|
+| `points` | `amount` | Adds XP to the user |
+| `achievement` | `achievement_id` | Grants an achievement |
+
+### Enrolling Users
+
+**Auto-enroll** — Set `auto_enroll` to `true` on the challenge. Users are enrolled automatically when a relevant event fires (e.g. earning points, levelling up). Enrollment starts the clock: "earn 100 points" means 100 more points from the moment of enrollment, not total lifetime points.
+
+**Manual enroll:**
+
+```php
+$challenge = Challenge::find(1);
+
+$user->enrollInChallenge($challenge);
+```
+
+Manual enrollment throws if the challenge hasn't started yet, has expired, or the user is already enrolled.
+
+**Unenroll:**
+
+```php
+$user->unenrollFromChallenge($challenge);
+```
+
+Throws if the user is not enrolled, or if the challenge is already completed.
+
+### Querying Progress
+
+```php
+$user->activeChallenges;        // Enrolled, not yet completed
+$user->completedChallenges;     // Completed challenges
+
+$user->getChallengeProgress($challenge);
+// Returns: [['type' => 'points_earned', 'completed' => true], ['type' => 'level_reached', 'completed' => false]]
+
+$user->getChallengeCompletionPercentage($challenge);
+// Returns: 50.0 (1 of 2 conditions met)
+```
+
+### Custom Conditions
+
+Implement the `ChallengeCondition` contract for your own logic:
+
+```php
+use LevelUp\Experience\Contracts\ChallengeCondition;
+use Illuminate\Database\Eloquent\Model;
+
+class HasVerifiedEmail implements ChallengeCondition
+{
+    public function check(Model $user, array $condition): bool
+    {
+        return $user->hasVerifiedEmail();
+    }
+}
+```
+
+Then reference it in your challenge conditions:
+
+```php
+Challenge::create([
+    'conditions' => [
+        ['type' => 'custom', 'class' => HasVerifiedEmail::class],
+    ],
+    // ...
+]);
+```
+
+### Repeatable Challenges
+
+Set `is_repeatable` to `true`. When all conditions are met, rewards are dispatched, then the challenge resets with a fresh baseline. The user can complete it again.
+
+### Events
+
+**ChallengeCompleted** — When all conditions are met and rewards are dispatched.
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+**ChallengeEnrolled** — When a user enrolls in a challenge (manual or auto).
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+**ChallengeUnenrolled** — When a user unenrolls from a challenge.
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+### Configuration
+
+Challenges are enabled by default. To disable:
+
+```
+CHALLENGES_ENABLED=false
 ```
 
 # Testing

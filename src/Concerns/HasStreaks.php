@@ -87,21 +87,29 @@ trait HasStreaks
         $days ??= $this->getFreezeDurationForTier();
         $frozenUntil = now()->addDays(value: $days)->startOfDay();
 
-        event(new StreakFrozen(
-            frozenStreakLength: $days,
-            frozenUntil: $frozenUntil
-        ));
-
-        return $this->getStreakLastActivity($activity)
+        $result = $this->getStreakLastActivity($activity)
             ?->update(['frozen_until' => $frozenUntil]) ?? false;
+
+        if ($result) {
+            event(new StreakFrozen(
+                frozenStreakLength: $days,
+                frozenUntil: $frozenUntil
+            ));
+        }
+
+        return $result;
     }
 
     public function unFreezeStreak(Activity $activity): bool
     {
-        event(new StreakUnfroze());
-
-        return $this->getStreakLastActivity($activity)
+        $result = $this->getStreakLastActivity($activity)
             ?->update(['frozen_until' => null]) ?? false;
+
+        if ($result) {
+            event(new StreakUnfroze());
+        }
+
+        return $result;
     }
 
     public function isStreakFrozen(Activity $activity): bool

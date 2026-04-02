@@ -155,7 +155,7 @@ test(description: 'UserTierUpdated event fires on tier promotion', closure: func
     Event::assertDispatched(
         event: UserTierUpdated::class,
         callback: fn (UserTierUpdated $event): bool => $event->newTier->name === 'Bronze'
-            && $event->previousTier === null
+            && ! $event->previousTier instanceof Tier
             && $event->direction === TierDirection::Promoted
             && $event->user->is($this->user)
     );
@@ -238,7 +238,45 @@ test(description: 'demotion event does not fire when demotion is disabled', clos
 test(description: 'the stored tier_id is set on the experience record', closure: function (): void {
     $this->user->addPoints(amount: 550);
 
-    $silverTier = Tier::where('name', 'Silver')->first();
+    $silverTier = Tier::query()->where('name', 'Silver')->first();
 
     expect($this->user->fresh()->experience->tier_id)->toBe(expected: $silverTier->id);
+});
+
+test(description: 'isAtTier returns false for a non-existent tier name', closure: function (): void {
+    $this->user->addPoints(amount: 550);
+
+    expect($this->user->isAtTier(name: 'Diamond'))->toBeFalse();
+});
+
+test(description: 'isAtOrAboveTier returns false for a non-existent tier name', closure: function (): void {
+    $this->user->addPoints(amount: 550);
+
+    expect($this->user->isAtOrAboveTier(name: 'Diamond'))->toBeFalse();
+});
+
+test(description: 'demotion below all tiers sets tier to null', closure: function (): void {
+    config()->set('level-up.tiers.demotion', true);
+
+    Tier::query()->delete();
+    Tier::add(
+        ['name' => 'Bronze', 'experience' => 100],
+    );
+
+    $this->user->addPoints(amount: 150);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Bronze');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->deductPoints(amount: 100);
+
+    expect($this->user->fresh()->experience->tier_id)->toBeNull();
+
+    Event::assertDispatched(
+        event: UserTierUpdated::class,
+        callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Demoted
+            && $event->previousTier->name === 'Bronze'
+            && ! $event->newTier instanceof Tier
+    );
 });

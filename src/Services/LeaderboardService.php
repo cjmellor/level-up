@@ -42,7 +42,7 @@ class LeaderboardService
             ->whereHas('experience', function (Builder $query) use ($tier): void {
                 $query->whereNotNull(columns: 'experience_points');
 
-                if ($tier) {
+                if ($tier instanceof Tier) {
                     $query->where(column: 'tier_id', operator: '=', value: $tier->id);
                 }
             })

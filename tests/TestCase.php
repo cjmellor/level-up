@@ -57,6 +57,8 @@ class TestCase extends Orchestra
             'create_multipliers_table',
             'create_multiplier_scopes_table',
             'add_multipliers_column_to_experience_audits_table',
+            'create_challenges_table',
+            'create_challenge_user_table',
         ];
 
         foreach ($migrations as $migrationFile) {

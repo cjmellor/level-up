@@ -10,3 +10,4 @@ testbench.yaml
 vendor
 node_modules
 .claude/review-history.json
+.env

@@ -16,6 +16,8 @@ return [
         'tier' => LevelUp\Experience\Models\Tier::class,
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
         'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
+        'challenge' => LevelUp\Experience\Models\Challenge::class,
+        'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],
 
     /*
@@ -138,5 +140,18 @@ return [
         | Example: ['Bronze' => 1, 'Silver' => 2, 'Gold' => 3]
         */
         'streak_freeze_days' => [],
+    ],
+
+    /*
+    | -------------------------------------------------------------------------
+    | Challenges
+    | -------------------------------------------------------------------------
+    |
+    | Configure the challenges system. Challenges are multi-condition goals
+    | that users can enroll in and complete for rewards.
+    |
+    */
+    'challenges' => [
+        'enabled' => env(key: 'CHALLENGES_ENABLED', default: true),
     ],
 ];

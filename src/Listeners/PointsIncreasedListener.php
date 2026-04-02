@@ -46,10 +46,7 @@ class PointsIncreasedListener
         }
 
         $tierClass = config(key: 'level-up.models.tier');
-        $newTier = $tierClass::query()
-            ->where(column: 'experience', operator: '<=', value: $event->totalPoints)
-            ->orderByDesc(column: 'experience')
-            ->first();
+        $newTier = $tierClass::forPoints(points: $event->totalPoints);
 
         if (! $newTier) {
             return;

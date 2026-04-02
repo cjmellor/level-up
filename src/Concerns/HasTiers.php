@@ -117,10 +117,7 @@ trait HasTiers
     {
         $tierClass = config(key: 'level-up.models.tier');
 
-        return $tierClass::query()
-            ->where(column: 'experience', operator: '<=', value: $this->getPoints())
-            ->orderByDesc(column: 'experience')
-            ->first();
+        return $tierClass::forPoints(points: $this->getPoints());
     }
 
     protected function storedTier(): ?Tier
