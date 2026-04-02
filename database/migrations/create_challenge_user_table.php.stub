@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->unique([config('level-up.user.foreign_key'), 'challenge_id']);
+            $table->index('completed_at');
         });
     }
 

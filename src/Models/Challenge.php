@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use InvalidArgumentException;
+use LevelUp\Experience\Contracts\ChallengeCondition;
 
 class Challenge extends Model
 {
@@ -25,6 +27,28 @@ class Challenge extends Model
         'expires_at' => 'datetime',
         'metadata' => 'array',
     ];
+
+    protected static array $conditionRules = [
+        'points_earned' => ['amount'],
+        'level_reached' => ['level'],
+        'achievement_earned' => ['achievement_id'],
+        'streak_count' => ['activity', 'count'],
+        'tier_reached' => ['tier'],
+        'custom' => ['class'],
+    ];
+
+    protected static array $rewardRules = [
+        'points' => ['amount'],
+        'achievement' => ['achievement_id'],
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Challenge $challenge): void {
+            $challenge->validateConditions();
+            $challenge->validateRewards();
+        });
+    }
 
     public function users(): BelongsToMany
     {
@@ -46,5 +70,60 @@ class Challenge extends Model
     protected function autoEnroll(Builder $query): void
     {
         $query->where(column: 'auto_enroll', operator: '=', value: true);
+    }
+
+    protected function validateConditions(): void
+    {
+        $this->validateEntries(
+            entries: $this->conditions ?? [],
+            rules: self::$conditionRules,
+            label: 'Condition',
+        );
+    }
+
+    protected function validateRewards(): void
+    {
+        $this->validateEntries(
+            entries: $this->rewards ?? [],
+            rules: self::$rewardRules,
+            label: 'Reward',
+        );
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $entries
+     * @param  array<string, list<string>>  $rules
+     */
+    private function validateEntries(array $entries, array $rules, string $label): void
+    {
+        $lowerLabel = lcfirst($label);
+
+        foreach ($entries as $index => $entry) {
+            if (! isset($entry['type'])) {
+                throw new InvalidArgumentException("{$label} at index {$index} is missing a 'type' key.");
+            }
+
+            $type = $entry['type'];
+
+            if (! array_key_exists($type, $rules)) {
+                $allowed = implode(', ', array_keys($rules));
+
+                throw new InvalidArgumentException("Invalid {$lowerLabel} type '{$type}' at index {$index}. Allowed: {$allowed}.");
+            }
+
+            foreach ($rules[$type] as $requiredKey) {
+                if (! array_key_exists($requiredKey, $entry)) {
+                    throw new InvalidArgumentException("{$label} '{$type}' at index {$index} is missing required key '{$requiredKey}'.");
+                }
+            }
+
+            if ($type === 'custom' && isset($entry['class'])) {
+                $class = $entry['class'];
+
+                if (! class_exists($class) || ! is_subclass_of($class, ChallengeCondition::class)) {
+                    throw new InvalidArgumentException("{$label} at index {$index}: class '{$class}' must exist and implement ChallengeCondition.");
+                }
+            }
+        }
     }
 }

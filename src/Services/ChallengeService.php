@@ -15,14 +15,15 @@ use LevelUp\Experience\Models\Challenge;
 
 class ChallengeService
 {
-    protected static bool $evaluating = false;
+    /** @var array<int|string> */
+    protected static array $evaluatingUsers = [];
 
     /**
      * @param  array<string>  $conditionTypes
      */
     public function evaluateForUser(Model $user, array $conditionTypes): void
     {
-        if (self::$evaluating) {
+        if (in_array($user->id, self::$evaluatingUsers, strict: true)) {
             return;
         }
 
@@ -30,13 +31,7 @@ class ChallengeService
             return;
         }
 
-        $challengeModel = config(key: 'level-up.models.challenge');
-
-        if ($challengeModel::query()->doesntExist()) {
-            return;
-        }
-
-        self::$evaluating = true;
+        self::$evaluatingUsers[] = $user->id;
 
         try {
             $enrolledChallenges = $this->getEnrolledChallenges(user: $user, conditionTypes: $conditionTypes);
@@ -53,11 +48,16 @@ class ChallengeService
 
             $allChallenges = $enrolledChallenges->merge($autoEnrollChallenges);
 
+            $preloaded = $this->preloadConditionData(user: $user, challenges: $allChallenges);
+
             foreach ($allChallenges as $challenge) {
-                $this->evaluateChallenge(user: $user, challenge: $challenge);
+                $this->evaluateChallenge(user: $user, challenge: $challenge, preloaded: $preloaded);
             }
         } finally {
-            self::$evaluating = false;
+            self::$evaluatingUsers = array_filter(
+                self::$evaluatingUsers,
+                fn ($id): bool => $id !== $user->id,
+            );
         }
     }
 
@@ -120,27 +120,44 @@ class ChallengeService
 
     protected function hasMatchingCondition(Challenge $challenge, array $conditionTypes): bool
     {
-        foreach ($challenge->conditions as $condition) {
-            if (in_array(needle: $condition['type'], haystack: $conditionTypes, strict: true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return collect($challenge->conditions)
+            ->contains(fn (array $condition): bool => in_array($condition['type'], $conditionTypes, strict: true));
     }
 
     protected function enrollUser(Model $user, Challenge $challenge): void
     {
         try {
             $challenge->users()->attach($user->id, [
-                'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: false)),
+                'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge)),
             ]);
         } catch (UniqueConstraintViolationException) {
             //
         }
     }
 
-    protected function evaluateChallenge(Model $user, Challenge $challenge): void
+    protected function preloadConditionData(Model $user, Collection $challenges): array
+    {
+        $activityNames = $challenges
+            ->flatMap(fn (Challenge $challenge): array => $challenge->conditions)
+            ->where('type', 'streak_count')
+            ->pluck('activity')
+            ->filter()
+            ->unique()
+            ->all();
+
+        $activityModel = config(key: 'level-up.models.activity');
+
+        return [
+            'achievement_ids' => method_exists($user, 'allAchievements')
+                ? $user->allAchievements()->pluck('achievements.id')->all()
+                : [],
+            'activities' => $activityNames !== []
+                ? $activityModel::whereIn('name', $activityNames)->get()->keyBy('name')
+                : collect(),
+        ];
+    }
+
+    protected function evaluateChallenge(Model $user, Challenge $challenge, array $preloaded = []): void
     {
         $pivot = $challenge->users()
             ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
@@ -152,10 +169,7 @@ class ChallengeService
             return;
         }
 
-        $rawProgress = $pivot->progress;
-        $progress = is_string($rawProgress)
-            ? json_decode(json: $rawProgress, associative: true)
-            : ($rawProgress ?? $this->initializeProgress(user: $user, challenge: $challenge));
+        $progress = $pivot->getDecodedProgress() ?? $this->initializeProgress(user: $user, challenge: $challenge);
 
         if (empty($challenge->conditions)) {
             return;
@@ -164,11 +178,11 @@ class ChallengeService
         $allComplete = true;
 
         foreach ($challenge->conditions as $index => $condition) {
-            if (isset($progress[$index]['completed']) && $progress[$index]['completed'] === true) {
+            if (($progress[$index]['completed'] ?? false) === true) {
                 continue;
             }
 
-            $met = $this->checkCondition(user: $user, condition: $condition, progressEntry: $progress[$index] ?? []);
+            $met = $this->checkCondition(user: $user, condition: $condition, progressEntry: $progress[$index] ?? [], preloaded: $preloaded);
 
             $progress[$index]['completed'] = $met;
 
@@ -186,13 +200,13 @@ class ChallengeService
         }
     }
 
-    protected function checkCondition(Model $user, array $condition, array $progressEntry): bool
+    protected function checkCondition(Model $user, array $condition, array $progressEntry, array $preloaded = []): bool
     {
         return match ($condition['type']) {
             'points_earned' => $this->checkPointsEarned(user: $user, condition: $condition, progressEntry: $progressEntry),
             'level_reached' => $this->checkLevelReached(user: $user, condition: $condition),
-            'achievement_earned' => $this->checkAchievementEarned(user: $user, condition: $condition),
-            'streak_count' => $this->checkStreakCount(user: $user, condition: $condition),
+            'achievement_earned' => $this->checkAchievementEarned(condition: $condition, preloaded: $preloaded),
+            'streak_count' => $this->checkStreakCount(user: $user, condition: $condition, preloaded: $preloaded),
             'tier_reached' => $this->checkTierReached(user: $user, condition: $condition),
             'custom' => $this->checkCustomCondition(user: $user, condition: $condition),
             default => false,
@@ -219,25 +233,19 @@ class ChallengeService
         return $user->getLevel() >= ($condition['level'] ?? 0);
     }
 
-    protected function checkAchievementEarned(Model $user, array $condition): bool
+    protected function checkAchievementEarned(array $condition, array $preloaded = []): bool
     {
-        if (! method_exists($user, 'allAchievements')) {
-            return false;
-        }
-
-        return $user->allAchievements()
-            ->where('achievements.id', $condition['achievement_id'] ?? 0)
-            ->exists();
+        return in_array($condition['achievement_id'] ?? 0, $preloaded['achievement_ids'] ?? [], strict: true);
     }
 
-    protected function checkStreakCount(Model $user, array $condition): bool
+    protected function checkStreakCount(Model $user, array $condition, array $preloaded = []): bool
     {
         if (! method_exists($user, 'getCurrentStreakCount')) {
             return false;
         }
 
-        $activityModel = config(key: 'level-up.models.activity');
-        $activity = $activityModel::where(column: 'name', operator: '=', value: $condition['activity'] ?? '')->first();
+        $activities = $preloaded['activities'] ?? collect();
+        $activity = $activities->get($condition['activity'] ?? '');
 
         if (! $activity) {
             return false;
