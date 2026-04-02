@@ -155,7 +155,7 @@ test(description: 'UserTierUpdated event fires on tier promotion', closure: func
     Event::assertDispatched(
         event: UserTierUpdated::class,
         callback: fn (UserTierUpdated $event): bool => $event->newTier->name === 'Bronze'
-            && $event->previousTier === null
+            && ! $event->previousTier instanceof Tier
             && $event->direction === TierDirection::Promoted
             && $event->user->is($this->user)
     );
@@ -238,7 +238,7 @@ test(description: 'demotion event does not fire when demotion is disabled', clos
 test(description: 'the stored tier_id is set on the experience record', closure: function (): void {
     $this->user->addPoints(amount: 550);
 
-    $silverTier = Tier::where('name', 'Silver')->first();
+    $silverTier = Tier::query()->where('name', 'Silver')->first();
 
     expect($this->user->fresh()->experience->tier_id)->toBe(expected: $silverTier->id);
 });
@@ -277,6 +277,6 @@ test(description: 'demotion below all tiers sets tier to null', closure: functio
         event: UserTierUpdated::class,
         callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Demoted
             && $event->previousTier->name === 'Bronze'
-            && $event->newTier === null
+            && ! $event->newTier instanceof Tier
     );
 });

@@ -22,7 +22,7 @@ beforeEach(closure: function (): void {
 });
 
 test(description: 'a tier-gated achievement can be granted when user meets the tier', closure: function (): void {
-    $goldTier = Tier::where('name', 'Gold')->first();
+    $goldTier = Tier::query()->where('name', 'Gold')->first();
     $achievement = Achievement::factory()->create(['tier_id' => $goldTier->id]);
 
     $this->user->addPoints(amount: 600);
@@ -36,7 +36,7 @@ test(description: 'a tier-gated achievement can be granted when user meets the t
 });
 
 test(description: 'a tier-gated achievement throws when user does not meet the tier', closure: function (): void {
-    $goldTier = Tier::where('name', 'Gold')->first();
+    $goldTier = Tier::query()->where('name', 'Gold')->first();
     $achievement = Achievement::factory()->create(['tier_id' => $goldTier->id]);
 
     $this->user->addPoints(amount: 100);
@@ -116,14 +116,14 @@ test(description: 'streak freeze falls back to global duration when tier has no 
 test(description: 'leaderboard can be filtered by tier', closure: function (): void {
     $this->user->addPoints(amount: 550);
 
-    $secondUser = User::create([
+    $secondUser = User::query()->create([
         'name' => 'Other User',
         'email' => 'other@test.com',
         'password' => bcrypt('password'),
     ]);
     $secondUser->addPoints(amount: 100);
 
-    $silverLeaderboard = app('leaderboard')->forTier('Silver')->generate();
+    $silverLeaderboard = resolve('leaderboard')->forTier('Silver')->generate();
 
     expect($silverLeaderboard)->toHaveCount(count: 1)
         ->and($silverLeaderboard->first()->id)->toBe(expected: $this->user->id);

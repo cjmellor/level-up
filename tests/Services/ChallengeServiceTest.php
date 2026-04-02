@@ -332,7 +332,7 @@ test(description: 'streak_count with unknown activity returns false', closure: f
 
     $this->user->enrollInChallenge(challenge: $challenge);
 
-    app(abstract: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['streak_count', 'custom']);
+    resolve(ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['streak_count', 'custom']);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
 });
@@ -367,7 +367,7 @@ test(description: 'custom condition delegates to ChallengeCondition class', clos
 
     $this->user->enrollInChallenge(challenge: $challenge);
 
-    app(abstract: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+    resolve(ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
 });
@@ -378,7 +378,7 @@ test(description: 'custom with missing class throws on creation', closure: funct
             ['type' => 'custom', 'class' => 'App\\NonExistent\\ClassName'],
         ],
         'rewards' => [],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "must exist and implement ChallengeCondition");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: 'must exist and implement ChallengeCondition');
 });
 
 test(description: 'custom with non-implementing class throws on creation', closure: function (): void {
@@ -387,7 +387,7 @@ test(description: 'custom with non-implementing class throws on creation', closu
             ['type' => 'custom', 'class' => NotACondition::class],
         ],
         'rewards' => [],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "must exist and implement ChallengeCondition");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: 'must exist and implement ChallengeCondition');
 });
 
 test(description: 'unknown condition type throws on creation', closure: function (): void {
@@ -396,7 +396,7 @@ test(description: 'unknown condition type throws on creation', closure: function
             ['type' => 'nonexistent_type'],
         ],
         'rewards' => [],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'nonexistent_type'");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'nonexistent_type'");
 });
 
 test(description: 'method_exists guard returns false when user missing trait', closure: function (): void {
@@ -409,7 +409,7 @@ test(description: 'method_exists guard returns false when user missing trait', c
 
     $minimalUser->fill(['name' => 'Test', 'email' => 'test@test.com', 'password' => 'pass'])->save();
 
-    $service = app(abstract: ChallengeService::class);
+    $service = resolve(ChallengeService::class);
 
     $reflection = new ReflectionMethod($service, 'checkPointsEarned');
     $result = $reflection->invoke($service, $minimalUser, ['amount' => 10], []);
@@ -564,25 +564,25 @@ test(description: 're-entrancy guard blocks per-user, not globally', closure: fu
 test(description: 'validation rejects invalid condition type on create', closure: function (): void {
     expect(fn () => Challenge::factory()->create([
         'conditions' => [['type' => 'banana']],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'banana'");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'banana'");
 });
 
 test(description: 'validation rejects missing required keys on condition', closure: function (): void {
     expect(fn () => Challenge::factory()->create([
         'conditions' => [['type' => 'points_earned']],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
 });
 
 test(description: 'validation rejects invalid reward type on create', closure: function (): void {
     expect(fn () => Challenge::factory()->create([
         'conditions' => [['type' => 'points_earned', 'amount' => 10]],
         'rewards' => [['type' => 'gold_coins']],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid reward type 'gold_coins'");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "Invalid reward type 'gold_coins'");
 });
 
 test(description: 'validation rejects missing required keys on reward', closure: function (): void {
     expect(fn () => Challenge::factory()->create([
         'conditions' => [['type' => 'points_earned', 'amount' => 10]],
         'rewards' => [['type' => 'points']],
-    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
+    ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
 });
