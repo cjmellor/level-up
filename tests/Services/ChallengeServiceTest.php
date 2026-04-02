@@ -53,12 +53,15 @@ test(description: 'challenge stays incomplete when some conditions are unmet', c
 });
 
 test(description: 'ChallengeCompleted event fires on completion', closure: function (): void {
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 10],
         ],
         'rewards' => [],
     ]);
+
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
 
     Event::fake(eventsToFake: [ChallengeCompleted::class]);
 
@@ -68,7 +71,7 @@ test(description: 'ChallengeCompleted event fires on completion', closure: funct
 });
 
 test(description: 'points reward is dispatched on completion', closure: function (): void {
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 10],
         ],
@@ -77,14 +80,16 @@ test(description: 'points reward is dispatched on completion', closure: function
         ],
     ]);
 
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
     $this->user->addPoints(amount: 20);
 
-    expect($this->user->fresh()->getPoints())->toBe(expected: 70);
+    expect($this->user->fresh()->getPoints())->toBe(expected: 75);
 });
 
 test(description: 'achievement reward is dispatched on completion', closure: function (): void {
     $achievement = Achievement::factory()->create();
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 10],
         ],
@@ -93,6 +98,8 @@ test(description: 'achievement reward is dispatched on completion', closure: fun
         ],
     ]);
 
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
     $this->user->addPoints(amount: 20);
 
     $this->assertDatabaseHas(table: 'achievement_user', data: [
@@ -102,7 +109,7 @@ test(description: 'achievement reward is dispatched on completion', closure: fun
 });
 
 test(description: 'achievement not found for reward is silently skipped', closure: function (): void {
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 10],
         ],
@@ -111,6 +118,8 @@ test(description: 'achievement not found for reward is silently skipped', closur
         ],
     ]);
 
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
     $this->user->addPoints(amount: 20);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
@@ -118,7 +127,7 @@ test(description: 'achievement not found for reward is silently skipped', closur
 
 test(description: 'multiple rewards in one challenge', closure: function (): void {
     $achievement = Achievement::factory()->create();
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 10],
         ],
@@ -128,9 +137,11 @@ test(description: 'multiple rewards in one challenge', closure: function (): voi
         ],
     ]);
 
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
     $this->user->addPoints(amount: 20);
 
-    expect($this->user->fresh()->getPoints())->toBe(expected: 45);
+    expect($this->user->fresh()->getPoints())->toBe(expected: 50);
 
     $this->assertDatabaseHas(table: 'achievement_user', data: [
         'user_id' => $this->user->id,
@@ -146,14 +157,16 @@ test(description: 'repeatable challenge resets progress after completion', closu
         'rewards' => [],
     ]);
 
+    $this->user->addPoints(amount: 5);
+
     Event::fake(eventsToFake: [ChallengeCompleted::class]);
 
-    $this->user->addPoints(amount: 20);
+    $this->user->addPoints(amount: 15);
 
     Event::assertDispatched(event: ChallengeCompleted::class);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = is_string($pivot->progress) ? json_decode($pivot->progress, true) : $pivot->progress;
+    $progress = $pivot->getDecodedProgress();
 
     expect($pivot->completed_at)->toBeNull();
     expect($progress[0]['completed'])->toBeFalse();
@@ -167,10 +180,11 @@ test(description: 'repeatable challenge re-captures baseline on reset', closure:
         'rewards' => [],
     ]);
 
-    $this->user->addPoints(amount: 20);
+    $this->user->addPoints(amount: 5);
+    $this->user->addPoints(amount: 15);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = is_string($pivot->progress) ? json_decode($pivot->progress, true) : $pivot->progress;
+    $progress = $pivot->getDecodedProgress();
 
     expect($progress[0]['baseline'])->toBe(expected: 20);
 });
@@ -358,49 +372,31 @@ test(description: 'custom condition delegates to ChallengeCondition class', clos
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
 });
 
-test(description: 'custom with missing class returns false', closure: function (): void {
-    $challenge = Challenge::factory()->create([
+test(description: 'custom with missing class throws on creation', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
         'conditions' => [
             ['type' => 'custom', 'class' => 'App\\NonExistent\\ClassName'],
         ],
         'rewards' => [],
-    ]);
-
-    $this->user->enrollInChallenge(challenge: $challenge);
-
-    app(abstract: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
-
-    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "must exist and implement ChallengeCondition");
 });
 
-test(description: 'custom with non-implementing class returns false', closure: function (): void {
-    $challenge = Challenge::factory()->create([
+test(description: 'custom with non-implementing class throws on creation', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
         'conditions' => [
             ['type' => 'custom', 'class' => NotACondition::class],
         ],
         'rewards' => [],
-    ]);
-
-    $this->user->enrollInChallenge(challenge: $challenge);
-
-    app(abstract: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
-
-    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "must exist and implement ChallengeCondition");
 });
 
-test(description: 'unknown condition type returns false', closure: function (): void {
-    $challenge = Challenge::factory()->create([
+test(description: 'unknown condition type throws on creation', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
         'conditions' => [
             ['type' => 'nonexistent_type'],
         ],
         'rewards' => [],
-    ]);
-
-    $this->user->enrollInChallenge(challenge: $challenge);
-
-    app(abstract: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['nonexistent_type']);
-
-    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'nonexistent_type'");
 });
 
 test(description: 'method_exists guard returns false when user missing trait', closure: function (): void {
@@ -424,13 +420,16 @@ test(description: 'method_exists guard returns false when user missing trait', c
 test(description: 'mixed condition types in one challenge', closure: function (): void {
     $achievement = Achievement::factory()->create();
 
-    $challenge = Challenge::factory()->autoEnroll()->create([
+    $challenge = Challenge::factory()->create([
         'conditions' => [
             ['type' => 'points_earned', 'amount' => 50],
             ['type' => 'achievement_earned', 'achievement_id' => $achievement->id],
         ],
         'rewards' => [],
     ]);
+
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
 
     Event::fake(eventsToFake: [ChallengeCompleted::class]);
 
@@ -455,15 +454,19 @@ test(description: 'E2E: auto-enroll → addPoints → complete → rewards dispa
         ],
     ]);
 
-    $this->user->addPoints(amount: 60);
+    $this->user->addPoints(amount: 10);
 
     $this->assertDatabaseHas(table: 'challenge_user', data: [
         'user_id' => $this->user->id,
         'challenge_id' => $challenge->id,
     ]);
 
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+
+    $this->user->addPoints(amount: 60);
+
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
-    expect($this->user->fresh()->getPoints())->toBe(expected: 85);
+    expect($this->user->fresh()->getPoints())->toBe(expected: 95);
 });
 
 test(description: 'E2E: reward cascade — challenge A reward completes challenge B', closure: function (): void {
@@ -483,7 +486,8 @@ test(description: 'E2E: reward cascade — challenge A reward completes challeng
         'rewards' => [],
     ]);
 
-    $this->user->addPoints(amount: 20);
+    $this->user->addPoints(amount: 5);
+    $this->user->addPoints(amount: 15);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 2);
 });
@@ -496,22 +500,89 @@ test(description: 'E2E: repeatable with baseline — complete, reset, earn more,
         'rewards' => [],
     ]);
 
+    $this->user->addPoints(amount: 5);
     $this->user->addPoints(amount: 60);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = is_string($pivot->progress) ? json_decode($pivot->progress, true) : $pivot->progress;
+    $progress = $pivot->getDecodedProgress();
     expect($pivot->completed_at)->toBeNull();
-    expect($progress[0]['baseline'])->toBe(expected: 60);
+    expect($progress[0]['baseline'])->toBe(expected: 65);
 
     $this->user->addPoints(amount: 30);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = is_string($pivot->progress) ? json_decode($pivot->progress, true) : $pivot->progress;
+    $progress = $pivot->getDecodedProgress();
     expect($progress[0]['completed'])->toBeFalse();
 
     $this->user->addPoints(amount: 30);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = is_string($pivot->progress) ? json_decode($pivot->progress, true) : $pivot->progress;
-    expect($progress[0]['baseline'])->toBe(expected: 120);
+    $progress = $pivot->getDecodedProgress();
+    expect($progress[0]['baseline'])->toBe(expected: 125);
+});
+
+test(description: 'auto-enroll with existing points uses current baseline, not zero', closure: function (): void {
+    $this->user->addPoints(amount: 100);
+
+    $challenge = Challenge::factory()->autoEnroll()->create([
+        'conditions' => [
+            ['type' => 'points_earned', 'amount' => 50],
+        ],
+        'rewards' => [],
+    ]);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+
+    $this->user->addPoints(amount: 20);
+
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+
+    $this->user->addPoints(amount: 40);
+
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
+});
+
+test(description: 're-entrancy guard blocks per-user, not globally', closure: function (): void {
+    $challenge = Challenge::factory()->autoEnroll()->create([
+        'conditions' => [
+            ['type' => 'points_earned', 'amount' => 10],
+        ],
+        'rewards' => [
+            ['type' => 'points', 'amount' => 50],
+        ],
+    ]);
+
+    $this->user->addPoints(amount: 5);
+    $this->user->addPoints(amount: 20);
+
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
+    expect($this->user->fresh()->getPoints())->toBe(expected: 75);
+});
+
+test(description: 'validation rejects invalid condition type on create', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
+        'conditions' => [['type' => 'banana']],
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid condition type 'banana'");
+});
+
+test(description: 'validation rejects missing required keys on condition', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
+        'conditions' => [['type' => 'points_earned']],
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
+});
+
+test(description: 'validation rejects invalid reward type on create', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
+        'conditions' => [['type' => 'points_earned', 'amount' => 10]],
+        'rewards' => [['type' => 'gold_coins']],
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "Invalid reward type 'gold_coins'");
+});
+
+test(description: 'validation rejects missing required keys on reward', closure: function (): void {
+    expect(fn () => Challenge::factory()->create([
+        'conditions' => [['type' => 'points_earned', 'amount' => 10]],
+        'rewards' => [['type' => 'points']],
+    ]))->toThrow(exception: \InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
 });

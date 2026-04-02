@@ -242,3 +242,41 @@ test(description: 'the stored tier_id is set on the experience record', closure:
 
     expect($this->user->fresh()->experience->tier_id)->toBe(expected: $silverTier->id);
 });
+
+test(description: 'isAtTier returns false for a non-existent tier name', closure: function (): void {
+    $this->user->addPoints(amount: 550);
+
+    expect($this->user->isAtTier(name: 'Diamond'))->toBeFalse();
+});
+
+test(description: 'isAtOrAboveTier returns false for a non-existent tier name', closure: function (): void {
+    $this->user->addPoints(amount: 550);
+
+    expect($this->user->isAtOrAboveTier(name: 'Diamond'))->toBeFalse();
+});
+
+test(description: 'demotion below all tiers sets tier to null', closure: function (): void {
+    config()->set('level-up.tiers.demotion', true);
+
+    Tier::query()->delete();
+    Tier::add(
+        ['name' => 'Bronze', 'experience' => 100],
+    );
+
+    $this->user->addPoints(amount: 150);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Bronze');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->deductPoints(amount: 100);
+
+    expect($this->user->fresh()->experience->tier_id)->toBeNull();
+
+    Event::assertDispatched(
+        event: UserTierUpdated::class,
+        callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Demoted
+            && $event->previousTier->name === 'Bronze'
+            && $event->newTier === null
+    );
+});

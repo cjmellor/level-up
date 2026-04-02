@@ -88,3 +88,17 @@ test(description: 'auto-enroll does not duplicate on subsequent events', closure
 
     expect($this->user->challenges)->toHaveCount(count: 1);
 });
+
+test(description: 'listener isolates exceptions and does not propagate', closure: function (): void {
+    $this->mock(\LevelUp\Experience\Services\ChallengeService::class)
+        ->shouldReceive('evaluateForUser')
+        ->andThrow(new \RuntimeException('Service failure'));
+
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'points_earned', 'amount' => 10]],
+    ]);
+
+    $this->user->addPoints(amount: 20);
+
+    expect($this->user->fresh()->getPoints())->toBe(expected: 20);
+});
