@@ -15,7 +15,7 @@ class ChallengeProgressListener
 {
     public function __invoke(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated $event): void
     {
-        if (! config(key: 'level-up.challenges.enabled')) {
+        if (! config()->boolean(key: 'level-up.challenges.enabled')) {
             return;
         }
 

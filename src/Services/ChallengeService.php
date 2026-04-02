@@ -26,7 +26,7 @@ class ChallengeService
             return;
         }
 
-        if (! config(key: 'level-up.challenges.enabled')) {
+        if (! config()->boolean(key: 'level-up.challenges.enabled')) {
             return;
         }
 

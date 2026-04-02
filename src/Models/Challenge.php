@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,15 +34,17 @@ class Challenge extends Model
             ->withTimestamps();
     }
 
-    public function scopeActive(Builder $query): Builder
+    #[Scope]
+    protected function active(Builder $query): void
     {
-        return $query
+        $query
             ->where(fn (Builder $q): Builder => $q->whereNull(columns: 'starts_at')->orWhere(column: 'starts_at', operator: '<=', value: now()))
             ->where(fn (Builder $q): Builder => $q->whereNull(columns: 'expires_at')->orWhere(column: 'expires_at', operator: '>', value: now()));
     }
 
-    public function scopeAutoEnroll(Builder $query): Builder
+    #[Scope]
+    protected function autoEnroll(Builder $query): void
     {
-        return $query->where(column: 'auto_enroll', operator: '=', value: true);
+        $query->where(column: 'auto_enroll', operator: '=', value: true);
     }
 }
