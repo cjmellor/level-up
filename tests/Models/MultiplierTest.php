@@ -169,6 +169,34 @@ test(description: 'scopeTo creates scopes for given models', closure: function (
         ->and($multiplier->scopes->first()->scopeable_id)->toBe($this->user->id);
 });
 
+test(description: 'scopeTo is idempotent for the same model', closure: function (): void {
+    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+
+    $multiplier->scopeTo($this->user);
+    $multiplier->scopeTo($this->user);
+
+    expect(MultiplierScope::where('multiplier_id', $multiplier->id)->count())->toBe(1);
+});
+
+test(description: 'multiplier scoped to both user and tier is only applied once', closure: function (): void {
+    config()->set('level-up.multiplier.enabled', true);
+    config()->set('level-up.tiers.enabled', true);
+
+    $tier = Tier::create(['name' => 'Gold', 'experience' => 100]);
+
+    $multiplier = Multiplier::create(['name' => 'Dual Scoped', 'multiplier' => 3, 'is_active' => true]);
+    $multiplier->scopeTo($this->user);
+    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
+
+    $this->user->addPoints(amount: 10);
+    $this->user->experience->update(['tier_id' => $tier->id]);
+
+    $matched = Multiplier::active()->forUser($this->user->fresh())->get();
+
+    expect($matched)->toHaveCount(1)
+        ->and($matched->first()->name)->toBe('Dual Scoped');
+});
+
 test(description: 'tiers relationship returns morphed tiers', closure: function (): void {
     $tier = Tier::create(['name' => 'Gold', 'experience' => 500]);
     $multiplier = Multiplier::create(['name' => 'Tier Bonus', 'multiplier' => 3, 'is_active' => true]);

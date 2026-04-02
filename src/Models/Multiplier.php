@@ -40,7 +40,7 @@ class Multiplier extends Model
     public function scopeTo(Model ...$models): static
     {
         foreach ($models as $model) {
-            $this->scopes()->create([
+            $this->scopes()->firstOrCreate([
                 'scopeable_type' => $model->getMorphClass(),
                 'scopeable_id' => $model->getKey(),
             ]);
