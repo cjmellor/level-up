@@ -83,18 +83,19 @@ class Multiplier extends Model
     protected function forUser(Builder $query, Model $user): void
     {
         $tierId = $user->experience?->tier_id;
+        $tierClass = config(key: 'level-up.models.tier');
 
-        $query->where(fn (Builder $q) => $q
+        $query->where(fn (Builder $outer) => $outer
             ->whereDoesntHave('scopes')
-            ->orWhereHas('scopes', fn (Builder $q) => $q
-                ->where(fn (Builder $q) => $q
+            ->orWhereHas('scopes', fn (Builder $scopeQuery) => $scopeQuery
+                ->where(fn (Builder $match) => $match
                     ->where([
                         'scopeable_type' => $user->getMorphClass(),
                         'scopeable_id' => $user->getKey(),
                     ])
-                    ->when($tierId, fn (Builder $q) => $q
+                    ->when($tierId, fn (Builder $tierMatch) => $tierMatch
                         ->orWhere([
-                            'scopeable_type' => (new (config(key: 'level-up.models.tier')))->getMorphClass(),
+                            'scopeable_type' => (new $tierClass)->getMorphClass(),
                             'scopeable_id' => $tierId,
                         ])
                     )

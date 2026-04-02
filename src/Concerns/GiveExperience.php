@@ -36,37 +36,7 @@ trait GiveExperience
             message: 'Points exceed the last level\'s experience points.',
         );
 
-        $originalAmount = $amount;
-        $appliedMultipliers = collect();
-
-        $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
-
-        if (config(key: 'level-up.multiplier.enabled')) {
-            $multiplierClass = config(key: 'level-up.models.multiplier');
-            $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
-
-            $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v) => (float) $v);
-
-            if ($multiplier !== null) {
-                $allValues->push((float) $multiplier);
-            }
-
-            if ($allValues->isNotEmpty()) {
-                $amount = $this->applyStackingStrategy($amount, $allValues, $strategy);
-            }
-
-            if ($appliedMultipliers->isNotEmpty() || $multiplier !== null) {
-                event(new MultiplierApplied(
-                    user: $this,
-                    multipliers: $appliedMultipliers,
-                    originalAmount: $originalAmount,
-                    finalAmount: $amount,
-                    strategy: $strategy,
-                ));
-            }
-        } elseif ($multiplier !== null) {
-            $amount = (int) round($amount * $multiplier);
-        }
+        [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
         if ($this->experience()->doesntExist()) {
             $startingLevel = config(key: 'level-up.starting_level');
@@ -213,6 +183,50 @@ trait GiveExperience
         }
     }
 
+    /**
+     * @return array{0: int, 1: Collection}
+     */
+    protected function resolveMultipliers(int $amount, int|float|null $inlineMultiplier): array
+    {
+        $appliedMultipliers = collect();
+
+        if (! config(key: 'level-up.multiplier.enabled')) {
+            if ($inlineMultiplier !== null) {
+                $amount = (int) round($amount * $inlineMultiplier);
+            }
+
+            return [$amount, $appliedMultipliers];
+        }
+
+        $multiplierClass = config(key: 'level-up.models.multiplier');
+        $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
+
+        $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v) => (float) $v);
+
+        if ($inlineMultiplier !== null) {
+            $allValues->push((float) $inlineMultiplier);
+        }
+
+        $originalAmount = $amount;
+        $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
+
+        if ($allValues->isNotEmpty()) {
+            $amount = $this->applyStackingStrategy($amount, $allValues, $strategy);
+        }
+
+        if ($appliedMultipliers->isNotEmpty() || $inlineMultiplier !== null) {
+            event(new MultiplierApplied(
+                user: $this,
+                multipliers: $appliedMultipliers,
+                originalAmount: $originalAmount,
+                finalAmount: $amount,
+                strategy: $strategy,
+            ));
+        }
+
+        return [$amount, $appliedMultipliers];
+    }
+
     protected function applyStackingStrategy(int $amount, Collection $multiplierValues, string $strategy): int
     {
         return (int) round(match ($strategy) {
@@ -225,21 +239,7 @@ trait GiveExperience
 
     protected function dispatchEvent(int $amount, string $type, ?string $reason, ?Collection $appliedMultipliers = null, int|float|null $inlineMultiplier = null): void
     {
-        $auditData = null;
-
-        if ($appliedMultipliers?->isNotEmpty() || $inlineMultiplier !== null) {
-            $auditData = [];
-
-            if ($appliedMultipliers?->isNotEmpty()) {
-                foreach ($appliedMultipliers as $m) {
-                    $auditData[] = ['id' => $m->id, 'name' => $m->name, 'value' => (float) $m->multiplier];
-                }
-            }
-
-            if ($inlineMultiplier !== null) {
-                $auditData[] = ['id' => null, 'name' => 'inline', 'value' => (float) $inlineMultiplier];
-            }
-        }
+        $auditData = $this->buildMultiplierAuditData($appliedMultipliers, $inlineMultiplier);
 
         event(new PointsIncreased(
             pointsAdded: $amount,
@@ -249,6 +249,24 @@ trait GiveExperience
             user: $this,
             multipliers: $auditData,
         ));
+    }
+
+    protected function buildMultiplierAuditData(?Collection $appliedMultipliers, int|float|null $inlineMultiplier): ?array
+    {
+        if ($appliedMultipliers?->isEmpty() && $inlineMultiplier === null) {
+            return null;
+        }
+
+        $auditData = $appliedMultipliers
+            ?->map(fn ($m) => ['id' => $m->id, 'name' => $m->name, 'value' => (float) $m->multiplier])
+            ->values()
+            ->all() ?? [];
+
+        if ($inlineMultiplier !== null) {
+            $auditData[] = ['id' => null, 'name' => 'inline', 'value' => (float) $inlineMultiplier];
+        }
+
+        return $auditData ?: null;
     }
 
     protected function levelCapExceedsUserLevel(): bool
