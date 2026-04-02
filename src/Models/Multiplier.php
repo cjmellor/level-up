@@ -92,7 +92,7 @@ class Multiplier extends Model
                     ])
                     ->when($tierId, fn (Builder $q) => $q
                         ->orWhere([
-                            'scopeable_type' => app(config(key: 'level-up.models.tier'))->getMorphClass(),
+                            'scopeable_type' => (new (config(key: 'level-up.models.tier')))->getMorphClass(),
                             'scopeable_id' => $tierId,
                         ])
                     )
