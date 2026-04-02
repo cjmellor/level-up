@@ -580,3 +580,12 @@ test(description: 'nextLevelAt returns 0 when current level is missing from data
 
     expect($this->user->nextLevelAt())->toBe(0);
 });
+
+test(description: 'unknown stacking strategy throws InvalidArgumentException', closure: function (): void {
+    config()->set(key: 'level-up.multiplier.enabled', value: true);
+    config()->set(key: 'level-up.multiplier.stack_strategy', value: 'invalid_strategy');
+
+    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+
+    $this->user->addPoints(amount: 10);
+})->throws(InvalidArgumentException::class, 'Unknown multiplier stack strategy: invalid_strategy');

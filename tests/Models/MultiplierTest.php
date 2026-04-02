@@ -148,3 +148,42 @@ test(description: 'fractional multiplier values are supported', closure: functio
 
     expect($multiplier->multiplier)->toBe('0.50');
 });
+
+test(description: 'starts_at must be before expires_at', closure: function (): void {
+    Multiplier::create([
+        'name' => 'Invalid',
+        'multiplier' => 2,
+        'is_active' => true,
+        'starts_at' => now()->addDay(),
+        'expires_at' => now(),
+    ]);
+})->throws(InvalidArgumentException::class, 'starts_at must be before expires_at.');
+
+test(description: 'scopeTo creates scopes for given models', closure: function (): void {
+    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+
+    $multiplier->scopeTo($this->user);
+
+    expect($multiplier->scopes)->toHaveCount(1)
+        ->and($multiplier->scopes->first()->scopeable_type)->toBe(User::class)
+        ->and($multiplier->scopes->first()->scopeable_id)->toBe($this->user->id);
+});
+
+test(description: 'tiers relationship returns morphed tiers', closure: function (): void {
+    $tier = Tier::create(['name' => 'Gold', 'experience' => 500]);
+    $multiplier = Multiplier::create(['name' => 'Tier Bonus', 'multiplier' => 3, 'is_active' => true]);
+    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
+
+    expect($multiplier->tiers)->toHaveCount(1)
+        ->and($multiplier->tiers->first()->name)->toBe('Gold');
+});
+
+test(description: 'users relationship returns morphed users', closure: function (): void {
+    config()->set('level-up.user.model', User::class);
+
+    $multiplier = Multiplier::create(['name' => 'User Bonus', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => $this->user->id]);
+
+    expect($multiplier->users)->toHaveCount(1)
+        ->and($multiplier->users->first()->id)->toBe($this->user->id);
+});
