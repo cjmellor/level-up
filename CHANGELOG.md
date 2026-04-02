@@ -2,6 +2,38 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v2.0.0 - 2026-04-02
+
+### Added
+
+- **Tier system** with automatic promotion/demotion based on points, tier-gated achievements, tier multipliers, streak freeze durations, and leaderboard filtering
+- **Challenge system** with multi-condition goals (points earned, level reached, achievement earned, streak count, tier reached, custom), auto-enrollment, repeatable challenges with baseline tracking, and reward dispatch (points, achievements)
+- **Custom challenge conditions** via `ChallengeCondition` contract for extensible goal types
+- Challenge lifecycle events: `ChallengeCompleted`, `ChallengeEnrolled`, `ChallengeUnenrolled`
+- Tier events: `UserTierUpdated` with promotion/demotion direction
+- `HasChallenges` trait with enrollment, unenrollment, progress tracking, and completion percentage
+- `HasTiers` trait with tier queries, multiplier integration, and `isAtOrAboveTier()` checks
+- `ChallengeProgressListener` evaluates challenges on points, achievements, streaks, levels, and tier changes
+- `PointsDecreasedListener` for tier demotion on point loss
+- `UserTierUpdatedListener` for tier-aware side effects
+- Re-entrancy guard in `ChallengeService` prevents infinite loops from reward cascades
+- Laravel Boost skills and guidelines for development assistance
+
+### Changed
+
+- **Minimum PHP 8.3**, **minimum Laravel 12**
+- Modernized to Laravel conventions: `Scope` attribute, typed config, `throw_unless`/`throw_if` helpers
+- Replaced `app()` calls with `resolve()` throughout
+- Leaderboard service now filters by `Tier` instance check instead of truthy value
+- Applied strict types and Rector/Pint modernisation across the codebase
+- Updated GitHub Actions test matrix for Laravel 13
+
+### Fixed
+
+- `resolve()` named parameter bug (`abstract:` → positional) that silently broke challenge evaluation via `catch (Throwable)`
+- Race conditions in tier system hardened
+- Re-entrancy guard scoped per-user, not globally
+
 ## v1.5.1 - 2025-09-28
 
 ### What's Changed
