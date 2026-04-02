@@ -8,7 +8,7 @@ uses()->group('challenges');
 
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
-    config()->set(key: 'level-up.user.model', value: \LevelUp\Experience\Tests\Fixtures\User::class);
+    config()->set(key: 'level-up.user.model', value: LevelUp\Experience\Tests\Fixtures\User::class);
 
     $this->challenge = Challenge::factory()->create([
         'conditions' => [

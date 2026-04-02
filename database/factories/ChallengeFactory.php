@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Database\Factories;
 
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use LevelUp\Experience\Models\Challenge;
 
@@ -47,14 +48,14 @@ class ChallengeFactory extends Factory
         ]);
     }
 
-    public function startsAt(\DateTimeInterface $date): static
+    public function startsAt(DateTimeInterface $date): static
     {
         return $this->state([
             'starts_at' => $date,
         ]);
     }
 
-    public function expiresAt(\DateTimeInterface $date): static
+    public function expiresAt(DateTimeInterface $date): static
     {
         return $this->state([
             'expires_at' => $date,

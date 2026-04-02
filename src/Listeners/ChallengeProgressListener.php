@@ -10,6 +10,7 @@ use LevelUp\Experience\Events\StreakIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Services\ChallengeService;
+use Throwable;
 
 class ChallengeProgressListener
 {
@@ -24,7 +25,7 @@ class ChallengeProgressListener
 
         try {
             app(abstract: ChallengeService::class)->evaluateForUser(user: $user, conditionTypes: $conditionTypes);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             report($e);
         }
     }

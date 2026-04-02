@@ -17,7 +17,7 @@ uses()->group('challenges', 'listeners');
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
     config()->set(key: 'level-up.challenges.enabled', value: true);
-    config()->set(key: 'level-up.user.model', value: \LevelUp\Experience\Tests\Fixtures\User::class);
+    config()->set(key: 'level-up.user.model', value: LevelUp\Experience\Tests\Fixtures\User::class);
 });
 
 test(description: 'ChallengeProgressListener is registered on PointsIncreased', closure: function (): void {
@@ -53,7 +53,7 @@ test(description: 'ChallengeProgressListener is NOT registered on ChallengeCompl
     try {
         Event::assertListening(expectedEvent: ChallengeCompleted::class, expectedListener: ChallengeProgressListener::class);
         $listening = true;
-    } catch (\PHPUnit\Framework\AssertionFailedError) {
+    } catch (PHPUnit\Framework\AssertionFailedError) {
         $listening = false;
     }
 

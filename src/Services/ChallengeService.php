@@ -136,7 +136,7 @@ class ChallengeService
                 'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: false)),
             ]);
         } catch (UniqueConstraintViolationException) {
-            // Already enrolled via a concurrent event — safe to continue
+            //
         }
     }
 

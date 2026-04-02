@@ -19,7 +19,7 @@ uses()->group('challenges');
 beforeEach(closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
     config()->set(key: 'level-up.challenges.enabled', value: true);
-    config()->set(key: 'level-up.user.model', value: \LevelUp\Experience\Tests\Fixtures\User::class);
+    config()->set(key: 'level-up.user.model', value: LevelUp\Experience\Tests\Fixtures\User::class);
 });
 
 test(description: 'challenge completes when all conditions are met', closure: function (): void {
@@ -404,7 +404,7 @@ test(description: 'unknown condition type returns false', closure: function (): 
 });
 
 test(description: 'method_exists guard returns false when user missing trait', closure: function (): void {
-    $minimalUser = new class extends \Illuminate\Database\Eloquent\Model
+    $minimalUser = new class extends Illuminate\Database\Eloquent\Model
     {
         protected $table = 'users';
 
@@ -444,8 +444,6 @@ test(description: 'mixed condition types in one challenge', closure: function ()
 
     Event::assertDispatched(event: ChallengeCompleted::class);
 });
-
-// Integration tests
 
 test(description: 'E2E: auto-enroll → addPoints → complete → rewards dispatched', closure: function (): void {
     $challenge = Challenge::factory()->autoEnroll()->create([
