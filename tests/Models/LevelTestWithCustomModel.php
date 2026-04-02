@@ -3,11 +3,12 @@
 declare(strict_types=1);
 
 use LevelUp\Experience\Exceptions\LevelExistsException;
+use LevelUp\Experience\Tests\Fixtures\Level;
 
 uses()->group('levels');
 
 beforeEach(function (): void {
-    config()->set('level-up.models.level', LevelUp\Experience\Tests\Fixtures\Level::class);
+    config()->set('level-up.models.level', Level::class);
 });
 
 it(description: 'is a custom model', closure: function (): void {

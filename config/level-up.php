@@ -2,20 +2,33 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
+use LevelUp\Experience\Models\Achievement;
+use LevelUp\Experience\Models\Activity;
+use LevelUp\Experience\Models\Challenge;
+use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\ExperienceAudit;
+use LevelUp\Experience\Models\Level;
+use LevelUp\Experience\Models\Pivots\AchievementUser;
+use LevelUp\Experience\Models\Pivots\ChallengeUser;
+use LevelUp\Experience\Models\Streak;
+use LevelUp\Experience\Models\StreakHistory;
+use LevelUp\Experience\Models\Tier;
+
 return [
 
     'models' => [
-        'achievement' => LevelUp\Experience\Models\Achievement::class,
-        'activity' => LevelUp\Experience\Models\Activity::class,
-        'experience' => LevelUp\Experience\Models\Experience::class,
-        'experience_audit' => LevelUp\Experience\Models\ExperienceAudit::class,
-        'level' => LevelUp\Experience\Models\Level::class,
-        'streak' => LevelUp\Experience\Models\Streak::class,
-        'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
-        'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
-        'tier' => LevelUp\Experience\Models\Tier::class,
-        'challenge' => LevelUp\Experience\Models\Challenge::class,
-        'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'achievement' => Achievement::class,
+        'activity' => Activity::class,
+        'experience' => Experience::class,
+        'experience_audit' => ExperienceAudit::class,
+        'level' => Level::class,
+        'streak' => Streak::class,
+        'streak_history' => StreakHistory::class,
+        'achievement_user' => AchievementUser::class,
+        'tier' => Tier::class,
+        'challenge' => Challenge::class,
+        'challenge_user' => ChallengeUser::class,
     ],
 
     /*
@@ -28,7 +41,7 @@ return [
      */
     'user' => [
         'foreign_key' => 'user_id',
-        'model' => App\Models\User::class,
+        'model' => User::class,
         'users_table' => 'users',
     ],
 
