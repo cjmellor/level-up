@@ -56,7 +56,7 @@ class ChallengeService
         } finally {
             self::$evaluatingUsers = array_filter(
                 self::$evaluatingUsers,
-                fn ($id): bool => $id !== $user->id,
+                fn (int|string $id): bool => $id !== $user->id,
             );
         }
     }
@@ -107,7 +107,7 @@ class ChallengeService
         return $challengeModel::query()
             ->active()
             ->autoEnroll()
-            ->when(! empty($excludeIds), fn ($q) => $q->whereNotIn('id', $excludeIds))
+            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('id', $excludeIds))
             ->whereDoesntHave('users', fn ($q) => $q
                 ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
             )
@@ -275,7 +275,7 @@ class ChallengeService
             return false;
         }
 
-        return app(abstract: $class)->check(user: $user, condition: $condition);
+        return resolve($class)->check(user: $user, condition: $condition);
     }
 
     protected function completeChallenge(Model $user, Challenge $challenge): void

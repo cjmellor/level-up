@@ -42,20 +42,20 @@ class Challenge extends Model
         'achievement' => ['achievement_id'],
     ];
 
-    protected static function booted(): void
-    {
-        static::saving(function (Challenge $challenge): void {
-            $challenge->validateConditions();
-            $challenge->validateRewards();
-        });
-    }
-
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: 'challenge_user')
             ->using(config(key: 'level-up.models.challenge_user'))
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Challenge $challenge): void {
+            $challenge->validateConditions();
+            $challenge->validateRewards();
+        });
     }
 
     #[Scope]
@@ -99,9 +99,7 @@ class Challenge extends Model
         $lowerLabel = lcfirst($label);
 
         foreach ($entries as $index => $entry) {
-            if (! isset($entry['type'])) {
-                throw new InvalidArgumentException("{$label} at index {$index} is missing a 'type' key.");
-            }
+            throw_unless(isset($entry['type']), InvalidArgumentException::class, "{$label} at index {$index} is missing a 'type' key.");
 
             $type = $entry['type'];
 
@@ -112,17 +110,12 @@ class Challenge extends Model
             }
 
             foreach ($rules[$type] as $requiredKey) {
-                if (! array_key_exists($requiredKey, $entry)) {
-                    throw new InvalidArgumentException("{$label} '{$type}' at index {$index} is missing required key '{$requiredKey}'.");
-                }
+                throw_unless(array_key_exists($requiredKey, $entry), InvalidArgumentException::class, "{$label} '{$type}' at index {$index} is missing required key '{$requiredKey}'.");
             }
 
             if ($type === 'custom' && isset($entry['class'])) {
                 $class = $entry['class'];
-
-                if (! class_exists($class) || ! is_subclass_of($class, ChallengeCondition::class)) {
-                    throw new InvalidArgumentException("{$label} at index {$index}: class '{$class}' must exist and implement ChallengeCondition.");
-                }
+                throw_if(! class_exists($class) || ! is_subclass_of($class, ChallengeCondition::class), InvalidArgumentException::class, "{$label} at index {$index}: class '{$class}' must exist and implement ChallengeCondition.");
             }
         }
     }

@@ -124,7 +124,7 @@ trait HasChallenges
 
     private function freshChallengeProgress(Challenge $challenge): string
     {
-        return json_encode(value: app(abstract: ChallengeService::class)->initializeProgress(
+        return json_encode(value: resolve(ChallengeService::class)->initializeProgress(
             user: $this,
             challenge: $challenge,
         ));

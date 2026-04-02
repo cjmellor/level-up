@@ -24,7 +24,7 @@ class ChallengeProgressListener
         $conditionTypes = $this->mapEventToConditionTypes(event: $event);
 
         try {
-            app(abstract: ChallengeService::class)->evaluateForUser(user: $user, conditionTypes: $conditionTypes);
+            resolve(ChallengeService::class)->evaluateForUser(user: $user, conditionTypes: $conditionTypes);
         } catch (Throwable $e) {
             report($e);
         }
