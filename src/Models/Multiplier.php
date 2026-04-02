@@ -65,15 +65,17 @@ class Multiplier extends Model
     #[Scope]
     protected function active(Builder $query): void
     {
+        $now = now();
+
         $query
             ->where('is_active', true)
             ->where(fn (Builder $q): Builder => $q
                 ->whereNull('starts_at')
-                ->orWhere('starts_at', '<=', now())
+                ->orWhere('starts_at', '<=', $now)
             )
             ->where(fn (Builder $q): Builder => $q
                 ->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now())
+                ->orWhere('expires_at', '>=', $now)
             );
     }
 
