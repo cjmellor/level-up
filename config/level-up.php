@@ -28,7 +28,7 @@ return [
      */
     'user' => [
         'foreign_key' => 'user_id',
-        'model' => App\Models\User::class,
+        'model' => User::class,
         'users_table' => 'users',
     ],
 
