@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\StreakBroken;
 use LevelUp\Experience\Events\StreakFrozen;
@@ -14,7 +16,7 @@ uses()->group('streaks');
 
 beforeEach(closure: fn () => $this->activity = Activity::factory()->create());
 
-test(description: 'record a streak if one does not exist for the activity', closure: function () {
+test(description: 'record a streak if one does not exist for the activity', closure: function (): void {
     Event::fake();
 
     $this->user->recordStreak($this->activity);
@@ -36,27 +38,23 @@ test(description: 'record a streak if one does not exist for the activity', clos
     ]);
 });
 
-test(description: 'if an activity happens more than once on the same day, nothing will happen', closure: function () {
+test(description: 'if an activity happens more than once on the same day, nothing will happen', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
     expect($this->activity)->streaks->toHaveCount(count: 1);
 
-    // Now, simulate the same activity being recorded
     $this->user->recordStreak($this->activity);
 
-    // ... there should still only be one streak record
     expect($this->activity)->streaks->toHaveCount(count: 1);
 
-    // Finally, check the data hasn't changed
     $this->assertDatabaseHas(table: 'streaks', data: [
         'user_id' => $this->user->id,
         'activity_id' => $this->activity->id,
         'count' => 1,
-        // 'activity_at' => now(),
     ]);
 });
 
-test(description: 'when a streak record exists, update the data', closure: function () {
+test(description: 'when a streak record exists, update the data', closure: function (): void {
     Event::fake();
 
     $this->user->recordStreak($this->activity);
@@ -65,7 +63,6 @@ test(description: 'when a streak record exists, update the data', closure: funct
         ->and($this->activity)->streaks->first()->count->toBe(expected: 1)
         ->and($this->activity)->streaks->first()->activity_at->toBeCarbon(now());
 
-    // Now, simulate the record happening the next day and instead, been updated
     travel(1)->day();
 
     $this->user->recordStreak($this->activity);
@@ -78,10 +75,8 @@ test(description: 'when a streak record exists, update the data', closure: funct
             && $event->streak->count === 2
     );
 
-    // There should still only be one streak record
     expect($this->activity)->streaks->toHaveCount(count: 1);
 
-    // Finally, check the data has been updated
     $this->assertDatabaseHas(table: 'streaks', data: [
         'user_id' => $this->user->id,
         'activity_id' => $this->activity->id,
@@ -90,7 +85,7 @@ test(description: 'when a streak record exists, update the data', closure: funct
     ]);
 });
 
-test(description: 'a User\'s streak is broken when they miss a day', closure: function () {
+test(description: 'a User\'s streak is broken when they miss a day', closure: function (): void {
     Event::fake();
 
     $this->user->recordStreak($this->activity);
@@ -98,7 +93,6 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
         ->and($this->activity)->streaks->first()->count->toBe(expected: 1)
         ->and($this->activity)->streaks->first()->activity_at->toBeCarbon(now());
 
-    // Simulate the activity happening again the next day
     travel(value: 1)->day();
 
     $this->user->recordStreak($this->activity);
@@ -106,7 +100,6 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
         ->and($this->activity)->fresh()->streaks->first()->count->toBe(expected: 2)
         ->and($this->activity)->fresh()->streaks->first()->activity_at->toBeCarbon(now());
 
-    // Simulate the activity happening again the next day
     travel(value: 2)->days();
 
     $this->user->recordStreak($this->activity);
@@ -123,20 +116,20 @@ test(description: 'a User\'s streak is broken when they miss a day', closure: fu
     );
 });
 
-test(description: 'the Users current streak count is correct', closure: function () {
+test(description: 'the Users current streak count is correct', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
     expect($this->user->streaks)->toHaveCount(count: 1)
         ->and($this->user)->getCurrentStreakCount($this->activity)->toBe(1);
 });
 
-test(description: 'a User has a streak going', closure: function () {
+test(description: 'a User has a streak going', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
     expect($this->user)->hasStreakToday($this->activity)->toBeTrue();
 });
 
-test(description: 'a User\'s streak can be reset', closure: function () {
+test(description: 'a User\'s streak can be reset', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
     expect($this->user)->hasStreakToday($this->activity)->toBeTrue();
@@ -147,29 +140,23 @@ test(description: 'a User\'s streak can be reset', closure: function () {
     expect($this->user)->getCurrentStreakCount($this->activity)->toBe(expected: 1);
 });
 
-test(description: 'when a streak is broken, it is also archived for historical usage', closure: function () {
-    // Simulate a 3 day streak
-    // Day 1
+test(description: 'when a streak is broken, it is also archived for historical usage', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
-    // Day 2
     travel(value: 1)->day();
     $this->user->recordStreak($this->activity);
 
-    // Day 3
     travel(value: 1)->day();
     $this->user->recordStreak($this->activity);
 
     expect($this->user)->streaks->toHaveCount(count: 1)
         ->and($this->user)->getCurrentStreakCount($this->activity)->toBe(3);
 
-    // Now, break the streak
     travel(value: 2)->days();
     $this->user->recordStreak($this->activity);
 
     expect($this->user)->getCurrentStreakCount($this->activity)->toBe(expected: 1);
 
-    // Check the streak's history data is correct...
     $this->assertDatabaseHas(table: 'streak_histories', data: [
         'user_id' => $this->user->id,
         'activity_id' => $this->activity->id,
@@ -179,7 +166,7 @@ test(description: 'when a streak is broken, it is also archived for historical u
     ]);
 });
 
-test(description: 'a streak can be frozen', closure: function () {
+test(description: 'a streak can be frozen', closure: function (): void {
     Event::fake();
 
     $this->user->recordStreak($this->activity);
@@ -195,7 +182,7 @@ test(description: 'a streak can be frozen', closure: function () {
     );
 });
 
-test(description: 'a streak can be unfrozen', closure: function () {
+test(description: 'a streak can be unfrozen', closure: function (): void {
     Event::fake();
 
     $this->user->recordStreak($this->activity);
@@ -211,7 +198,7 @@ test(description: 'a streak can be unfrozen', closure: function () {
     Event::assertDispatched(event: StreakUnfroze::class);
 });
 
-test(description: 'when a streak is frozen, it does not break', closure: function () {
+test(description: 'when a streak is frozen, it does not break', closure: function (): void {
     $this->user->recordStreak($this->activity);
 
     travel(value: 1)->day();
@@ -227,7 +214,7 @@ test(description: 'when a streak is frozen, it does not break', closure: functio
     expect($this->user)->getCurrentStreakCount($this->activity)->toBe(expected: 3);
 });
 
-test('when a streak is frozen and freeze duration has passed, streak count will reset', function () {
+test('when a streak is frozen and freeze duration has passed, streak count will reset', function (): void {
     $this->user->recordStreak($this->activity);
 
     travel(value: 1)->day();
@@ -241,4 +228,12 @@ test('when a streak is frozen and freeze duration has passed, streak count will 
     $this->user->recordStreak($this->activity);
 
     expect($this->user)->getCurrentStreakCount($this->activity)->toBe(expected: 1);
+});
+
+test(description: 'hasStreakToday returns false when no streak exists', closure: function (): void {
+    expect($this->user->hasStreakToday($this->activity))->toBeFalse();
+});
+
+test(description: 'freezeStreak returns false when no streak exists', closure: function (): void {
+    expect($this->user->freezeStreak($this->activity))->toBeFalse();
 });

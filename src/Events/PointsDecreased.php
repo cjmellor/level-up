@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Events;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,9 +12,9 @@ class PointsDecreased
     use Dispatchable;
 
     public function __construct(
-        public int $pointsDecreasedBy,
-        public int $totalPoints,
-        public ?string $reason,
-        public Model $user,
+        public readonly int $pointsDecreasedBy,
+        public readonly int $totalPoints,
+        public readonly ?string $reason,
+        public readonly Model $user,
     ) {}
 }

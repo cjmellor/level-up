@@ -1,10 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience;
 
-use LevelUp\Experience\Commands\MakeMultiplierCommand;
 use LevelUp\Experience\Providers\EventServiceProvider;
-use LevelUp\Experience\Providers\MultiplierServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -15,7 +15,6 @@ class LevelUpServiceProvider extends PackageServiceProvider
     {
         $package
             ->name(name: 'level-up')
-            ->hasCommand(commandClassName: MakeMultiplierCommand::class)
             ->hasConfigFile()
             ->hasMigrations([
                 'create_levels_table',
@@ -29,6 +28,15 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_streak_histories_table',
                 'add_streak_freeze_feature_columns_to_streaks_table',
                 'remove_level_id_column_from_users_table',
+                'alter_experience_audits_type_to_string',
+                'create_tiers_table',
+                'add_tier_id_to_experiences_table',
+                'add_tier_id_to_achievements_table',
+                'create_multipliers_table',
+                'create_multiplier_scopes_table',
+                'add_multipliers_column_to_experience_audits_table',
+                'create_challenges_table',
+                'create_challenge_user_table',
             ]);
     }
 
@@ -37,7 +45,6 @@ class LevelUpServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->register(provider: EventServiceProvider::class);
-        $this->app->singleton(abstract: 'leaderboard', concrete: fn () => new LeaderboardService);
-        $this->app->register(provider: MultiplierServiceProvider::class);
+        $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
     }
 }

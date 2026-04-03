@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Listeners\UserLevelledUpListener;
@@ -9,7 +11,7 @@ beforeEach(closure: function (): void {
     config()->set(key: 'level-up.audit.enabled', value: true);
 });
 
-it(description: 'adds audit data when a User level\'s up', closure: function () {
+it(description: 'adds audit data when a User level\'s up', closure: function (): void {
     $this->user->addPoints(100);
 
     expect($this->user)->experienceHistory->count()->toBe(expected: 3);
@@ -23,7 +25,7 @@ it(description: 'adds audit data when a User level\'s up', closure: function () 
     ]);
 });
 
-test(description: 'the Event and Listener run when levelling up', closure: function () {
+test(description: 'the Event and Listener run when levelling up', closure: function (): void {
     Event::fake();
 
     $this->user->addPoints(100);
@@ -32,7 +34,7 @@ test(description: 'the Event and Listener run when levelling up', closure: funct
     Event::assertListening(expectedEvent: UserLevelledUp::class, expectedListener: UserLevelledUpListener::class);
 });
 
-test(description: 'when a User levels up more than once, an event runs for each level', closure: function (int $level) {
+test(description: 'when a User levels up more than once, an event runs for each level', closure: function (int $level): void {
     Event::fake();
 
     $this->user->addPoints(300);

@@ -1,8 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Events;
 
-class StreakUnfroze
-{
-    public function __construct() {}
-}
+class StreakUnfroze {}

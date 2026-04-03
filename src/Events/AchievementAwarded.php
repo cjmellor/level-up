@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Events;
 
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +13,7 @@ class AchievementAwarded
     use Dispatchable;
 
     public function __construct(
-        public Achievement $achievement,
-        public Model $user,
+        public readonly Achievement $achievement,
+        public readonly Model $user,
     ) {}
 }

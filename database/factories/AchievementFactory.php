@@ -1,10 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use LevelUp\Experience\Models\Achievement;
 
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\LevelUp\Experience\Models\Achievement>
+ */
 class AchievementFactory extends Factory
 {
     protected $model = Achievement::class;
@@ -15,9 +20,9 @@ class AchievementFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name,
-            'description' => fake()->sentence,
-            'image' => fake()->imageUrl,
+            'name' => fake()->name(),
+            'description' => fake()->sentence(),
+            'image' => fake()->imageUrl(),
         ];
     }
 

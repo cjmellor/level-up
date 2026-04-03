@@ -2,6 +2,57 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v2.0.0 - 2026-04-03
+
+### Added
+
+- **DB-backed multiplier system** with `Multiplier` and `MultiplierScope` models, replacing the class-based approach
+- Multipliers can be scoped to specific users or tiers via polymorphic `scopeTo()` method
+- Three stacking strategies: `compound` (multiply together), `additive` (sum values), `highest` (largest only)
+- Time-windowed multipliers with `starts_at`/`expires_at` and automatic active/expired/scheduled scoping
+- `MultiplierApplied` event fires when multipliers modify point awards, including audit trail data
+- Multiplier data stored in experience audit records for full traceability
+- **Tier system** with automatic promotion/demotion based on points, tier-gated achievements, tier multipliers, streak freeze durations, and leaderboard filtering
+- **Challenge system** with multi-condition goals (points earned, level reached, achievement earned, streak count, tier reached, custom), auto-enrollment, repeatable challenges with baseline tracking, and reward dispatch (points, achievements)
+- **Custom challenge conditions** via `ChallengeCondition` contract for extensible goal types
+- Challenge lifecycle events: `ChallengeCompleted`, `ChallengeEnrolled`, `ChallengeUnenrolled`
+- Tier events: `UserTierUpdated` with promotion/demotion direction
+- `HasChallenges` trait with enrollment, unenrollment, progress tracking, and completion percentage
+- `HasTiers` trait with tier queries, multiplier integration, and `isAtOrAboveTier()` checks
+- `ChallengeProgressListener` evaluates challenges on points, achievements, streaks, levels, and tier changes
+- `PointsDecreasedListener` for tier demotion on point loss
+- `UserTierUpdatedListener` for tier-aware side effects
+- Re-entrancy guard in `ChallengeService` prevents infinite loops from reward cascades
+- Laravel Boost skills and guidelines for development assistance
+
+### Changed
+
+- **Minimum PHP 8.3**, **minimum Laravel 12**
+- Replaced class-based multiplier system (contracts, service provider, artisan command, stubs) with database-driven `Multiplier` model
+- Multiplier configuration simplified to `enabled` and `stack_strategy` options
+- Inline multipliers now stack with DB multipliers when the feature is enabled
+- Modernized to Laravel conventions: `Scope` attribute, typed config, `throw_unless`/`throw_if` helpers
+- Replaced `app()` calls with `resolve()` throughout
+- Leaderboard service now filters by `Tier` instance check instead of truthy value
+- Applied strict types and Rector/Pint modernisation across the codebase
+- Updated GitHub Actions test matrix for Laravel 13
+
+### Removed
+
+- `MakeMultiplierCommand` artisan command
+- `Multiplier` contract interface
+- `MultiplierServiceProvider`
+- `MultiplierService`
+- `Multiplier.stub` template
+- Class-based multiplier fixtures (`HasExternalData`, `IsMonthDecember`)
+
+### Fixed
+
+- `resolve()` named parameter bug (`abstract:` → positional) that silently broke challenge evaluation via `catch (Throwable)`
+- `scopeTo()` now idempotent — calling with the same model twice no longer creates duplicate scopes
+- Race conditions in tier system hardened
+- Re-entrancy guard scoped per-user, not globally
+
 ## v1.5.1 - 2025-09-28
 
 ### What's Changed

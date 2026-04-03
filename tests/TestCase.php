@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use LevelUp\Experience\LevelUpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
+/**
+ * @property \LevelUp\Experience\Tests\Fixtures\User $user
+ * @property \LevelUp\Experience\Models\Challenge $challenge
+ * @property \LevelUp\Experience\Models\Activity $activity
+ */
 class TestCase extends Orchestra
 {
     protected function setUp(): void
@@ -27,8 +32,9 @@ class TestCase extends Orchestra
     protected function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
+        config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
 
-        app('db')->connection()->getSchemaBuilder()->create('users', function ($table): void {
+        \Illuminate\Support\Facades\Schema::create('users', function ($table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
@@ -50,6 +56,15 @@ class TestCase extends Orchestra
             'add_streak_freeze_feature_columns_to_streaks_table',
             'add_level_relationship_to_users_table',
             'remove_level_id_column_from_users_table',
+            'alter_experience_audits_type_to_string',
+            'create_tiers_table',
+            'add_tier_id_to_experiences_table',
+            'add_tier_id_to_achievements_table',
+            'create_multipliers_table',
+            'create_multiplier_scopes_table',
+            'add_multipliers_column_to_experience_audits_table',
+            'create_challenges_table',
+            'create_challenge_user_table',
         ];
 
         foreach ($migrations as $migrationFile) {

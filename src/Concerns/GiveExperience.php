@@ -1,36 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Concerns;
 
-use Closure;
 use Exception;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
+use LevelUp\Experience\Events\MultiplierApplied;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Services\MultiplierService;
 
 trait GiveExperience
 {
-    protected ?Closure $multiplierCondition = null;
-
-    protected ?Collection $multiplierData = null;
-
     public function addPoints(
         int $amount,
-        ?int $multiplier = null,
+        int|float|null $multiplier = null,
         ?string $type = null,
         ?string $reason = null
     ): Experience {
-        if ($type === null) {
-            $type = AuditType::Add->value;
-        }
+        throw_if($multiplier !== null && $multiplier <= 0, InvalidArgumentException::class, message: 'Multiplier must be greater than 0.');
+
+        $type ??= AuditType::Add->value;
 
         $levelClass = config(key: 'level-up.models.level');
 
@@ -40,39 +36,17 @@ trait GiveExperience
             message: 'Points exceed the last level\'s experience points.',
         );
 
-        /**
-         * If the Multiplier Service is enabled, apply the Multipliers.
-         */
-        if (config(key: 'level-up.multiplier.enabled') && file_exists(filename: config(key: 'level-up.multiplier.path'))) {
-            $amount = $this->getMultipliers(amount: $amount);
-        }
+        [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
-        if ($this->multiplierCondition instanceof Closure && is_null($multiplier)) {
-            throw new InvalidArgumentException(message: 'Multiplier is not set');
-        }
-
-        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
-            $multiplier = 1;
-        }
-
-        if ($multiplier) {
-            $amount *= $multiplier;
-        }
-
-        /**
-         * If the User does not have an Experience record, create one.
-         */
         if ($this->experience()->doesntExist()) {
             $startingLevel = config(key: 'level-up.starting_level');
 
-            // Find the appropriate level based on experience points
             $level = $levelClass::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $amount)
-                ->where(column: 'next_level_experience', operator: '!=', value: null)
+                ->whereNotNull(columns: 'next_level_experience')
                 ->orderByDesc(column: 'next_level_experience')
                 ->first();
 
-            // If no qualifying level found, use starting level
             if (! $level) {
                 $level = $levelClass::firstOrCreate(
                     ['level' => $startingLevel],
@@ -80,71 +54,38 @@ trait GiveExperience
                 );
             }
 
-            $experience = $this->experience()->create(attributes: [
+            $this->experience()->create(attributes: [
                 'level_id' => $level->id,
                 'experience_points' => $amount,
             ]);
 
-            $this->dispatchEvent($amount, $type, $reason);
+            $this->load('experience');
 
-            // Only dispatch UserLevelledUp events if the user is above the starting level
+            $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
+
             if ($level->level > $startingLevel) {
                 for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
-                    Event::dispatch(event: new UserLevelledUp(user: $this, level: $lvl));
+                    event(new UserLevelledUp(user: $this, level: $lvl));
                 }
             }
 
             return $this->experience;
         }
 
-        /**
-         * If the User does have an Experience record, update it.
-         */
         if ($this->levelCapExceedsUserLevel()) {
             return $this->experience;
         }
 
         $this->experience->increment(column: 'experience_points', amount: $amount);
 
-        $this->dispatchEvent($amount, $type, $reason);
+        $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
 
         return $this->experience;
-    }
-
-    protected function getMultipliers(int $amount): int
-    {
-        if (isset($this->multiplierCondition) && ! ($this->multiplierCondition)()) {
-            return $amount;
-        }
-
-        $multiplierService = app(abstract: MultiplierService::class, parameters: [
-            'data' => $this->multiplierData ? $this->multiplierData->toArray() : [],
-        ]);
-
-        return $multiplierService(points: $amount);
     }
 
     public function experience(): HasOne
     {
         return $this->hasOne(related: config('level-up.models.experience'));
-    }
-
-    protected function dispatchEvent(int $amount, string $type, ?string $reason): void
-    {
-        event(new PointsIncreased(
-            pointsAdded: $amount,
-            totalPoints: $this->experience->experience_points,
-            type: $type,
-            reason: $reason,
-            user: $this,
-        ));
-    }
-
-    protected function levelCapExceedsUserLevel(): bool
-    {
-        return config(key: 'level-up.level_cap.enabled')
-            && $this->getLevel() >= config(key: 'level-up.level_cap.level')
-            && ! (config(key: 'level-up.level_cap.points_continue'));
     }
 
     public function getLevel(): int
@@ -159,9 +100,7 @@ trait GiveExperience
 
     public function deductPoints(int $amount, ?string $reason = null): Experience
     {
-        if ($this->experience()->doesntExist()) {
-            return $this->experience;
-        }
+        throw_unless($this->experience()->exists(), Exception::class, 'User has no experience record.');
 
         $this->experience->decrement(column: 'experience_points', amount: $amount);
 
@@ -175,31 +114,15 @@ trait GiveExperience
         return $this->experience;
     }
 
-    /**
-     * @throws Exception
-     */
     public function setPoints(int $amount): Experience
     {
-        if (! $this->experience()->exists()) {
-            throw new Exception(message: 'User has no experience record.');
-        }
+        throw_unless($this->experience()->exists(), Exception::class, message: 'User has no experience record.');
 
         $this->experience->update(attributes: [
             'experience_points' => $amount,
         ]);
 
         return $this->experience;
-    }
-
-    public function withMultiplierData(array|callable $data): static
-    {
-        if ($data instanceof Closure) {
-            $this->multiplierCondition = $data;
-        } else {
-            $this->multiplierData = collect(value: $data);
-        }
-
-        return $this;
     }
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
@@ -216,13 +139,22 @@ trait GiveExperience
             return 0;
         }
 
-        $currentLevelExperience = $levelClass::firstWhere(column: 'level', operator: '=', value: $this->getLevel())->next_level_experience;
+        $currentLevel = $levelClass::firstWhere(column: 'level', operator: '=', value: $this->getLevel());
 
-        if ($showAsPercentage) {
-            return (int) ((($this->getPoints() - $currentLevelExperience) / ($nextLevel->next_level_experience - $currentLevelExperience)) * 100);
+        if (! $currentLevel) {
+            return 0;
         }
 
-        return max(0, ($nextLevel->next_level_experience - $currentLevelExperience) - ($this->getPoints() - $currentLevelExperience));
+        $currentLevelExperience = $currentLevel->next_level_experience ?? 0;
+        $range = $nextLevel->next_level_experience - $currentLevelExperience;
+
+        if ($showAsPercentage) {
+            return $range > 0
+                ? (int) ((($this->getPoints() - $currentLevelExperience) / $range) * 100)
+                : 0;
+        }
+
+        return max(0, $range - ($this->getPoints() - $currentLevelExperience));
     }
 
     public function getPoints(): int
@@ -239,19 +171,108 @@ trait GiveExperience
         $levelClass = config(key: 'level-up.models.level');
         $level = $levelClass::firstWhere(column: 'level', operator: '=', value: $to);
 
-        if ($level) {
-            $this->experience->status()->associate(model: $level);
-            $this->experience->save();
-        }
+        throw_unless($level, InvalidArgumentException::class, "Level {$to} does not exist.");
 
-        // TODO: In next major version, enforce strict behavior by throwing when level is missing.
-        // if (! $level) {
-        //     throw new InvalidArgumentException("Level {$to} does not exist");
-        // }
+        $previousLevel = $this->getLevel();
 
-        // Fire an event for each level gained
-        for ($lvl = $this->getLevel(); $lvl <= $to; $lvl++) {
+        $this->experience->status()->associate(model: $level);
+        $this->experience->save();
+
+        for ($lvl = $previousLevel + 1; $lvl <= $to; $lvl++) {
             event(new UserLevelledUp(user: $this, level: $lvl));
         }
+    }
+
+    /**
+     * @return array{0: int, 1: Collection}
+     */
+    protected function resolveMultipliers(int $amount, int|float|null $inlineMultiplier): array
+    {
+        $appliedMultipliers = collect();
+
+        if (! config(key: 'level-up.multiplier.enabled')) {
+            if ($inlineMultiplier !== null) {
+                $amount = (int) round($amount * $inlineMultiplier);
+            }
+
+            return [$amount, $appliedMultipliers];
+        }
+
+        $multiplierClass = config(key: 'level-up.models.multiplier');
+        $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
+
+        $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v): float => (float) $v);
+
+        if ($inlineMultiplier !== null) {
+            $allValues->push((float) $inlineMultiplier);
+        }
+
+        $originalAmount = $amount;
+        $strategy = config(key: 'level-up.multiplier.stack_strategy', default: 'compound');
+
+        if ($allValues->isNotEmpty()) {
+            $amount = $this->applyStackingStrategy($amount, $allValues, $strategy);
+        }
+
+        if ($appliedMultipliers->isNotEmpty() || $inlineMultiplier !== null) {
+            event(new MultiplierApplied(
+                user: $this,
+                multipliers: $appliedMultipliers,
+                originalAmount: $originalAmount,
+                finalAmount: $amount,
+                strategy: $strategy,
+            ));
+        }
+
+        return [$amount, $appliedMultipliers];
+    }
+
+    protected function applyStackingStrategy(int $amount, Collection $multiplierValues, string $strategy): int
+    {
+        return (int) round(match ($strategy) {
+            'compound' => $amount * $multiplierValues->reduce(fn (float $carry, float $value): float => $carry * $value, 1.0),
+            'additive' => $amount * $multiplierValues->sum(),
+            'highest' => $amount * $multiplierValues->max(),
+            default => throw new InvalidArgumentException("Unknown multiplier stack strategy: {$strategy}"),
+        });
+    }
+
+    protected function dispatchEvent(int $amount, string $type, ?string $reason, ?Collection $appliedMultipliers = null, int|float|null $inlineMultiplier = null): void
+    {
+        $auditData = $this->buildMultiplierAuditData($appliedMultipliers, $inlineMultiplier);
+
+        event(new PointsIncreased(
+            pointsAdded: $amount,
+            totalPoints: $this->experience->experience_points,
+            type: $type,
+            reason: $reason,
+            user: $this,
+            multipliers: $auditData,
+        ));
+    }
+
+    protected function buildMultiplierAuditData(?Collection $appliedMultipliers, int|float|null $inlineMultiplier): ?array
+    {
+        if ($appliedMultipliers?->isEmpty() && $inlineMultiplier === null) {
+            return null;
+        }
+
+        $auditData = $appliedMultipliers
+            ?->map(fn ($m): array => ['id' => $m->id, 'name' => $m->name, 'value' => (float) $m->multiplier])
+            ->values()
+            ->all() ?? [];
+
+        if ($inlineMultiplier !== null) {
+            $auditData[] = ['id' => null, 'name' => 'inline', 'value' => (float) $inlineMultiplier];
+        }
+
+        return $auditData ?: null;
+    }
+
+    protected function levelCapExceedsUserLevel(): bool
+    {
+        return config(key: 'level-up.level_cap.enabled')
+            && $this->getLevel() >= config(key: 'level-up.level_cap.level')
+            && ! config(key: 'level-up.level_cap.points_continue');
     }
 }

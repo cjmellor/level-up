@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use LevelUp\Experience\Exceptions\LevelExistsException;
 use LevelUp\Experience\Models\Level;
 
@@ -20,6 +22,6 @@ it(description: 'can create a level', closure: function (): void {
 });
 
 it(description: 'throws an error if a level exists', closure: function (): void {
-    Level::add(level: 1, pointsToNextLevel: 100);
-    Level::add(level: 1, pointsToNextLevel: 100);
+    Level::add(['level' => 1, 'next_level_experience' => 100]);
+    Level::add(['level' => 1, 'next_level_experience' => 100]);
 })->throws(exception: LevelExistsException::class, exceptionMessage: 'The level with number "1" already exists');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Listeners\PointsDecreasedListener;
@@ -8,20 +10,18 @@ uses()->group('experience');
 
 beforeEach(closure: fn () => config()->set(key: 'level-up.multiplier.enabled', value: false));
 
-test(description: 'the Event is dispatched when points are decreased', closure: function () {
-    Event::fakeFor(function () {
+test(description: 'the Event is dispatched when points are decreased', closure: function (): void {
+    Event::fakeFor(function (): void {
         $this->user->addPoints(amount: 100);
         $this->user->deductPoints(amount: 50, reason: 'test');
 
-        Event::assertDispatched(event: PointsDecreased::class, callback: function ($event): bool {
-            return $event->pointsDecreasedBy === 50
-                && $event->reason === 'test';
-        });
+        Event::assertDispatched(event: PointsDecreased::class, callback: fn ($event): bool => $event->pointsDecreasedBy === 50
+            && $event->reason === 'test');
         Event::assertListening(expectedEvent: PointsDecreased::class, expectedListener: PointsDecreasedListener::class);
     });
 });
 
-test(description: 'the Event Listener runs and logs the audit', closure: function () {
+test(description: 'the Event Listener runs and logs the audit', closure: function (): void {
     config()->set(key: 'level-up.audit.enabled', value: true);
     config()->set(key: 'level-up.multiplier.enabled', value: false);
 

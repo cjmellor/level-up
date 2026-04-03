@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\AchievementProgressionIncreased;
@@ -42,7 +44,7 @@ test(description: 'an Event runs when an Achievement is earned', closure: functi
         $this->user->grantAchievement($this->achievement);
         Event::assertDispatched(event: AchievementAwarded::class);
 
-        $this->user->grantAchievement(Achievement::factory()->create(), 100); // grant an achievement with 100% progress
+        $this->user->grantAchievement(Achievement::factory()->create(), 100);
         Event::assertDispatched(event: AchievementAwarded::class);
     });
 });
@@ -106,7 +108,7 @@ it(description: 'can increment the progress of an Achievement', closure: functio
     ]);
 });
 
-test(description: 'a User cannot be granted the same Achievement twice', closure: function () {
+test(description: 'a User cannot be granted the same Achievement twice', closure: function (): void {
     $this->user->grantAchievement($this->achievement);
     $this->user->grantAchievement($this->achievement);
 
@@ -114,12 +116,10 @@ test(description: 'a User cannot be granted the same Achievement twice', closure
 })->throws(exception: Exception::class, exceptionMessage: 'User already has this Achievement');
 
 test(description: 'a User can have an Achievement revoked', closure: function (): void {
-    // First grant the achievement
     $this->user->grantAchievement($this->achievement);
 
     expect($this->user)->getUserAchievements()->toHaveCount(count: 1);
 
-    // Now revoke it
     $this->user->revokeAchievement($this->achievement);
 
     expect($this->user->fresh())
@@ -163,3 +163,7 @@ test(description: 'revoking a secret Achievement works correctly', closure: func
     $this->user->revokeAchievement($secretAchievement);
     expect($this->user->fresh())->secretAchievements->toHaveCount(count: 0);
 });
+
+test(description: 'incrementAchievementProgress throws when user does not have the achievement', closure: function (): void {
+    $this->user->incrementAchievementProgress($this->achievement);
+})->throws(Exception::class, 'User does not have this Achievement. Grant it first before incrementing progress.');

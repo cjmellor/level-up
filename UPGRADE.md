@@ -1,10 +1,201 @@
 # Upgrade Guide
 
+## v1.x -> v2.0
+
+### Requirements
+
+**Likelihood Of Impact: High**
+
+- **PHP 8.3+** is now required (was PHP 8.1+)
+- **Laravel 12 or 13** is now required (was Laravel 10, 11, or 12)
+
+### High Impact Changes
+
+#### Multiplier System Replaced With Database-Backed Model
+
+**Likelihood Of Impact: High**
+
+The class-based multiplier system has been entirely replaced with a database-backed Eloquent model. Multipliers are now managed at runtime via the database — no PHP classes needed.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_multipliers_table` — creates the `multipliers` table
+- `create_multiplier_scopes_table` — polymorphic scoping for user/tier targeting
+- `add_multipliers_column_to_experience_audits_table` — adds multiplier audit trail
+
+The following have been removed:
+
+- The `Multiplier` contract (`LevelUp\Experience\Contracts\Multiplier`)
+- The `MultiplierService` and `MultiplierServiceProvider`
+- The `level-up:multiplier` artisan command
+- The `withMultiplierData()` method from the `GiveExperience` trait
+- The `multiplier.path` and `multiplier.namespace` config keys (replaced with `multiplier.stack_strategy`)
+- The `tiers.multipliers` config key (use DB-scoped multipliers instead)
+
+**Migrating from class-based multipliers:**
+
+```php
+// Before (v1): PHP class with qualifies() logic
+// After (v2): Database record
+Multiplier::create([
+    'name' => 'December Holiday Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+    'starts_at' => '2026-12-01',
+    'expires_at' => '2026-12-31',
+]);
+```
+
+For multipliers with complex `qualifies()` logic, create the DB record and toggle `is_active` programmatically from your application code.
+
+**Migrating from config-based tier multipliers:**
+
+```php
+$multiplier = Multiplier::create([
+    'name' => 'Gold Tier Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+]);
+
+$multiplier->tiers()->attach(Tier::where('name', 'Gold')->first());
+```
+
+#### `addPoints()` Multiplier Parameter Type Changed
+
+**Likelihood Of Impact: High**
+
+The `$multiplier` parameter on `addPoints()` changed from `?int` to `int|float|null`. This supports fractional multipliers (e.g. `1.5`) but may affect code that strictly type-checks the parameter.
+
+### Medium Impact Changes
+
+#### `levelUp()` Now Throws on Invalid Levels
+
+**Likelihood Of Impact: Medium**
+
+Previously, calling `$user->levelUp(to: 999)` with a non-existent level would silently do nothing. In v2, it throws an `InvalidArgumentException`.
+
+#### `deductPoints()` Now Throws When No Experience Record Exists
+
+**Likelihood Of Impact: Medium**
+
+Previously, calling `$user->deductPoints(50)` on a user with no experience record would silently return. In v2, it throws an `Exception`, matching the behaviour of `setPoints()`.
+
+#### `Level::add()` Only Accepts Arrays
+
+**Likelihood Of Impact: Medium**
+
+The scalar form has been removed. Use the array form instead:
+
+```php
+// Before (v1)
+Level::add(level: 1, pointsToNextLevel: 100);
+
+// After (v2)
+Level::add(['level' => 1, 'next_level_experience' => 100]);
+```
+
+### Low Impact Changes
+
+#### `incrementAchievementProgress()` Now Throws When User Lacks the Achievement
+
+**Likelihood Of Impact: Low**
+
+Previously, this would cause a null dereference error. In v2, it throws a clear `Exception` with a helpful message.
+
+#### `grantAchievement()` Progress Parameter Is Now Typed
+
+**Likelihood Of Impact: Low**
+
+The `$progress` parameter is now typed as `?int`. If you were passing non-integer values (e.g. strings), they will now cause a `TypeError` under strict types.
+
+#### `getStreakLastActivity()` Return Type Changed
+
+**Likelihood Of Impact: Low**
+
+The method now returns `?Streak` instead of `Streak`. If you were calling this method directly, you may need to handle the `null` case.
+
+#### `AchievementUser::scopeWithProgress()` Removed
+
+**Likelihood Of Impact: Low**
+
+This scope was unused and has been removed. Use `achievementsWithSpecificProgress()` instead.
+
+### New Features
+
+#### Tiers
+
+v2.0 introduces a Tiers system for named status brackets (e.g. Bronze, Silver, Gold). Tiers are **enabled by default**.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_tiers_table` — creates the `tiers` table
+- `add_tier_id_to_experiences_table` — adds `tier_id` foreign key to experiences
+- `add_tier_id_to_achievements_table` — adds `tier_id` foreign key to achievements
+- `alter_experience_audits_type_to_string` — converts the `type` column from `enum` to `string` (required for new `tier_up`/`tier_down` audit types)
+
+**Add the `HasTiers` trait** to your User model to use tier features:
+
+```php
+use LevelUp\Experience\Concerns\HasTiers;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers;
+}
+```
+
+> [!NOTE]
+> The `HasTiers` trait is optional. If you don't add it, the existing features (points, achievements, streaks) continue to work without tiers. The package guards against missing `HasTiers` with `method_exists` checks.
+
+**To disable tiers entirely**, set `TIERS_ENABLED=false` in your `.env` file.
+
+#### DB-Backed Multipliers
+
+Multipliers can now be created, scheduled, and scoped to users or tiers entirely via the database. See the [Multipliers section in the README](README.md#multipliers) for full usage.
+
+### New: Challenges Feature
+
+v2.0 introduces a Challenges system for multi-condition goals with rewards. Users can enroll in challenges, track progress across multiple conditions (points earned, levels, achievements, streaks, tiers, custom), and earn rewards on completion.
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_challenges_table` — creates the `challenges` table
+- `create_challenge_user_table` — creates the `challenge_user` pivot table with progress tracking
+
+**Add the `HasChallenges` trait** to your User model to use challenge features:
+
+```php
+use LevelUp\Experience\Concerns\HasChallenges;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers, HasChallenges;
+}
+```
+
+> [!NOTE]
+> The `HasChallenges` trait is optional. If you don't add it, the existing features (points, achievements, streaks, tiers) continue to work without challenges. Challenges are evaluated automatically when relevant events fire (PointsIncreased, AchievementAwarded, etc.), but only if the config is enabled and the trait is present.
+
+**To disable challenges entirely**, set `CHALLENGES_ENABLED=false` in your `.env` file.
+
+### Bug Fixes Included
+
+- `levelUp()` now correctly fires `UserLevelledUp` events for all intermediate levels (previously only fired for the final level)
+- `StreakBroken` event now correctly filters by activity (previously could return the wrong streak)
+- `nextLevelAt()` no longer crashes when the current level is missing from the database
+- `freezeStreak()` no longer causes a `TypeError` when `STREAK_FREEZE_DURATION` is set via `.env`
+- `Level::add()` now catches `UniqueConstraintViolationException` specifically instead of all `Throwable`
+
+### Other Changes
+
+- `declare(strict_types=1)` has been added to all PHP files
+- All source files have been modernised with Rector (PHP 8.3 rules) and Pint (Laravel preset)
+
 ## v1.2.3 -> v1.2.4
 
 #### New Migration to remove `level_id` column from `users` table
 
-The `level_id` column in the `users` table has been removed as it was no longer relevant. Run `php artisan vendor:publish --tag=level-up-migrations` to publish the new migration files. 
+The `level_id` column in the `users` table has been removed as it was no longer relevant. Run `php artisan vendor:publish --tag=level-up-migrations` to publish the new migration files.
 
 ## v1.2.2 -> v1.2.3
 

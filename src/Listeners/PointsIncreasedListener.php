@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Listeners;
 
+use LevelUp\Experience\Enums\TierDirection;
 use LevelUp\Experience\Events\PointsIncreased;
-use LevelUp\Experience\Models\Level;
+use LevelUp\Experience\Events\UserTierUpdated;
 
 class PointsIncreasedListener
 {
@@ -16,29 +19,58 @@ class PointsIncreasedListener
                 'points' => $event->pointsAdded,
                 'type' => $event->type,
                 'reason' => $event->reason,
+                'multipliers' => $event->multipliers,
             ]);
         }
 
-        // Get the next level experience needed for the user's current level
         $nextLevel = $levelModel::firstWhere(column: 'level', operator: '=', value: $event->user->getLevel() + 1);
 
-        if (! $nextLevel) {
-            // If there is no next level, return
-            return;
-        }
-
-        // Check if user's points are equal or greater than the next level's required experience
-        if ($event->user->getPoints() >= $nextLevel->next_level_experience) {
-            // Find the highest level the user can achieve with current points
+        if ($nextLevel && $event->user->getPoints() >= $nextLevel->next_level_experience) {
             $highestAchievableLevel = $levelModel::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $event->user->getPoints())
                 ->orderByDesc(column: 'level')
                 ->first();
 
-            // Update the user level to the highest achievable level
-            if ($highestAchievableLevel->level > $event->user->getLevel()) {
+            if ($highestAchievableLevel && $highestAchievableLevel->level > $event->user->getLevel()) {
                 $event->user->levelUp(to: $highestAchievableLevel->level);
             }
         }
+
+        $this->checkTierPromotion($event);
+    }
+
+    protected function checkTierPromotion(PointsIncreased $event): void
+    {
+        if (! config(key: 'level-up.tiers.enabled')) {
+            return;
+        }
+
+        $tierClass = config(key: 'level-up.models.tier');
+        $newTier = $tierClass::forPoints(points: $event->totalPoints);
+
+        if (! $newTier) {
+            return;
+        }
+
+        $currentTierId = $event->user->experience?->tier_id;
+
+        if ($currentTierId === $newTier->id) {
+            return;
+        }
+
+        $previousTier = $currentTierId ? $tierClass::find($currentTierId) : null;
+
+        if ($previousTier && $newTier->experience <= $previousTier->experience) {
+            return;
+        }
+
+        $event->user->experience->update(['tier_id' => $newTier->id]);
+
+        event(new UserTierUpdated(
+            user: $event->user,
+            previousTier: $previousTier,
+            newTier: $newTier,
+            direction: TierDirection::Promoted,
+        ));
     }
 }

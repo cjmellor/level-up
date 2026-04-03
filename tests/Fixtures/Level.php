@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Tests\Fixtures;
 
 class Level extends \LevelUp\Experience\Models\Level

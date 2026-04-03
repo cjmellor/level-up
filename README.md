@@ -2,7 +2,7 @@
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/cjmellor/level-up/run-tests.yml?branch=main&label=tests&style=for-the-badge&color=rgb%28134%20239%20128%29)](https://github.com/cjmellor/level-up/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/cjmellor/level-up.svg?color=rgb%28249%20115%2022%29&style=for-the-badge)](https://packagist.org/packages/cjmellor/level-up)
 ![Packagist PHP Version](https://img.shields.io/packagist/dependency-v/cjmellor/level-up/php?color=rgb%28165%20180%20252%29&logo=php&logoColor=rgb%28165%20180%20252%29&style=for-the-badge)
-![Laravel Version](https://img.shields.io/badge/laravel-^10-rgb(235%2068%2050)?style=for-the-badge&logo=laravel)
+![Laravel Version](https://img.shields.io/badge/laravel-^12|^13-rgb(235%2068%2050)?style=for-the-badge&logo=laravel)
 
 This package allows users to gain experience points (XP) and progress through levels by performing actions on your site. It can provide a simple way to track user progress and implement gamification elements into your application
 
@@ -68,16 +68,16 @@ return [
 
     /*
     |-----------------------------------------------------------------------
-    | Multiplier Paths
+    | Multipliers
     |-----------------------------------------------------------------------
     |
-    | Set the path and namespace for the Multiplier classes.
+    | Configure the multiplier system. Multipliers are managed via the
+    | database and can be scoped to specific users or tiers.
     |
     */
     'multiplier' => [
         'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
-        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
-        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
+        'stack_strategy' => env(key: 'MULTIPLIER_STACK', default: 'compound'),
     ],
 
     /*
@@ -127,6 +127,16 @@ return [
      |
      */
     'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
+
+    'tiers' => [
+        'enabled' => env(key: 'TIERS_ENABLED', default: true),
+        'demotion' => env(key: 'TIER_DEMOTION', default: false),
+        'streak_freeze_days' => [],
+    ],
+
+    'challenges' => [
+        'enabled' => env(key: 'CHALLENGES_ENABLED', default: true),
+    ],
 ];
 ```
 
@@ -164,6 +174,9 @@ A new record will be added to the `experiences` table which stores the Users’ 
 $user->deductPoints(10);
 ```
 
+> [!NOTE]
+> Both `deductPoints` and `setPoints` will throw an exception if the User has no experience record.
+
 **Set XP points to a User**
 
 For an event where you just want to directly add a certain number of points to a User. Points can only be ***set*** if the User has an Experience Model.
@@ -180,99 +193,76 @@ $user->getPoints();
 
 ### Multipliers
 
-Point multipliers can be used to modify the experience point value of an event by a certain multiplier, such as doubling or tripling the point value. This can be useful for implementing temporary events or promotions that offer bonus points.
+Multipliers modify the experience points a User earns. They are managed via the database, so you can create, schedule, and toggle multipliers at runtime — no code deployments needed. This makes them ideal for building admin panels or managing promotional events.
 
-To get started, you can use an Artisan command to crease a new Multiplier.
-
-```bash
-php artisan level-up:multiplier IsMonthDecember
-```
-
-This will create a file at `app\Multipliers\IsMonthDecember.php`.
-
-Here is how the class looks:
+**Create a Multiplier**
 
 ```php
-<?php
+use LevelUp\Experience\Models\Multiplier;
 
-namespace LevelUp\Experience\Tests\Fixtures\Multipliers;
-
-use LevelUp\Experience\Contracts\Multiplier;
-
-class IsMonthDecember implements Multiplier
-{
-    public bool $enabled = true;
-    
-    public function qualifies(array $data): bool
-    {
-        return now()->month === 12;
-    }
-
-    public function setMultiplier(): int
-    {
-        return 2;
-    }
-}
+Multiplier::create([
+    ‘name’ => ‘WrestleMania Weekend’,
+    ‘multiplier’ => 5,
+    ‘is_active’ => true,
+    ‘starts_at’ => ‘2026-04-05 00:00:00’,
+    ‘expires_at’ => ‘2026-04-07 23:59:59’,
+]);
 ```
 
-Multipliers are enabled by default, but you can change the `$enabled` variable to `false` so that it won’t even run.
+Active multipliers are automatically applied when a User earns points via `addPoints()`. Time-based multipliers activate and deactivate based on `starts_at` and `expires_at`. Non-time-based multipliers (like "Man UTD Win the League") are toggled via `is_active`.
 
-The `qualifies` method is where you put your logic to check against and multiply if the result is true.
+**Scope Multipliers to Users or Tiers**
 
-This can be as simple as checking that the month is December.
+By default, a multiplier applies to all Users. You can restrict it to specific Users or Tiers:
 
 ```php
-public function qualifies(array $data): bool
-{
-    return now()->month === 12;
-}
+// Scope to specific tiers
+$multiplier->tiers()->attach([$premiumTier->id, $diamondTier->id]);
+
+// Scope to a specific user
+$multiplier->users()->attach($user->id);
+
+// Or use the convenience method with any model
+$multiplier->scopeTo($premiumTier, $diamondTier, $user);
 ```
 
-Or passing extra data along to check against. This is a bit more complex.
+If a multiplier has no scopes, it applies to everyone. If it has scopes, it only applies to Users who match (either directly or via their Tier).
 
-You can pass extra data along when you're adding points to a User. Any enabled Multiplier can then use that data to check against.
+You can also use `detach()` and `sync()` on the `tiers()` and `users()` relationships.
+
+**Query Multipliers**
 
 ```php
-$user
-    ->withMultiplierData([
-        'event_id' => 222,
-    ])
-    ->addPoints(10);
-
-//
-
-public function qualifies(array $data): bool
-{
-    return isset($data['event_id']) && $data['event_id'] === 222;
-}
+Multiplier::active()->get();               // Currently active
+Multiplier::active()->forUser($user)->get(); // Active for a specific user
+Multiplier::scheduled()->get();             // Armed but starts_at is in the future
+Multiplier::expired()->get();               // Past their expires_at
 ```
 
-**Conditional Multipliers**
+**Stacking Strategy**
 
-If you don't want to use the class based method to check conditionals to add multipliers, you can do this inline by giving the method a callback with the conditional. When using this method, make sure you have the multiplier set as an argument in the `addPoints` method, otherwise an error will occur. See example below:
+When multiple multipliers are active, you can control how they combine via the `stack_strategy` config:
 
-```php
-$user
-    ->withMultiplierData(fn () => true)
-    ->addPoints(amount: 10, multiplier: 2);
+```
+MULTIPLIER_STACK=compound   # 2x × 5x = 10x (default)
+MULTIPLIER_STACK=additive   # 2x + 5x = 7x
+MULTIPLIER_STACK=highest    # max(2x, 5x) = 5x
 ```
 
-The `setMultiplier` method expects an `int` which is the number it will be multiplied by.
+**Inline Multipliers**
 
-**Multiply Manually**
-
-You can skip this altogether and just multiply the points manually if you desire.
+You can also pass a one-off multiplier directly when adding points. This participates in the configured stacking strategy alongside any active DB multipliers:
 
 ```php
 $user->addPoints(
-    amount: 10, 
+    amount: 10,
     multiplier: 2
 );
 ```
 
 ### Events
 
-**PointsIncrease** - When points are added.
+**PointsIncreased** - When points are added.
 
 ```php
 public int $pointsAdded,
@@ -280,6 +270,17 @@ public int $totalPoints,
 public string $type,
 public ?string $reason,
 public Model $user,
+public ?array $multipliers, // Applied multipliers (if any)
+```
+
+**MultiplierApplied** - When multipliers are applied during point addition.
+
+```php
+public Model $user,
+public Collection $multipliers,   // DB multiplier models that were applied
+public int $originalAmount,       // Points before multipliers
+public int $finalAmount,          // Points after multipliers
+public string $strategy,          // 'compound', 'additive', or 'highest'
 ```
 
 **PointsDecreased** - When points are decreased.
@@ -687,6 +688,275 @@ public Carbon $frozenUntil,
 
 ```
 No data is sent with this event
+```
+
+## 🏅 Tiers
+
+Tiers provide named status brackets based on experience points — think Bronze, Silver, Gold, Platinum. Unlike levels (which are numeric progression), tiers represent **status** and can integrate with multipliers, achievements, streaks, and leaderboards.
+
+Add the `HasTiers` trait to your `User` model:
+
+```php
+use LevelUp\Experience\Concerns\HasTiers;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers;
+}
+```
+
+### Define Tiers
+
+```php
+use LevelUp\Experience\Models\Tier;
+
+Tier::add(
+    ['name' => 'Bronze', 'experience' => 0],
+    ['name' => 'Silver', 'experience' => 500],
+    ['name' => 'Gold', 'experience' => 2000],
+    ['name' => 'Platinum', 'experience' => 5000, 'metadata' => ['color' => '#E5E4E2']],
+);
+```
+
+The `metadata` column is a flexible JSON field — store whatever you need (colours, icons, descriptions).
+
+### Query Tiers
+
+```php
+$user->getTier();           // Current tier (Tier model or null)
+$user->getNextTier();       // Next tier above current
+$user->tierProgress();      // Percentage (0-100) through current bracket
+$user->nextTierAt();        // XP remaining until next tier
+$user->isAtTier('Gold');    // Check exact tier
+$user->isAtOrAboveTier('Silver'); // Check tier hierarchy
+```
+
+### Demotion
+
+By default, tiers use a **high-water mark** — once a user reaches Gold, they stay Gold even if points decrease. To enable demotion (tier drops when points drop):
+
+```
+TIER_DEMOTION=true
+```
+
+### Tier-Scoped Multipliers
+
+You can create multipliers that only apply to Users in specific tiers using the polymorphic scoping system (see the [Multipliers](#multipliers) section above):
+
+```php
+$goldMultiplier = Multiplier::create([
+    'name' => 'Gold Tier Bonus',
+    'multiplier' => 2,
+    'is_active' => true,
+]);
+
+$goldMultiplier->tiers()->attach(Tier::where('name', 'Gold')->first());
+```
+
+### Tier-Gated Achievements
+
+Restrict achievements to users who have reached a certain tier:
+
+```php
+$goldTier = Tier::where('name', 'Gold')->first();
+
+Achievement::create([
+    'name' => 'Golden Streak',
+    'tier_id' => $goldTier->id,
+]);
+```
+
+Attempting to grant this achievement to a user below Gold will throw `TierRequirementNotMet`.
+
+### Tier-Scaled Streak Freezes
+
+Higher tiers can get longer freeze durations:
+
+```php
+// config/level-up.php
+'tiers' => [
+    'streak_freeze_days' => [
+        'Bronze' => 1,
+        'Silver' => 2,
+        'Gold' => 3,
+        'Platinum' => 7,
+    ],
+],
+```
+
+### Tier-Scoped Leaderboards
+
+Filter leaderboards by tier:
+
+```php
+Leaderboard::forTier('Gold')->generate();
+```
+
+### Events
+
+**UserTierUpdated** — When a user's tier changes (promotion or demotion).
+
+```php
+public Model $user,
+public ?Tier $previousTier,
+public ?Tier $newTier,
+public TierDirection $direction, // TierDirection::Promoted or TierDirection::Demoted
+```
+
+## 🎯 Challenges
+
+Challenges are multi-condition goals that users can enroll in and complete for rewards. Think "Earn 100 XP and reach Level 5 to unlock a bonus." Challenges support auto-enrollment, time windows, repeatable completion, and custom condition logic.
+
+Add the `HasChallenges` trait to your `User` model:
+
+```php
+use LevelUp\Experience\Concerns\HasChallenges;
+
+class User extends Model
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers, HasChallenges;
+}
+```
+
+### Creating Challenges
+
+```php
+use LevelUp\Experience\Models\Challenge;
+
+Challenge::create([
+    'name' => 'Welcome Warrior',
+    'description' => 'Complete these tasks to earn a bonus!',
+    'conditions' => [
+        ['type' => 'points_earned', 'amount' => 100],
+        ['type' => 'level_reached', 'level' => 5],
+    ],
+    'rewards' => [
+        ['type' => 'points', 'amount' => 500],
+    ],
+    'auto_enroll' => true,
+    'is_repeatable' => false,
+    'starts_at' => '2026-04-01 00:00:00', // optional
+    'expires_at' => '2026-04-30 23:59:59', // optional
+]);
+```
+
+> [!NOTE]
+> Conditions and rewards are validated on creation. Invalid types or missing required keys will throw an `InvalidArgumentException`.
+
+### Condition Types
+
+| Type | Required Keys | What it checks |
+|------|--------------|----------------|
+| `points_earned` | `amount` | Points earned since enrollment |
+| `level_reached` | `level` | User's current level >= target |
+| `achievement_earned` | `achievement_id` | User has the achievement |
+| `streak_count` | `activity`, `count` | Current streak count for the activity |
+| `tier_reached` | `tier` | User is at or above the named tier |
+| `custom` | `class` | Your own class implementing `ChallengeCondition` |
+
+### Reward Types
+
+| Type | Required Keys | What happens |
+|------|--------------|--------------|
+| `points` | `amount` | Adds XP to the user |
+| `achievement` | `achievement_id` | Grants an achievement |
+
+### Enrolling Users
+
+**Auto-enroll** — Set `auto_enroll` to `true` on the challenge. Users are enrolled automatically when a relevant event fires (e.g. earning points, levelling up). Enrollment starts the clock: "earn 100 points" means 100 more points from the moment of enrollment, not total lifetime points.
+
+**Manual enroll:**
+
+```php
+$challenge = Challenge::find(1);
+
+$user->enrollInChallenge($challenge);
+```
+
+Manual enrollment throws if the challenge hasn't started yet, has expired, or the user is already enrolled.
+
+**Unenroll:**
+
+```php
+$user->unenrollFromChallenge($challenge);
+```
+
+Throws if the user is not enrolled, or if the challenge is already completed.
+
+### Querying Progress
+
+```php
+$user->activeChallenges;        // Enrolled, not yet completed
+$user->completedChallenges;     // Completed challenges
+
+$user->getChallengeProgress($challenge);
+// Returns: [['type' => 'points_earned', 'completed' => true], ['type' => 'level_reached', 'completed' => false]]
+
+$user->getChallengeCompletionPercentage($challenge);
+// Returns: 50.0 (1 of 2 conditions met)
+```
+
+### Custom Conditions
+
+Implement the `ChallengeCondition` contract for your own logic:
+
+```php
+use LevelUp\Experience\Contracts\ChallengeCondition;
+use Illuminate\Database\Eloquent\Model;
+
+class HasVerifiedEmail implements ChallengeCondition
+{
+    public function check(Model $user, array $condition): bool
+    {
+        return $user->hasVerifiedEmail();
+    }
+}
+```
+
+Then reference it in your challenge conditions:
+
+```php
+Challenge::create([
+    'conditions' => [
+        ['type' => 'custom', 'class' => HasVerifiedEmail::class],
+    ],
+    // ...
+]);
+```
+
+### Repeatable Challenges
+
+Set `is_repeatable` to `true`. When all conditions are met, rewards are dispatched, then the challenge resets with a fresh baseline. The user can complete it again.
+
+### Events
+
+**ChallengeCompleted** — When all conditions are met and rewards are dispatched.
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+**ChallengeEnrolled** — When a user enrolls in a challenge (manual or auto).
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+**ChallengeUnenrolled** — When a user unenrolls from a challenge.
+
+```php
+public Challenge $challenge,
+public Model $user,
+```
+
+### Configuration
+
+Challenges are enabled by default. To disable:
+
+```
+CHALLENGES_ENABLED=false
 ```
 
 # Testing

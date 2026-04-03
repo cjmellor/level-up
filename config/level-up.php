@@ -1,26 +1,23 @@
 <?php
 
-use App\Models\User;
-use LevelUp\Experience\Models\Achievement;
-use LevelUp\Experience\Models\Activity;
-use LevelUp\Experience\Models\Experience;
-use LevelUp\Experience\Models\ExperienceAudit;
-use LevelUp\Experience\Models\Level;
-use LevelUp\Experience\Models\Pivots\AchievementUser;
-use LevelUp\Experience\Models\Streak;
-use LevelUp\Experience\Models\StreakHistory;
+declare(strict_types=1);
 
 return [
 
     'models' => [
-        'achievement' => Achievement::class,
-        'activity' => Activity::class,
-        'experience' => Experience::class,
-        'experience_audit' => ExperienceAudit::class,
-        'level' => Level::class,
-        'streak' => Streak::class,
-        'streak_history' => StreakHistory::class,
-        'achievement_user' => AchievementUser::class,
+        'achievement' => LevelUp\Experience\Models\Achievement::class,
+        'activity' => LevelUp\Experience\Models\Activity::class,
+        'experience' => LevelUp\Experience\Models\Experience::class,
+        'experience_audit' => LevelUp\Experience\Models\ExperienceAudit::class,
+        'level' => LevelUp\Experience\Models\Level::class,
+        'streak' => LevelUp\Experience\Models\Streak::class,
+        'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
+        'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
+        'tier' => LevelUp\Experience\Models\Tier::class,
+        'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
+        'challenge' => LevelUp\Experience\Models\Challenge::class,
+        'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],
 
     /*
@@ -33,7 +30,7 @@ return [
      */
     'user' => [
         'foreign_key' => 'user_id',
-        'model' => User::class,
+        'model' => App\Models\User::class,
         'users_table' => 'users',
     ],
 
@@ -59,16 +56,19 @@ return [
 
     /*
     |-----------------------------------------------------------------------
-    | Multiplier Paths
+    | Multipliers
     |-----------------------------------------------------------------------
     |
-    | Set the path and namespace for the Multiplier classes.
+    | Configure the multiplier system. Multipliers are managed via the
+    | database and can be scoped to specific users or tiers.
     |
     */
     'multiplier' => [
         'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
-        'path' => env(key: 'MULTIPLIER_PATH', default: app_path(path: 'Multipliers')),
-        'namespace' => env(key: 'MULTIPLIER_NAMESPACE', default: 'App\\Multipliers\\'),
+        'stack_strategy' => env(key: 'MULTIPLIER_STACK', default: 'compound'),
+        // 'compound'  — multipliers multiply each other: 2 × 5 = 10x
+        // 'additive'  — multipliers sum:              2 + 5 = 7x
+        // 'highest'   — only the largest applies:  max(2, 5) = 5x
     ],
 
     /*
@@ -118,4 +118,40 @@ return [
      |
      */
     'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
+
+    /*
+    | -------------------------------------------------------------------------
+    | Tiers
+    | -------------------------------------------------------------------------
+    |
+    | Configure the tier system. Tiers provide named status brackets
+    | (e.g. Bronze, Silver, Gold) based on experience points.
+    |
+    */
+    'tiers' => [
+        'enabled' => env(key: 'TIERS_ENABLED', default: true),
+        'demotion' => env(key: 'TIER_DEMOTION', default: false),
+
+        /*
+        | Tier-based streak freeze duration (in days). Map tier names
+        | to the number of days a streak can be frozen.
+        | Falls back to the global 'freeze_duration' if not set.
+        |
+        | Example: ['Bronze' => 1, 'Silver' => 2, 'Gold' => 3]
+        */
+        'streak_freeze_days' => [],
+    ],
+
+    /*
+    | -------------------------------------------------------------------------
+    | Challenges
+    | -------------------------------------------------------------------------
+    |
+    | Configure the challenges system. Challenges are multi-condition goals
+    | that users can enroll in and complete for rewards.
+    |
+    */
+    'challenges' => [
+        'enabled' => env(key: 'CHALLENGES_ENABLED', default: true),
+    ],
 ];

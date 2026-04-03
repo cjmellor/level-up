@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Events;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +12,7 @@ class UserLevelledUp
     use Dispatchable;
 
     public function __construct(
-        public Model $user,
-        public int $level
+        public readonly Model $user,
+        public readonly int $level
     ) {}
 }

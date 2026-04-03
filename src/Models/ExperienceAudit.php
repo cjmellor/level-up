@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +14,7 @@ class ExperienceAudit extends Model
 
     protected $casts = [
         'type' => AuditType::class,
+        'multipliers' => 'array',
     ];
 
     public function user(): BelongsTo

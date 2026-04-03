@@ -2,40 +2,46 @@
 
 declare(strict_types=1);
 
-use Rector\CodingStyle\Rector\ArrowFunction\StaticArrowFunctionRector;
-use Rector\CodingStyle\Rector\ClassMethod\UnSpreadOperatorRector;
-use Rector\CodingStyle\Rector\Closure\StaticClosureRector;
 use Rector\Config\RectorConfig;
-use Rector\Privatization\Rector\Class_\FinalizeClassesWithoutChildrenRector;
-use Rector\Set\ValueObject\LevelSetList;
-use Rector\Set\ValueObject\SetList;
+use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
+use RectorLaravel\Rector\Class_\AddHasFactoryToModelsRector;
+use RectorLaravel\Rector\ClassMethod\MakeModelAttributesAndScopesProtectedRector;
+use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use RectorLaravel\Set\LaravelSetList;
+use RectorLaravel\Set\LaravelSetProvider;
 
-return static function (RectorConfig $rectorConfig): void {
-    $rectorConfig->paths([
+return RectorConfig::configure()
+    ->withPaths([
         __DIR__.'/config',
         __DIR__.'/database',
-        __DIR__.'/resources',
-        __DIR__.'/routes',
         __DIR__.'/src',
         __DIR__.'/tests',
+    ])
+    ->withSkip([
+        AddOverrideAttributeToOverriddenMethodsRector::class,
+        AddHasFactoryToModelsRector::class,
+        MakeModelAttributesAndScopesProtectedRector::class,
+    ])
+    ->withPreparedSets(
+        deadCode: true,
+        codeQuality: true,
+        typeDeclarations: true,
+        privatization: true,
+        earlyReturn: true,
+    )
+    ->withPhpSets(php83: true)
+    ->withSetProviders(LaravelSetProvider::class)
+    ->withComposerBased(laravel: true)
+    ->withSets([
+        LaravelSetList::LARAVEL_ARRAYACCESS_TO_METHOD_CALL,
+        LaravelSetList::LARAVEL_ARRAY_STR_FUNCTION_TO_STATIC_CALL,
+        LaravelSetList::LARAVEL_CODE_QUALITY,
+        LaravelSetList::LARAVEL_COLLECTION,
+        LaravelSetList::LARAVEL_CONTAINER_STRING_TO_FULLY_QUALIFIED_NAME,
+        LaravelSetList::LARAVEL_ELOQUENT_MAGIC_METHOD_TO_QUERY_BUILDER,
+        LaravelSetList::LARAVEL_FACTORIES,
+        LaravelSetList::LARAVEL_IF_HELPERS,
+    ])
+    ->withConfiguredRule(RemoveDumpDataDeadCodeRector::class, [
+        'dd', 'dump',
     ]);
-
-    $rectorConfig->sets([
-        LevelSetList::UP_TO_PHP_82,
-        SetList::CODE_QUALITY,
-        SetList::CODING_STYLE,
-        SetList::DEAD_CODE,
-        SetList::EARLY_RETURN,
-        SetList::TYPE_DECLARATION,
-        SetList::PRIVATIZATION,
-        LaravelSetList::LARAVEL_100,
-    ]);
-
-    $rectorConfig->skip([
-        FinalizeClassesWithoutChildrenRector::class,
-        StaticArrowFunctionRector::class,
-        StaticClosureRector::class,
-        UnSpreadOperatorRector::class,
-    ]);
-};

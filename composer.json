@@ -18,17 +18,19 @@
         }
     ],
     "require": {
-        "php": "^8.1|^8.2|^8.3|^8.4",
-        "illuminate/support": "^10.0|^11.0|^12.0",
+        "php": "^8.3",
+        "illuminate/support": "^12.6|^13.0",
         "spatie/laravel-package-tools": "^1.15"
     },
     "require-dev": {
+        "driftingly/rector-laravel": "*",
         "laravel/pint": "^1.10",
-        "nunomaduro/collision": "^7.0|^8.0",
-        "orchestra/testbench": "^8.0|^9.0|^10.0",
-        "pestphp/pest": "^2.13|^3.7",
-        "pestphp/pest-plugin-laravel": "^2.2|^3.1",
-        "pestphp/pest-plugin-type-coverage": "^2.0|^3.3"
+        "nunomaduro/collision": "^8.0",
+        "orchestra/testbench": "^10.0|^11.0",
+        "pestphp/pest": "^3.7|^4.4",
+        "pestphp/pest-plugin-laravel": "^3.1|^4.1",
+        "pestphp/pest-plugin-type-coverage": "^3.3|^4.0",
+        "rector/rector": "*"
     },
     "autoload": {
         "psr-4": {
@@ -47,7 +49,7 @@
     "scripts": {
         "lint": "vendor/bin/pint",
         "format": "vendor/bin/rector process",
-        "dry-format": "vendor/bin/rector process --dry-run",
+        "format:dry": "vendor/bin/rector process --dry-run",
         "post-autoload-dump": [
             "@php ./vendor/bin/testbench package:discover --ansi"
         ],
