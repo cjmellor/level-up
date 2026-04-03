@@ -2,7 +2,7 @@
 
 All notable changes to `level-up` will be documented in this file.
 
-## v2.0.0 - 2026-04-02
+## v2.0.0 - 2026-04-03
 
 ### Added
 
@@ -49,6 +49,7 @@ All notable changes to `level-up` will be documented in this file.
 ### Fixed
 
 - `resolve()` named parameter bug (`abstract:` → positional) that silently broke challenge evaluation via `catch (Throwable)`
+- `scopeTo()` now idempotent — calling with the same model twice no longer creates duplicate scopes
 - Race conditions in tier system hardened
 - Re-entrancy guard scoped per-user, not globally
 
