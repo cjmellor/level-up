@@ -6,6 +6,11 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use LevelUp\Experience\LevelUpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
+/**
+ * @property \LevelUp\Experience\Tests\Fixtures\User $user
+ * @property \LevelUp\Experience\Models\Challenge $challenge
+ * @property \LevelUp\Experience\Models\Activity $activity
+ */
 class TestCase extends Orchestra
 {
     protected function setUp(): void
@@ -27,6 +32,7 @@ class TestCase extends Orchestra
     protected function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
+        config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
 
         \Illuminate\Support\Facades\Schema::create('users', function ($table): void {
             $table->id();

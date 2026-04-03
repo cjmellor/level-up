@@ -166,7 +166,7 @@ test(description: 'repeatable challenge resets progress after completion', closu
     Event::assertDispatched(event: ChallengeCompleted::class);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = $pivot->getDecodedProgress();
+    $progress = $pivot->progress;
 
     expect($pivot->completed_at)->toBeNull();
     expect($progress[0]['completed'])->toBeFalse();
@@ -184,7 +184,7 @@ test(description: 'repeatable challenge re-captures baseline on reset', closure:
     $this->user->addPoints(amount: 15);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = $pivot->getDecodedProgress();
+    $progress = $pivot->progress;
 
     expect($progress[0]['baseline'])->toBe(expected: 20);
 });
@@ -504,20 +504,20 @@ test(description: 'E2E: repeatable with baseline — complete, reset, earn more,
     $this->user->addPoints(amount: 60);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = $pivot->getDecodedProgress();
+    $progress = $pivot->progress;
     expect($pivot->completed_at)->toBeNull();
     expect($progress[0]['baseline'])->toBe(expected: 65);
 
     $this->user->addPoints(amount: 30);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = $pivot->getDecodedProgress();
+    $progress = $pivot->progress;
     expect($progress[0]['completed'])->toBeFalse();
 
     $this->user->addPoints(amount: 30);
 
     $pivot = $challenge->users()->where('user_id', $this->user->id)->first()->pivot;
-    $progress = $pivot->getDecodedProgress();
+    $progress = $pivot->progress;
     expect($progress[0]['baseline'])->toBe(expected: 125);
 });
 

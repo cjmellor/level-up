@@ -14,7 +14,7 @@ beforeEach(closure: function (): void {
 });
 
 test(description: 'a multiplier can be created', closure: function (): void {
-    $multiplier = Multiplier::create([
+    $multiplier = Multiplier::query()->create([
         'name' => 'Double XP',
         'multiplier' => 2,
         'is_active' => true,
@@ -27,27 +27,27 @@ test(description: 'a multiplier can be created', closure: function (): void {
 });
 
 test(description: 'multiplier value must be greater than zero', closure: function (): void {
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Zero',
         'multiplier' => 0,
         'is_active' => true,
     ]);
-})->throws(InvalidArgumentException::class, 'Multiplier value must be greater than 0.');
+})->throws(InvalidArgumentException::class, 'Multiplier value must be at least 0.01.');
 
 test(description: 'negative multiplier value is rejected', closure: function (): void {
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Negative',
         'multiplier' => -1,
         'is_active' => true,
     ]);
-})->throws(InvalidArgumentException::class, 'Multiplier value must be greater than 0.');
+})->throws(InvalidArgumentException::class, 'Multiplier value must be at least 0.01.');
 
 test(description: 'active scope returns only active multipliers within time window', closure: function (): void {
-    Multiplier::create(['name' => 'Active', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'Inactive', 'multiplier' => 3, 'is_active' => false]);
-    Multiplier::create(['name' => 'Expired', 'multiplier' => 4, 'is_active' => true, 'starts_at' => now()->subDays(2), 'expires_at' => now()->subDay()]);
-    Multiplier::create(['name' => 'Future', 'multiplier' => 5, 'is_active' => true, 'starts_at' => now()->addDay()]);
-    Multiplier::create(['name' => 'In Window', 'multiplier' => 6, 'is_active' => true, 'starts_at' => now()->subHour(), 'expires_at' => now()->addHour()]);
+    Multiplier::query()->create(['name' => 'Active', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Inactive', 'multiplier' => 3, 'is_active' => false]);
+    Multiplier::query()->create(['name' => 'Expired', 'multiplier' => 4, 'is_active' => true, 'starts_at' => now()->subDays(2), 'expires_at' => now()->subDay()]);
+    Multiplier::query()->create(['name' => 'Future', 'multiplier' => 5, 'is_active' => true, 'starts_at' => now()->addDay()]);
+    Multiplier::query()->create(['name' => 'In Window', 'multiplier' => 6, 'is_active' => true, 'starts_at' => now()->subHour(), 'expires_at' => now()->addHour()]);
 
     $active = Multiplier::active()->pluck('name')->toArray();
 
@@ -55,7 +55,7 @@ test(description: 'active scope returns only active multipliers within time wind
 });
 
 test(description: 'forUser scope returns global multipliers', closure: function (): void {
-    Multiplier::create(['name' => 'Global', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Global', 'multiplier' => 2, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
@@ -66,14 +66,14 @@ test(description: 'forUser scope returns global multipliers', closure: function 
 });
 
 test(description: 'forUser scope filters by user scope', closure: function (): void {
-    $multiplier = Multiplier::create(['name' => 'User Specific', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'User Specific', 'multiplier' => 2, 'is_active' => true]);
 
     $multiplier->scopes()->create([
         'scopeable_type' => User::class,
         'scopeable_id' => $this->user->id,
     ]);
 
-    $otherUser = User::create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt(value: 'password')]);
+    $otherUser = User::query()->create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt(value: 'password')]);
 
     $forUser = Multiplier::active()->forUser($this->user)->count();
     $forOther = Multiplier::active()->forUser($otherUser)->count();
@@ -85,9 +85,9 @@ test(description: 'forUser scope filters by user scope', closure: function (): v
 test(description: 'forUser scope filters by tier scope', closure: function (): void {
     config()->set('level-up.tiers.enabled', true);
 
-    $silverTier = Tier::create(['name' => 'Silver', 'experience' => 100]);
+    $silverTier = Tier::query()->create(['name' => 'Silver', 'experience' => 100]);
 
-    $multiplier = Multiplier::create(['name' => 'Silver Bonus', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Silver Bonus', 'multiplier' => 2, 'is_active' => true]);
     $multiplier->scopes()->create([
         'scopeable_type' => Tier::class,
         'scopeable_id' => $silverTier->id,
@@ -103,8 +103,8 @@ test(description: 'forUser scope filters by tier scope', closure: function (): v
 });
 
 test(description: 'scheduled scope returns future multipliers', closure: function (): void {
-    Multiplier::create(['name' => 'Active Now', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'Scheduled', 'multiplier' => 3, 'is_active' => true, 'starts_at' => now()->addDay()]);
+    Multiplier::query()->create(['name' => 'Active Now', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Scheduled', 'multiplier' => 3, 'is_active' => true, 'starts_at' => now()->addDay()]);
 
     $scheduled = Multiplier::scheduled()->pluck('name')->toArray();
 
@@ -112,8 +112,8 @@ test(description: 'scheduled scope returns future multipliers', closure: functio
 });
 
 test(description: 'expired scope returns past multipliers', closure: function (): void {
-    Multiplier::create(['name' => 'Active', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'Expired', 'multiplier' => 3, 'is_active' => true, 'expires_at' => now()->subDay()]);
+    Multiplier::query()->create(['name' => 'Active', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Expired', 'multiplier' => 3, 'is_active' => true, 'expires_at' => now()->subDay()]);
 
     $expired = Multiplier::expired()->pluck('name')->toArray();
 
@@ -121,7 +121,7 @@ test(description: 'expired scope returns past multipliers', closure: function ()
 });
 
 test(description: 'multiplier has many scopes relationship', closure: function (): void {
-    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
 
     $multiplier->scopes()->createMany([
         ['scopeable_type' => User::class, 'scopeable_id' => 1],
@@ -132,15 +132,15 @@ test(description: 'multiplier has many scopes relationship', closure: function (
 });
 
 test(description: 'multiplier scopes are associated correctly', closure: function (): void {
-    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
     $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => 1]);
 
-    expect(MultiplierScope::count())->toBe(1)
-        ->and(MultiplierScope::first()->multiplier_id)->toBe($multiplier->id);
+    expect(MultiplierScope::query()->count())->toBe(1)
+        ->and(MultiplierScope::query()->first()->multiplier_id)->toBe($multiplier->id);
 });
 
 test(description: 'fractional multiplier values are supported', closure: function (): void {
-    $multiplier = Multiplier::create([
+    $multiplier = Multiplier::query()->create([
         'name' => 'Half',
         'multiplier' => 0.5,
         'is_active' => true,
@@ -150,7 +150,7 @@ test(description: 'fractional multiplier values are supported', closure: functio
 });
 
 test(description: 'starts_at must be before expires_at', closure: function (): void {
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Invalid',
         'multiplier' => 2,
         'is_active' => true,
@@ -160,7 +160,7 @@ test(description: 'starts_at must be before expires_at', closure: function (): v
 })->throws(InvalidArgumentException::class, 'starts_at must be before expires_at.');
 
 test(description: 'scopeTo creates scopes for given models', closure: function (): void {
-    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
 
     $multiplier->scopeTo($this->user);
 
@@ -170,21 +170,21 @@ test(description: 'scopeTo creates scopes for given models', closure: function (
 });
 
 test(description: 'scopeTo is idempotent for the same model', closure: function (): void {
-    $multiplier = Multiplier::create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
 
     $multiplier->scopeTo($this->user);
     $multiplier->scopeTo($this->user);
 
-    expect(MultiplierScope::where('multiplier_id', $multiplier->id)->count())->toBe(1);
+    expect(MultiplierScope::query()->where('multiplier_id', $multiplier->id)->count())->toBe(1);
 });
 
 test(description: 'multiplier scoped to both user and tier is only applied once', closure: function (): void {
     config()->set('level-up.multiplier.enabled', true);
     config()->set('level-up.tiers.enabled', true);
 
-    $tier = Tier::create(['name' => 'Gold', 'experience' => 100]);
+    $tier = Tier::query()->create(['name' => 'Gold', 'experience' => 100]);
 
-    $multiplier = Multiplier::create(['name' => 'Dual Scoped', 'multiplier' => 3, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'Dual Scoped', 'multiplier' => 3, 'is_active' => true]);
     $multiplier->scopeTo($this->user);
     $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
 
@@ -198,8 +198,8 @@ test(description: 'multiplier scoped to both user and tier is only applied once'
 });
 
 test(description: 'tiers relationship returns morphed tiers', closure: function (): void {
-    $tier = Tier::create(['name' => 'Gold', 'experience' => 500]);
-    $multiplier = Multiplier::create(['name' => 'Tier Bonus', 'multiplier' => 3, 'is_active' => true]);
+    $tier = Tier::query()->create(['name' => 'Gold', 'experience' => 500]);
+    $multiplier = Multiplier::query()->create(['name' => 'Tier Bonus', 'multiplier' => 3, 'is_active' => true]);
     $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
 
     expect($multiplier->tiers)->toHaveCount(1)
@@ -209,7 +209,7 @@ test(description: 'tiers relationship returns morphed tiers', closure: function 
 test(description: 'users relationship returns morphed users', closure: function (): void {
     config()->set('level-up.user.model', User::class);
 
-    $multiplier = Multiplier::create(['name' => 'User Bonus', 'multiplier' => 2, 'is_active' => true]);
+    $multiplier = Multiplier::query()->create(['name' => 'User Bonus', 'multiplier' => 2, 'is_active' => true]);
     $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => $this->user->id]);
 
     expect($multiplier->users)->toHaveCount(1)

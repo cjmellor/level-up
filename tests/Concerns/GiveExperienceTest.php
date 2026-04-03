@@ -125,7 +125,7 @@ test(description: 'when using a multiplier, times the points by it', closure: fu
 test(description: 'DB multipliers are applied automatically when active', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Double XP',
         'multiplier' => 2,
         'is_active' => true,
@@ -147,7 +147,7 @@ test(description: 'DB multipliers are applied automatically when active', closur
 test(description: 'inactive DB multipliers are not applied', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Inactive Bonus',
         'multiplier' => 5,
         'is_active' => false,
@@ -161,7 +161,7 @@ test(description: 'inactive DB multipliers are not applied', closure: function (
 test(description: 'time-based multiplier applies within window', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Weekend Bonus',
         'multiplier' => 3,
         'is_active' => true,
@@ -177,7 +177,7 @@ test(description: 'time-based multiplier applies within window', closure: functi
 test(description: 'expired multiplier is not applied', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Expired Bonus',
         'multiplier' => 3,
         'is_active' => true,
@@ -193,7 +193,7 @@ test(description: 'expired multiplier is not applied', closure: function (): voi
 test(description: 'scheduled multiplier is not applied before start time', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create([
+    Multiplier::query()->create([
         'name' => 'Future Bonus',
         'multiplier' => 3,
         'is_active' => true,
@@ -210,8 +210,8 @@ test(description: 'compound stacking multiplies multipliers together', closure: 
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.stack_strategy', value: 'compound');
 
-    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
@@ -222,8 +222,8 @@ test(description: 'additive stacking sums multiplier values', closure: function 
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.stack_strategy', value: 'additive');
 
-    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
@@ -234,8 +234,8 @@ test(description: 'highest stacking uses only the largest multiplier', closure: 
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.stack_strategy', value: 'highest');
 
-    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
-    Multiplier::create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'B', 'multiplier' => 5, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
@@ -246,7 +246,7 @@ test(description: 'inline multiplier stacks with DB multipliers', closure: funct
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.stack_strategy', value: 'compound');
 
-    Multiplier::create(['name' => 'DB Bonus', 'multiplier' => 3, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'DB Bonus', 'multiplier' => 3, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10, multiplier: 2);
 
@@ -263,21 +263,19 @@ test(description: 'MultiplierApplied event fires when multipliers are applied', 
     Event::fake([MultiplierApplied::class]);
     config()->set(key: 'level-up.multiplier.enabled', value: true);
 
-    Multiplier::create(['name' => 'Bonus', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Bonus', 'multiplier' => 2, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
-    Event::assertDispatched(MultiplierApplied::class, function (MultiplierApplied $event): bool {
-        return $event->originalAmount === 10
-            && $event->finalAmount === 20
-            && $event->multipliers->count() === 1;
-    });
+    Event::assertDispatched(MultiplierApplied::class, fn(MultiplierApplied $event): bool => $event->originalAmount === 10
+        && $event->finalAmount === 20
+        && $event->multipliers->count() === 1);
 });
 
 test(description: 'no multipliers applied when multiplier feature is disabled', closure: function (): void {
     config()->set(key: 'level-up.multiplier.enabled', value: false);
 
-    Multiplier::create(['name' => 'Bonus', 'multiplier' => 5, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'Bonus', 'multiplier' => 5, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 
@@ -585,7 +583,7 @@ test(description: 'unknown stacking strategy throws InvalidArgumentException', c
     config()->set(key: 'level-up.multiplier.enabled', value: true);
     config()->set(key: 'level-up.multiplier.stack_strategy', value: 'invalid_strategy');
 
-    Multiplier::create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
+    Multiplier::query()->create(['name' => 'A', 'multiplier' => 2, 'is_active' => true]);
 
     $this->user->addPoints(amount: 10);
 })->throws(InvalidArgumentException::class, 'Unknown multiplier stack strategy: invalid_strategy');
