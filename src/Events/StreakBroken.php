@@ -14,8 +14,8 @@ class StreakBroken
     use Dispatchable;
 
     public function __construct(
-        public Model $user,
-        public Activity $activity,
-        public Streak $streak,
+        public readonly Model $user,
+        public readonly Activity $activity,
+        public readonly Streak $streak,
     ) {}
 }

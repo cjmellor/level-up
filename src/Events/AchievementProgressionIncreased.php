@@ -13,8 +13,8 @@ class AchievementProgressionIncreased
     use Dispatchable;
 
     public function __construct(
-        public Achievement $achievement,
-        public Model $user,
-        public int $amount,
+        public readonly Achievement $achievement,
+        public readonly Model $user,
+        public readonly int $amount,
     ) {}
 }

@@ -12,11 +12,11 @@ class PointsIncreased
     use Dispatchable;
 
     public function __construct(
-        public int $pointsAdded,
-        public int $totalPoints,
-        public string $type,
-        public ?string $reason,
-        public Model $user,
-        public ?array $multipliers = null,
+        public readonly int $pointsAdded,
+        public readonly int $totalPoints,
+        public readonly string $type,
+        public readonly ?string $reason,
+        public readonly Model $user,
+        public readonly ?array $multipliers = null,
     ) {}
 }

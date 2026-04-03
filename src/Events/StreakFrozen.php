@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 class StreakFrozen
 {
     public function __construct(
-        public int $frozenStreakLength,
-        public Carbon $frozenUntil,
+        public readonly int $frozenStreakLength,
+        public readonly Carbon $frozenUntil,
     ) {}
 }

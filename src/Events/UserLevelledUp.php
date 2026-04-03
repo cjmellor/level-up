@@ -12,7 +12,7 @@ class UserLevelledUp
     use Dispatchable;
 
     public function __construct(
-        public Model $user,
-        public int $level
+        public readonly Model $user,
+        public readonly int $level
     ) {}
 }

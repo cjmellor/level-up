@@ -13,9 +13,7 @@ class AchievementRevoked
     use Dispatchable;
 
     public function __construct(
-        public Achievement $achievement,
-        public Model $user,
-    ) {
-        //
-    }
+        public readonly Achievement $achievement,
+        public readonly Model $user,
+    ) {}
 }
