@@ -6,6 +6,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\UniqueConstraintViolationException;
 use LevelUp\Experience\Events\ChallengeEnrolled;
 use LevelUp\Experience\Events\ChallengeUnenrolled;
 use LevelUp\Experience\Models\Challenge;
@@ -59,9 +60,13 @@ trait HasChallenges
                 : 'User is already enrolled in this challenge.',
         );
 
-        $this->challenges()->attach($challenge->id, [
-            'progress' => $this->freshChallengeProgress($challenge),
-        ]);
+        try {
+            $this->challenges()->attach($challenge->id, [
+                'progress' => $this->freshChallengeProgress($challenge),
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            throw new Exception('User is already enrolled in this challenge.');
+        }
 
         event(new ChallengeEnrolled(challenge: $challenge, user: $this));
     }
@@ -106,7 +111,7 @@ trait HasChallenges
     {
         $pivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
 
-        return $pivot?->getDecodedProgress();
+        return $pivot?->progress;
     }
 
     public function getChallengeCompletionPercentage(Challenge $challenge): ?float
@@ -122,11 +127,11 @@ trait HasChallenges
         return round(num: ($completed / count($progress)) * 100, precision: 1);
     }
 
-    private function freshChallengeProgress(Challenge $challenge): string
+    private function freshChallengeProgress(Challenge $challenge): array
     {
-        return json_encode(value: resolve(ChallengeService::class)->initializeProgress(
+        return resolve(ChallengeService::class)->initializeProgress(
             user: $this,
             challenge: $challenge,
-        ));
+        );
     }
 }

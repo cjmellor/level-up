@@ -201,7 +201,7 @@ trait GiveExperience
         $multiplierClass = config(key: 'level-up.models.multiplier');
         $appliedMultipliers = $multiplierClass::active()->forUser($this)->get();
 
-        $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v) => (float) $v);
+        $allValues = $appliedMultipliers->pluck('multiplier')->map(fn ($v): float => (float) $v);
 
         if ($inlineMultiplier !== null) {
             $allValues->push((float) $inlineMultiplier);
@@ -258,7 +258,7 @@ trait GiveExperience
         }
 
         $auditData = $appliedMultipliers
-            ?->map(fn ($m) => ['id' => $m->id, 'name' => $m->name, 'value' => (float) $m->multiplier])
+            ?->map(fn ($m): array => ['id' => $m->id, 'name' => $m->name, 'value' => (float) $m->multiplier])
             ->values()
             ->all() ?? [];
 

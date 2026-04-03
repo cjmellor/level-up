@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Services;
 
-use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
@@ -128,10 +127,10 @@ class ChallengeService
     {
         try {
             $challenge->users()->attach($user->id, [
-                'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge)),
+                'progress' => $this->initializeProgress(user: $user, challenge: $challenge),
             ]);
         } catch (UniqueConstraintViolationException) {
-            //
+            logger()->debug("Challenge auto-enroll race: user {$user->id} already enrolled in challenge {$challenge->id}");
         }
     }
 
@@ -169,7 +168,7 @@ class ChallengeService
             return;
         }
 
-        $progress = $pivot->getDecodedProgress() ?? $this->initializeProgress(user: $user, challenge: $challenge);
+        $progress = $pivot->progress ?? $this->initializeProgress(user: $user, challenge: $challenge);
 
         if (empty($challenge->conditions)) {
             return;
@@ -192,7 +191,7 @@ class ChallengeService
         }
 
         $challenge->users()->updateExistingPivot($user->id, attributes: [
-            'progress' => json_encode(value: $progress),
+            'progress' => $progress,
         ]);
 
         if ($allComplete) {
@@ -209,7 +208,7 @@ class ChallengeService
             'streak_count' => $this->checkStreakCount(user: $user, condition: $condition, preloaded: $preloaded),
             'tier_reached' => $this->checkTierReached(user: $user, condition: $condition),
             'custom' => $this->checkCustomCondition(user: $user, condition: $condition),
-            default => false,
+            default => $this->reportAndFail("Unknown challenge condition type '{$condition['type']}'"),
         };
     }
 
@@ -268,11 +267,11 @@ class ChallengeService
         $class = $condition['class'] ?? null;
 
         if (! $class || ! class_exists($class)) {
-            return false;
+            return $this->reportAndFail("Custom challenge condition class '{$class}' not found");
         }
 
         if (! is_subclass_of($class, ChallengeCondition::class)) {
-            return false;
+            return $this->reportAndFail("Custom challenge condition class '{$class}' does not implement ChallengeCondition");
         }
 
         return resolve($class)->check(user: $user, condition: $condition);
@@ -305,9 +304,7 @@ class ChallengeService
             match ($reward['type']) {
                 'points' => $this->rewardPoints(user: $user, reward: $reward),
                 'achievement' => $this->rewardAchievement(user: $user, reward: $reward),
-                default => report(new Exception(
-                    "Unknown challenge reward type '{$reward['type']}' for challenge #{$challenge->id}"
-                )),
+                default => report("Unknown challenge reward type '{$reward['type']}' for challenge #{$challenge->id}"),
             };
         }
     }
@@ -315,15 +312,27 @@ class ChallengeService
     protected function rewardPoints(Model $user, array $reward): void
     {
         if (! method_exists($user, 'addPoints')) {
+            report('Challenge reward: user model missing addPoints method (GiveExperience trait)');
+
             return;
         }
 
-        $user->addPoints(amount: $reward['amount'] ?? 0);
+        $amount = $reward['amount'] ?? 0;
+
+        if ($amount <= 0) {
+            report("Challenge reward has invalid point amount ({$amount})");
+
+            return;
+        }
+
+        $user->addPoints(amount: $amount);
     }
 
     protected function rewardAchievement(Model $user, array $reward): void
     {
         if (! method_exists($user, 'grantAchievement')) {
+            report('Challenge reward: user model missing grantAchievement method (HasAchievements trait)');
+
             return;
         }
 
@@ -331,6 +340,8 @@ class ChallengeService
         $achievement = $achievementModel::find($reward['achievement_id'] ?? 0);
 
         if (! $achievement) {
+            report("Challenge reward references non-existent achievement ID {$reward['achievement_id']}");
+
             return;
         }
 
@@ -344,8 +355,15 @@ class ChallengeService
     protected function resetChallenge(Model $user, Challenge $challenge): void
     {
         $challenge->users()->updateExistingPivot($user->id, attributes: [
-            'progress' => json_encode(value: $this->initializeProgress(user: $user, challenge: $challenge)),
+            'progress' => $this->initializeProgress(user: $user, challenge: $challenge),
             'completed_at' => null,
         ]);
+    }
+
+    protected function reportAndFail(string $message): false
+    {
+        report($message);
+
+        return false;
     }
 }

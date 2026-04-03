@@ -53,6 +53,12 @@ class Challenge extends Model
     protected static function booted(): void
     {
         static::saving(function (Challenge $challenge): void {
+            throw_if(
+                condition: $challenge->starts_at && $challenge->expires_at && $challenge->starts_at->gte($challenge->expires_at),
+                exception: InvalidArgumentException::class,
+                message: 'starts_at must be before expires_at.',
+            );
+
             $challenge->validateConditions();
             $challenge->validateRewards();
         });

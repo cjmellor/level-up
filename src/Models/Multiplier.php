@@ -52,13 +52,17 @@ class Multiplier extends Model
     protected static function booted(): void
     {
         static::saving(function (Multiplier $multiplier): void {
-            if ((float) $multiplier->multiplier <= 0) {
-                throw new InvalidArgumentException('Multiplier value must be greater than 0.');
-            }
+            throw_if(
+                condition: (float) $multiplier->multiplier < 0.01,
+                exception: InvalidArgumentException::class,
+                message: 'Multiplier value must be at least 0.01.',
+            );
 
-            if ($multiplier->starts_at && $multiplier->expires_at && $multiplier->starts_at->gte($multiplier->expires_at)) {
-                throw new InvalidArgumentException('starts_at must be before expires_at.');
-            }
+            throw_if(
+                condition: $multiplier->starts_at && $multiplier->expires_at && $multiplier->starts_at->gte($multiplier->expires_at),
+                exception: InvalidArgumentException::class,
+                message: 'starts_at must be before expires_at.',
+            );
         });
     }
 
