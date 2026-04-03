@@ -267,7 +267,7 @@ test(description: 'MultiplierApplied event fires when multipliers are applied', 
 
     $this->user->addPoints(amount: 10);
 
-    Event::assertDispatched(MultiplierApplied::class, fn(MultiplierApplied $event): bool => $event->originalAmount === 10
+    Event::assertDispatched(MultiplierApplied::class, fn (MultiplierApplied $event): bool => $event->originalAmount === 10
         && $event->finalAmount === 20
         && $event->multipliers->count() === 1);
 });
