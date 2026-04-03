@@ -49,7 +49,7 @@
     "scripts": {
         "lint": "vendor/bin/pint",
         "format": "vendor/bin/rector process",
-        "dry-format": "vendor/bin/rector process --dry-run",
+        "format:dry": "vendor/bin/rector process --dry-run",
         "post-autoload-dump": [
             "@php ./vendor/bin/testbench package:discover --ansi"
         ],
