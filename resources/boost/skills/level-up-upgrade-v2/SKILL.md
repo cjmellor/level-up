@@ -40,6 +40,11 @@ This publishes and runs these new migrations:
 - `create_tiers_table` — creates the `tiers` table
 - `add_tier_id_to_experiences_table` — adds `tier_id` foreign key to the experiences table
 - `add_tier_id_to_achievements_table` — adds `tier_id` foreign key to the achievements table
+- `create_multipliers_table` — creates the `multipliers` table for DB-backed multipliers
+- `create_multiplier_scopes_table` — creates the `multiplier_scopes` table for polymorphic scoping
+- `add_multipliers_column_to_experience_audits_table` — adds `multipliers` JSON column to audit records
+- `create_challenges_table` — creates the `challenges` table
+- `create_challenge_user_table` — creates the `challenge_user` pivot table
 
 Existing migrations (from v1) will be skipped if they have already run.
 
@@ -58,10 +63,15 @@ New config keys added in v2:
 | Key | Default | Purpose |
 |-----|---------|---------|
 | `models.tier` | `LevelUp\Experience\Models\Tier::class` | Tier model class |
+| `models.multiplier` | `LevelUp\Experience\Models\Multiplier::class` | Multiplier model class |
+| `models.multiplier_scope` | `LevelUp\Experience\Models\MultiplierScope::class` | Multiplier scope model class |
+| `models.challenge` | `LevelUp\Experience\Models\Challenge::class` | Challenge model class |
+| `models.challenge_user` | `LevelUp\Experience\Models\Pivots\ChallengeUser::class` | Challenge pivot model class |
 | `tiers.enabled` | `true` | Enable/disable the tier system |
 | `tiers.demotion` | `false` | Allow tier demotion when points decrease |
-| `tiers.multipliers` | `[]` | Map tier names to point multiplier values |
 | `tiers.streak_freeze_days` | `[]` | Map tier names to streak freeze durations |
+| `multiplier.stack_strategy` | `'compound'` | How multiple multipliers combine: compound, additive, or highest |
+| `challenges.enabled` | `true` | Enable/disable the challenge system |
 
 ## Step 5: Apply code changes
 
@@ -158,7 +168,42 @@ $user->achievementsWithSpecificProgress(50)->get();
 
 **Action:** No code change needed in the user's codebase, but all package files now use strict types. If the user was passing incorrect types (e.g. string to int parameters), these will now throw `TypeError` at runtime. The changes in 5e and 5f address the most common cases.
 
-## Step 6: Optionally add HasTiers trait
+### 5i. Class-based multipliers replaced with DB-backed multipliers
+
+**Search:** `withMultiplierData(`, `Multiplier implements`, `Contracts\Multiplier`, `multiplier.path`, `multiplier.namespace`
+
+**Action:** The v1 class-based multiplier system (`php artisan level-up:multiplier`, `Multiplier` contract, `withMultiplierData()`) has been entirely removed. Multipliers are now database records managed via the `Multiplier` model:
+
+```php
+// Before (v1) — class-based
+$user->withMultiplierData(['event_id' => 42])->addPoints(10);
+
+// After (v2) — DB-backed
+use LevelUp\Experience\Models\Multiplier;
+
+Multiplier::create([
+    'name' => 'Weekend Bonus',
+    'multiplier' => 2.0,
+    'is_active' => true,
+    'starts_at' => now()->startOfWeekend(),
+    'expires_at' => now()->endOfWeekend(),
+]);
+
+// Inline multiplier still works
+$user->addPoints(amount: 10, multiplier: 2);
+```
+
+Delete any multiplier classes in `app/Multipliers/` and remove the `multiplier.path` and `multiplier.namespace` config keys. The new config uses `multiplier.stack_strategy` instead.
+
+### 5j. `config()->boolean()` may have been used for challenge checks
+
+**Search:** `config()->boolean(`
+
+**Action:** The package now uses `config()` consistently. No change needed in user code unless they copied package patterns.
+
+## Step 6: Optionally add new traits
+
+### 6a. HasTiers
 
 Ask the user if they want to use the new Tiers feature. If yes, add the trait to the User model:
 
@@ -172,6 +217,21 @@ class User extends Authenticatable
 ```
 
 If the user does not want tiers, no action is needed — the existing features work without it. The package guards against missing `HasTiers` with `method_exists` checks. To disable tiers entirely, set `TIERS_ENABLED=false` in `.env`.
+
+### 6b. HasChallenges
+
+Ask the user if they want to use the new Challenges feature. If yes, add the trait:
+
+```php
+use LevelUp\Experience\Concerns\HasChallenges;
+
+class User extends Authenticatable
+{
+    use GiveExperience, HasAchievements, HasStreaks, HasTiers, HasChallenges;
+}
+```
+
+Challenges allow users to enroll in multi-condition goals and earn rewards on completion. To disable challenges entirely, set `CHALLENGES_ENABLED=false` in `.env`.
 
 ## Step 7: Final sweep
 

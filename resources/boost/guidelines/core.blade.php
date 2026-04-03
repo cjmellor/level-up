@@ -11,6 +11,7 @@
 - `LevelUp\Experience\Concerns\HasAchievements` — Achievement operations: `grantAchievement()`, `revokeAchievement()`, `incrementAchievementProgress()`.
 - `LevelUp\Experience\Concerns\HasStreaks` — Streak operations: `recordStreak()`, `resetStreak()`, `freezeStreak()`, `unFreezeStreak()`.
 - `LevelUp\Experience\Concerns\HasTiers` — Tier operations: `getTier()`, `getNextTier()`, `tierProgress()`, `nextTierAt()`, `isAtTier()`, `isAtOrAboveTier()`.
+- `LevelUp\Experience\Concerns\HasChallenges` — Challenge operations: `enrollInChallenge()`, `unenrollFromChallenge()`, `getChallengeProgress()`, `getChallengeCompletionPercentage()`.
 
 ### Key Models
 
@@ -19,6 +20,8 @@
 - `LevelUp\Experience\Models\Achievement` — Unlockable rewards with optional progress and tier gating.
 - `LevelUp\Experience\Models\Activity` — Named activities for streak tracking.
 - `LevelUp\Experience\Models\Experience` — Stores a user's XP total, level, and tier.
+- `LevelUp\Experience\Models\Multiplier` — Database-backed point multipliers with scoping, scheduling, and stacking strategies.
+- `LevelUp\Experience\Models\Challenge` — Multi-condition goals with enrollment, progress tracking, and rewards.
 
 ### Key Enums
 
@@ -39,6 +42,7 @@ class User extends Authenticatable
     use HasAchievements;    // Optional — achievements
     use HasStreaks;          // Optional — streaks
     use HasTiers;           // Optional — tiers
+    use HasChallenges;      // Optional — challenges
 }
 
 // Define levels and tiers
@@ -79,3 +83,7 @@ All events use the `Dispatchable` trait:
 - `StreakBroken` — Day skipped, streak reset
 - `StreakFrozen` — Streak frozen
 - `StreakUnfroze` — Streak unfrozen
+- `MultiplierApplied` — DB or inline multiplier applied during `addPoints()`
+- `ChallengeCompleted` — Challenge conditions all met, rewards dispatched
+- `ChallengeEnrolled` — User enrolled in a challenge
+- `ChallengeUnenrolled` — User unenrolled from a challenge

@@ -13,7 +13,7 @@ Use this skill when working with gamification features — adding experience poi
 - **Tiers** — Named status brackets (e.g. Bronze, Silver, Gold) based on XP thresholds, independent of numeric levels.
 - **Achievements** — Unlockable rewards, optionally with progress tracking, optionally gated by tier.
 - **Streaks** — Track consecutive daily activities with freeze support.
-- **Multipliers** — Class-based, conditional, or manual point modifiers.
+- **Multipliers** — Database-backed point modifiers with scoping, scheduling, and configurable stacking strategies.
 - **Leaderboard** — Rank users by XP, optionally scoped to a tier.
 - **Auditing** — Automatic history of all XP changes, level-ups, and tier changes.
 
@@ -35,6 +35,7 @@ Add only the traits you need:
 ```php
 use LevelUp\Experience\Concerns\GiveExperience;
 use LevelUp\Experience\Concerns\HasAchievements;
+use LevelUp\Experience\Concerns\HasChallenges;
 use LevelUp\Experience\Concerns\HasStreaks;
 use LevelUp\Experience\Concerns\HasTiers;
 
@@ -44,6 +45,7 @@ class User extends Authenticatable
     use HasAchievements;    // Optional — achievements
     use HasStreaks;          // Optional — streaks
     use HasTiers;           // Optional — tiers
+    use HasChallenges;      // Optional — challenges
 }
 ```
 
@@ -137,78 +139,70 @@ $user->getPoints(); // int, returns 0 if no experience record
 
 ## Multipliers
 
-### Class-Based Multipliers
+Multipliers are database-backed records that modify point calculations. They can be scoped to specific users or tiers, scheduled with time windows, and configured to stack using different strategies.
 
-Generate a multiplier class:
-
-```bash
-php artisan level-up:multiplier IsWeekend
-```
-
-Creates `app/Multipliers/IsWeekend.php`:
+### Create Multipliers
 
 ```php
-use LevelUp\Experience\Contracts\Multiplier;
+use LevelUp\Experience\Models\Multiplier;
 
-class IsWeekend implements Multiplier
-{
-    public bool $enabled = true;
-
-    public function qualifies(array $data): bool
-    {
-        return now()->isWeekend();
-    }
-
-    public function setMultiplier(): int
-    {
-        return 2;
-    }
-}
+Multiplier::create([
+    'name' => 'Weekend Bonus',
+    'multiplier' => 2.0,
+    'is_active' => true,
+    'starts_at' => now()->startOfWeekend(),
+    'expires_at' => now()->endOfWeekend(),
+]);
 ```
 
-All enabled multiplier classes in the configured path are auto-discovered and applied when `addPoints()` is called. Set `$enabled = false` to disable without deleting.
+Active multipliers are automatically applied when `addPoints()` is called. The `multiplier` value must be at least `0.01`. If both `starts_at` and `expires_at` are set, `starts_at` must be before `expires_at`.
 
-### Multipliers with Data
+### Scope Multipliers
 
-Pass contextual data that multiplier classes can inspect:
+Multipliers with no scopes apply to all users. Use `scopeTo()` to restrict:
 
 ```php
-$user
-    ->withMultiplierData(['event_id' => 42])
-    ->addPoints(10);
-
-// In the multiplier class:
-public function qualifies(array $data): bool
-{
-    return isset($data['event_id']) && $data['event_id'] === 42;
-}
+$multiplier->scopeTo($user);           // Specific user only
+$multiplier->scopeTo($goldTier);       // Gold tier users only
+$multiplier->scopeTo($user, $tier);    // Multiple scopes (variadic)
 ```
 
-### Conditional Multipliers (Inline)
+`scopeTo()` is idempotent — calling it twice with the same model does not create duplicates.
 
-```php
-$user
-    ->withMultiplierData(fn () => $someCondition)
-    ->addPoints(amount: 10, multiplier: 2);
-```
-
-The callback must return `true` for the multiplier to apply. The `multiplier` parameter is required when using a callback — throws `InvalidArgumentException` if omitted.
-
-### Manual Multiplier
+### Inline Multiplier
 
 ```php
 $user->addPoints(amount: 10, multiplier: 3); // 30 points
 ```
 
-### Multiplier Config
+Inline multipliers stack with DB multipliers according to the configured strategy.
+
+### Stacking Strategies
+
+Configure in `config/level-up.php`:
 
 ```php
 'multiplier' => [
     'enabled' => env('MULTIPLIER_ENABLED', true),
-    'path' => env('MULTIPLIER_PATH', app_path('Multipliers')),
-    'namespace' => env('MULTIPLIER_NAMESPACE', 'App\\Multipliers\\'),
+    'stack_strategy' => env('MULTIPLIER_STACK', 'compound'),
+    // 'compound'  — multipliers multiply each other: 2 × 5 = 10x
+    // 'additive'  — multipliers sum:              2 + 5 = 7x
+    // 'highest'   — only the largest applies:  max(2, 5) = 5x
 ],
 ```
+
+### Query Multipliers
+
+```php
+Multiplier::active()->get();                    // Currently active
+Multiplier::active()->forUser($user)->get();    // Active for a specific user
+Multiplier::scheduled()->get();                 // Future (starts_at > now)
+Multiplier::expired()->get();                   // Past (expires_at < now)
+```
+
+### MultiplierApplied Event
+
+Fires when multipliers modify a point calculation. Properties: `Model $user`, `Collection $multipliers`, `int $originalAmount`, `int $finalAmount`, `string $strategy`.
 
 ## Tiers
 
@@ -254,22 +248,22 @@ TIER_DEMOTION=true
 
 When enabled, `deductPoints()` checks if the user should drop and fires `UserTierUpdated` with `TierDirection::Demoted`. The `newTier` property is nullable — it will be `null` if the user drops below all tier thresholds.
 
-### Tier Multipliers
+### Tier-Scoped Multipliers
 
-Automatically scale all points earned based on the user's current tier:
+Create a multiplier and scope it to a tier so it only applies to users at that tier:
 
 ```php
-// config/level-up.php
-'tiers' => [
-    'multipliers' => [
-        'Bronze' => 1,
-        'Silver' => 1.5,
-        'Gold' => 2,
-    ],
-],
+$multiplier = Multiplier::create([
+    'name' => 'Gold Bonus',
+    'multiplier' => 2.0,
+    'is_active' => true,
+]);
+
+$goldTier = Tier::where('name', 'Gold')->first();
+$multiplier->scopeTo($goldTier);
 ```
 
-Applied after class-based and manual multipliers.
+When a Gold-tier user calls `addPoints()`, this multiplier is automatically included.
 
 ### Tier-Gated Achievements
 
@@ -319,7 +313,6 @@ Leaderboard::forTier($tierModel)->generate();
 'tiers' => [
     'enabled' => env('TIERS_ENABLED', true),
     'demotion' => env('TIER_DEMOTION', false),
-    'multipliers' => [],
     'streak_freeze_days' => [],
 ],
 ```
@@ -451,6 +444,98 @@ $histories = StreakHistory::where('user_id', $user->id)->get();
 'freeze_duration' => env('STREAK_FREEZE_DURATION', 1),
 ```
 
+## Challenges
+
+Challenges are multi-condition goals that users enroll in and complete for rewards. Conditions are evaluated automatically when relevant events fire (points earned, level reached, achievement granted, streak recorded, tier changed).
+
+### Create a Challenge
+
+```php
+use LevelUp\Experience\Models\Challenge;
+
+Challenge::create([
+    'name' => 'Getting Started',
+    'conditions' => [
+        ['type' => 'points_earned', 'amount' => 100],
+        ['type' => 'level_reached', 'level' => 3],
+    ],
+    'rewards' => [
+        ['type' => 'points', 'amount' => 50],
+    ],
+    'auto_enroll' => true,
+    'is_repeatable' => false,
+]);
+```
+
+### Condition Types
+
+| Type | Required Keys | What it checks |
+|------|--------------|----------------|
+| `points_earned` | `amount` | Points earned since enrollment (baseline delta) |
+| `level_reached` | `level` | User's current level >= value |
+| `achievement_earned` | `achievement_id` | User has the achievement |
+| `streak_count` | `activity`, `count` | Current streak count for activity >= value |
+| `tier_reached` | `tier` | User is at or above the named tier |
+| `custom` | `class` | Class implementing `ChallengeCondition` interface |
+
+### Reward Types
+
+| Type | Required Keys | What it does |
+|------|--------------|-------------|
+| `points` | `amount` | Awards XP via `addPoints()` |
+| `achievement` | `achievement_id` | Grants the achievement |
+
+### Enrollment
+
+```php
+$user->enrollInChallenge($challenge);
+$user->unenrollFromChallenge($challenge);
+```
+
+Throws if: challenge not started yet, expired, already enrolled, or completed and not repeatable. Completed repeatable challenges can be re-enrolled.
+
+Auto-enroll challenges (`auto_enroll: true`) automatically enroll users when a relevant event fires.
+
+### Query Progress
+
+```php
+$user->getChallengeProgress($challenge);              // Array of condition statuses
+$user->getChallengeCompletionPercentage($challenge);  // 0.0 - 100.0
+$user->activeChallenges;                              // Enrolled, not completed
+$user->completedChallenges;                           // Completed
+```
+
+### Temporal Constraints
+
+Challenges support optional `starts_at` and `expires_at` fields. If both are set, `starts_at` must be before `expires_at`. Expired challenges are not evaluated.
+
+### Custom Conditions
+
+Implement the `ChallengeCondition` interface:
+
+```php
+use LevelUp\Experience\Contracts\ChallengeCondition;
+use Illuminate\Database\Eloquent\Model;
+
+class HasVerifiedEmail implements ChallengeCondition
+{
+    public function check(Model $user, array $condition): bool
+    {
+        return $user->hasVerifiedEmail();
+    }
+}
+```
+
+Reference it in the condition: `['type' => 'custom', 'class' => HasVerifiedEmail::class]`.
+
+### Challenge Config
+
+```php
+'challenges' => [
+    'enabled' => env('CHALLENGES_ENABLED', true),
+],
+```
+
 ## Leaderboard
 
 ```php
@@ -497,8 +582,9 @@ AuditType::TierDown; // 'tier_down'
 
 | Event | Properties | When |
 |-------|-----------|------|
-| `PointsIncreased` | `int $pointsAdded`, `int $totalPoints`, `string $type`, `?string $reason`, `Model $user` | Points added |
+| `PointsIncreased` | `int $pointsAdded`, `int $totalPoints`, `string $type`, `?string $reason`, `Model $user`, `?array $multipliers` | Points added |
 | `PointsDecreased` | `int $pointsDecreasedBy`, `int $totalPoints`, `?string $reason`, `Model $user` | Points deducted |
+| `MultiplierApplied` | `Model $user`, `Collection $multipliers`, `int $originalAmount`, `int $finalAmount`, `string $strategy` | Multipliers modified point calculation |
 | `UserLevelledUp` | `Model $user`, `int $level` | Level gained (fires per level) |
 | `UserTierUpdated` | `Model $user`, `?Tier $previousTier`, `?Tier $newTier`, `TierDirection $direction` | Tier promotion or demotion |
 | `AchievementAwarded` | `Achievement $achievement`, `Model $user` | Achievement granted at 100% |
@@ -509,6 +595,9 @@ AuditType::TierDown; // 'tier_down'
 | `StreakBroken` | `Model $user`, `Activity $activity`, `Streak $streak` | Streak reset |
 | `StreakFrozen` | `int $frozenStreakLength`, `Carbon $frozenUntil` | Streak frozen |
 | `StreakUnfroze` | *(none)* | Streak unfrozen |
+| `ChallengeCompleted` | `Challenge $challenge`, `Model $user` | Challenge conditions met, rewards dispatched |
+| `ChallengeEnrolled` | `Challenge $challenge`, `Model $user` | User enrolled in challenge |
+| `ChallengeUnenrolled` | `Challenge $challenge`, `Model $user` | User unenrolled from challenge |
 
 ## Common Patterns
 
@@ -583,6 +672,10 @@ return [
         'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
+        'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
+        'challenge' => LevelUp\Experience\Models\Challenge::class,
+        'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],
     'user' => [
         'foreign_key' => 'user_id',
@@ -593,8 +686,7 @@ return [
     'starting_level' => 1,
     'multiplier' => [
         'enabled' => env('MULTIPLIER_ENABLED', true),
-        'path' => env('MULTIPLIER_PATH', app_path('Multipliers')),
-        'namespace' => env('MULTIPLIER_NAMESPACE', 'App\\Multipliers\\'),
+        'stack_strategy' => env('MULTIPLIER_STACK', 'compound'),
     ],
     'level_cap' => [
         'enabled' => env('LEVEL_CAP_ENABLED', true),
@@ -611,8 +703,10 @@ return [
     'tiers' => [
         'enabled' => env('TIERS_ENABLED', true),
         'demotion' => env('TIER_DEMOTION', false),
-        'multipliers' => [],
         'streak_freeze_days' => [],
+    ],
+    'challenges' => [
+        'enabled' => env('CHALLENGES_ENABLED', true),
     ],
 ];
 ```
