@@ -83,24 +83,24 @@ return [
     |
     */
     'tables' => [
-        'experiences'       => 'experiences',
+        'experiences' => 'experiences',
         'experience_audits' => 'experience_audits',
-        'levels'            => 'levels',
-        'achievements'      => 'achievements',
-        'achievement_user'  => 'achievement_user',
-        'streaks'           => 'streaks',
-        'streak_histories'  => 'streak_histories',
+        'levels' => 'levels',
+        'achievements' => 'achievements',
+        'achievement_user' => 'achievement_user',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
         'streak_activities' => 'streak_activities',
-        'tiers'             => 'tiers',
-        'multipliers'       => 'multipliers',
+        'tiers' => 'tiers',
+        'multipliers' => 'multipliers',
         'multiplier_scopes' => 'multiplier_scopes',
-        'challenges'        => 'challenges',
-        'challenge_user'    => 'challenge_user',
+        'challenges' => 'challenges',
+        'challenge_user' => 'challenge_user',
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Experience Table  (deprecated — use tables.experiences)
+    | Experience Table (deprecated — use tables.experiences)
     |--------------------------------------------------------------------------
     |
     | Kept for backwards compatibility. If you customised this key in v1.x,
