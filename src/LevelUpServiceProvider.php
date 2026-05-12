@@ -19,6 +19,61 @@ class LevelUpServiceProvider extends PackageServiceProvider
         $this->registerEntityKeyMacros();
     }
 
+    public function packageBooted(): void
+    {
+        config()->set('level-up.tables', static::resolveTables(
+            prefix: (string) config('level-up.table_prefix', ''),
+            overrides: (array) config('level-up.tables', []),
+            legacyName: config('level-up.table'),
+        ));
+    }
+
+    public static function resolveTables(string $prefix, array $overrides, mixed $legacyName): array
+    {
+        $defaults = [
+            'experiences' => 'experiences',
+            'experience_audits' => 'experience_audits',
+            'levels' => 'levels',
+            'achievements' => 'achievements',
+            'achievement_user' => 'achievement_user',
+            'streaks' => 'streaks',
+            'streak_histories' => 'streak_histories',
+            'streak_activities' => 'streak_activities',
+            'tiers' => 'tiers',
+            'multipliers' => 'multipliers',
+            'multiplier_scopes' => 'multiplier_scopes',
+            'challenges' => 'challenges',
+            'challenge_user' => 'challenge_user',
+        ];
+
+        $resolved = [];
+
+        foreach ($defaults as $key => $default) {
+            $override = $overrides[$key] ?? null;
+            $overrideIsExplicit = is_string($override) && $override !== $default;
+
+            if ($key === 'experiences'
+                && ! $overrideIsExplicit
+                && is_string($legacyName)
+                && $legacyName !== $default
+            ) {
+                $resolved[$key] = $legacyName;
+
+                continue;
+            }
+
+            if ($overrideIsExplicit) {
+                $resolved[$key] = $override;
+
+                continue;
+            }
+
+            $resolved[$key] = $prefix.$default;
+        }
+
+        return $resolved;
+    }
+
     public function configurePackage(Package $package): void
     {
         $package
