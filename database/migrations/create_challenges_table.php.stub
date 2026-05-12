@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('challenges', function (Blueprint $table) {
+        Schema::create(config('level-up.tables.challenges'), function (Blueprint $table) {
             $table->entityId();
             $table->string(column: 'name');
             $table->text(column: 'description')->nullable();
@@ -25,6 +25,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('challenges');
+        Schema::dropIfExists(config('level-up.tables.challenges'));
     }
 };
