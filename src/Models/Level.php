@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Exceptions\LevelExistsException;
 
 class Level extends Model
 {
-    use HasConfigurableIds;
+    use HasConfigurableIds, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -42,5 +43,10 @@ class Level extends Model
     public function users(): HasMany
     {
         return $this->hasMany(related: config(key: 'level-up.user.model'));
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'levels';
     }
 }

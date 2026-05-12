@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Contracts\ChallengeCondition;
 
 class Challenge extends Model
 {
-    use HasConfigurableIds, HasFactory;
+    use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -95,6 +96,11 @@ class Challenge extends Model
             rules: self::$rewardRules,
             label: 'Reward',
         );
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'challenges';
     }
 
     /**

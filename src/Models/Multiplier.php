@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 class Multiplier extends Model
 {
-    use HasConfigurableIds;
+    use HasConfigurableIds, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -126,5 +127,10 @@ class Multiplier extends Model
         $query
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now());
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'multipliers';
     }
 }

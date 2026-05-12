@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 class Streak extends Model
 {
-    use HasConfigurableIds, HasFactory;
+    use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -28,5 +29,10 @@ class Streak extends Model
     public function activity(): BelongsTo
     {
         return $this->belongsTo(related: config(key: 'level-up.models.activity'));
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'streaks';
     }
 }

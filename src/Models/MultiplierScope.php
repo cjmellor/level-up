@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 class MultiplierScope extends Model
 {
-    use HasConfigurableIds;
+    use HasConfigurableIds, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -23,5 +24,10 @@ class MultiplierScope extends Model
     public function scopeable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'multiplier_scopes';
     }
 }
