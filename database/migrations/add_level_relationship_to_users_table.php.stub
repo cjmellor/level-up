@@ -11,7 +11,7 @@ return new class extends Migration {
             $table->entityForeignId('level_id')
                 ->after('remember_token')
                 ->nullable()
-                ->constrained();
+                ->constrained(table: config('level-up.tables.levels'));
         });
     }
 
