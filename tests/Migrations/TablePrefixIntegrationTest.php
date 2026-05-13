@@ -66,9 +66,6 @@ class TablePrefixIntegrationTest extends TestCase
         $app['config']->set('level-up.table_prefix', 'pfx_');
         $app['config']->set('level-up.tables.achievements', 'custom_achievements');
 
-        // Testbench runs migrations during getEnvironmentSetUp — before packageBooted()
-        // fires — so we resolve the table config here to mirror production timing,
-        // where `php artisan migrate` always runs after providers boot.
         $app['config']->set('level-up.tables', \LevelUp\Experience\LevelUpServiceProvider::resolveTables(
             prefix: 'pfx_',
             overrides: $app['config']->get('level-up.tables', []),

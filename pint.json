@@ -52,7 +52,7 @@
         },
         "ordered_interfaces": true,
         "ordered_traits": true,
-        "Pint/phpdoc_type_annotations_only": false,
+        "Pint/phpdoc_type_annotations_only": true,
         "protected_to_private": false,
         "self_accessor": true,
         "self_static_accessor": true,
