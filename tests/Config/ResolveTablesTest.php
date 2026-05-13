@@ -83,3 +83,14 @@ it('prefers tables.experiences over the legacy table key when both are set', fun
 
     expect($resolved['experiences'])->toBe('new_xp');
 });
+
+it('treats an empty-string override as unset and falls through to the prefix', function (): void {
+    $resolved = LevelUpServiceProvider::resolveTables(
+        prefix: 'lvl_',
+        overrides: ['experiences' => '', 'tiers' => ''],
+        legacyName: '',
+    );
+
+    expect($resolved['experiences'])->toBe('lvl_experiences')
+        ->and($resolved['tiers'])->toBe('lvl_tiers');
+});

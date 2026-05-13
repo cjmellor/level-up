@@ -50,11 +50,12 @@ class LevelUpServiceProvider extends PackageServiceProvider
 
         foreach ($defaults as $key => $default) {
             $override = $overrides[$key] ?? null;
-            $overrideIsExplicit = is_string($override) && $override !== $default;
+            $overrideIsExplicit = is_string($override) && $override !== '' && $override !== $default;
 
             if ($key === 'experiences'
                 && ! $overrideIsExplicit
                 && is_string($legacyName)
+                && $legacyName !== ''
                 && $legacyName !== $default
             ) {
                 $resolved[$key] = $legacyName;
