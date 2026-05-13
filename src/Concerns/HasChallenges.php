@@ -126,7 +126,7 @@ trait HasChallenges
 
     private function challengesRelation(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.challenge'), table: 'challenge_user')
+        return $this->belongsToMany(related: config(key: 'level-up.models.challenge'), table: config('level-up.tables.challenge_user'))
             ->using(config(key: 'level-up.models.challenge_user'))
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();

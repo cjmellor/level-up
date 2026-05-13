@@ -19,7 +19,7 @@ class Achievement extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.user.model'));
+        return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: config('level-up.tables.achievement_user'));
     }
 
     public function tier(): BelongsTo

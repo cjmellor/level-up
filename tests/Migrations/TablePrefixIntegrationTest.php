@@ -6,8 +6,11 @@ namespace LevelUp\Experience\Tests\Migrations;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use LevelUp\Experience\Models\Achievement;
+use LevelUp\Experience\Models\Challenge;
 use LevelUp\Experience\Models\Experience;
 use LevelUp\Experience\Models\Level;
+use LevelUp\Experience\Models\Multiplier;
 use LevelUp\Experience\Tests\Fixtures\User;
 use LevelUp\Experience\Tests\TestCase;
 
@@ -59,6 +62,58 @@ class TablePrefixIntegrationTest extends TestCase
 
         $this->assertSame(1, DB::table('pfx_experiences')->count());
         $this->assertFalse(Schema::hasTable('experiences'));
+    }
+
+    public function test_grant_achievement_writes_to_prefixed_pivot_table(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Achievement User',
+            'email' => 'ach@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $achievement = Achievement::factory()->create();
+
+        $user->grantAchievement($achievement);
+
+        $this->assertSame(1, DB::table('pfx_achievement_user')->count());
+        $this->assertFalse(Schema::hasTable('achievement_user'));
+    }
+
+    public function test_enroll_in_challenge_writes_to_prefixed_pivot_table(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Challenge User',
+            'email' => 'chal@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $challenge = Challenge::factory()->create();
+
+        $user->enrollInChallenge($challenge);
+
+        $this->assertSame(1, DB::table('pfx_challenge_user')->count());
+        $this->assertFalse(Schema::hasTable('challenge_user'));
+    }
+
+    public function test_multiplier_users_relation_writes_to_prefixed_pivot_table(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Multiplier User',
+            'email' => 'mult@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $multiplier = Multiplier::query()->create([
+            'name' => 'Test Multiplier',
+            'multiplier' => 2,
+            'is_active' => true,
+        ]);
+
+        $multiplier->users()->attach($user);
+
+        $this->assertSame(1, DB::table('pfx_multiplier_scopes')->count());
+        $this->assertFalse(Schema::hasTable('multiplier_scopes'));
     }
 
     protected function getEnvironmentSetUp($app): void

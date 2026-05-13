@@ -33,12 +33,12 @@ class Multiplier extends Model
 
     public function tiers(): MorphToMany
     {
-        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', 'multiplier_scopes');
+        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', config('level-up.tables.multiplier_scopes'));
     }
 
     public function users(): MorphToMany
     {
-        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', 'multiplier_scopes');
+        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', config('level-up.tables.multiplier_scopes'));
     }
 
     public function scopeTo(Model ...$models): static
