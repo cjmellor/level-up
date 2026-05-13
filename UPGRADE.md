@@ -184,6 +184,12 @@ class User extends Model
 
 The package's own primary keys can now be configured as `uuid` or `ulid` via `level-up.entities.id_type` (default remains `bigint`). Existing installs are unaffected on `composer update` — the setting only changes how *new* migrations build their tables. See the [Customizing Identifiers section in the README](README.md#customizing-identifiers) for the conversion path if you want to migrate an existing install.
 
+### New: Configurable Table Names
+
+**Likelihood of Impact: Low**
+
+A new `table_prefix` and `tables` config block lets you rename any of the package's 13 tables. The previous top-level `'table'` key is now deprecated — if you customised it before, it still works as a fallback for `tables.experiences`. No action required; consider migrating to `tables.experiences` on your next config publish. See the [Customizing Table Names section in the README](README.md#customizing-table-names) for examples.
+
 ### Bug Fixes Included
 
 - `levelUp()` now correctly fires `UserLevelledUp` events for all intermediate levels (previously only fired for the final level)

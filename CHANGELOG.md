@@ -2,6 +2,14 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
+
+### Deprecated
+- The top-level `'table'` config key is deprecated in favour of `'tables.experiences'`. The old key still works as a fallback for existing installs — no action required.
+
 ## v2.0.0 - 2026-04-03
 
 ### Added
