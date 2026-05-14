@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use LevelUp\Experience\Support\UserForeignKey;
 
 return new class extends Migration
 {
@@ -10,7 +11,7 @@ return new class extends Migration
     {
         Schema::create(config('level-up.table'), function (Blueprint $table) {
             $table->entityId();
-            $table->foreignId(config('level-up.user.foreign_key'))->constrained(config('level-up.user.users_table'));
+            UserForeignKey::on($table)->constrained(config('level-up.user.users_table'));
             $table->entityForeignId('level_id')->constrained();
             $table->integer('experience_points')->default(0)->index();
             $table->timestamps();

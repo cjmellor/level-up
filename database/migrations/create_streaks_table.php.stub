@@ -3,13 +3,14 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use LevelUp\Experience\Support\UserForeignKey;
 
 return new class extends Migration {
     public function up(): void
     {
         Schema::create('streaks', function (Blueprint $table) {
             $table->entityId();
-            $table->foreignId(column: config('level-up.user.foreign_key'))->constrained()->onDelete('cascade');
+            UserForeignKey::on($table)->constrained()->onDelete('cascade');
             $table->entityForeignId(column: 'activity_id')->constrained('streak_activities')->onDelete('cascade');
             $table->integer(column: 'count')->default(1);
             $table->timestamp(column: 'activity_at');

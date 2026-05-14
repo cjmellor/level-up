@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Rector\Config\RectorConfig;
 use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
 use RectorLaravel\Rector\Class_\AddHasFactoryToModelsRector;
+use RectorLaravel\Rector\Class_\TablePropertyToTableAttributeRector;
 use RectorLaravel\Rector\ClassMethod\MakeModelAttributesAndScopesProtectedRector;
 use RectorLaravel\Rector\FuncCall\RemoveDumpDataDeadCodeRector;
 use RectorLaravel\Set\LaravelSetList;
@@ -21,6 +22,9 @@ return RectorConfig::configure()
         AddOverrideAttributeToOverriddenMethodsRector::class,
         AddHasFactoryToModelsRector::class,
         MakeModelAttributesAndScopesProtectedRector::class,
+        // #[Table] is silently ignored on Laravel 12.x; keep $table property
+        // so models resolve their table on every supported Laravel version.
+        TablePropertyToTableAttributeRector::class,
     ])
     ->withPreparedSets(
         deadCode: true,

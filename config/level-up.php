@@ -27,9 +27,16 @@ return [
     |
     | This value is the foreign key that will be used to relate the Experience model to the User model.
     |
+    | 'foreign_key_type' controls the DB column type used for the user FK on
+    | every package table. Set to 'uuid' or 'ulid' if your host User model
+    | uses HasUuids / HasUlids. Leave as 'bigint' for standard auto-increment
+    | user IDs. This only affects fresh migrations; existing installs keep
+    | whichever column type they originally migrated with.
+    |
      */
     'user' => [
         'foreign_key' => 'user_id',
+        'foreign_key_type' => 'bigint',
         'model' => App\Models\User::class,
         'users_table' => 'users',
     ],

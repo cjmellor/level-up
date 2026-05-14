@@ -3,6 +3,7 @@
 namespace LevelUp\Experience\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use LevelUp\Experience\LevelUpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -33,11 +34,12 @@ class TestCase extends Orchestra
     protected function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
-        config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
         config()->set('level-up.entities.id_type', env('LEVELUP_TEST_KEY_TYPE', 'bigint'));
 
-        Schema::create('users', function ($table): void {
-            $table->id();
+        $this->defineUserConfig();
+
+        Schema::create('users', function (Blueprint $table): void {
+            $this->createUserIdColumn($table);
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -77,5 +79,20 @@ class TestCase extends Orchestra
 
             $migration->up();
         }
+    }
+
+    protected function defineUserConfig(): void
+    {
+        config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
+    }
+
+    protected function createUserIdColumn(Blueprint $table): void
+    {
+        match (config('level-up.user.foreign_key_type', 'bigint')) {
+            'bigint' => $table->id(),
+            'uuid' => $table->uuid('id')->primary(),
+            'ulid' => $table->ulid('id')->primary(),
+            default => $table->id(),
+        };
     }
 }
