@@ -95,13 +95,13 @@ trait HasChallenges
     public function activeChallenges(): BelongsToMany
     {
         return $this->challengesRelation()
-            ->whereNull(columns: 'challenge_user.completed_at');
+            ->whereNull(columns: config('level-up.tables.challenge_user').'.completed_at');
     }
 
     public function completedChallenges(): BelongsToMany
     {
         return $this->challengesRelation()
-            ->whereNotNull(columns: 'challenge_user.completed_at');
+            ->whereNotNull(columns: config('level-up.tables.challenge_user').'.completed_at');
     }
 
     public function getChallengeProgress(Challenge $challenge): ?array

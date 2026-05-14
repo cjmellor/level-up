@@ -90,7 +90,7 @@ class ChallengeService
             ->active()
             ->whereHas('users', fn ($q) => $q
                 ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
-                ->whereNull(columns: 'challenge_user.completed_at')
+                ->whereNull(columns: config('level-up.tables.challenge_user').'.completed_at')
             )
             ->get()
             ->filter(fn (Challenge $challenge): bool => $this->hasMatchingCondition(
@@ -148,7 +148,7 @@ class ChallengeService
 
         return [
             'achievement_ids' => method_exists($user, 'allAchievements')
-                ? $user->allAchievements()->pluck('achievements.id')->all()
+                ? $user->allAchievements()->pluck(config('level-up.tables.achievements').'.id')->all()
                 : [],
             'activities' => $activityNames !== []
                 ? $activityModel::whereIn('name', $activityNames)->get()->keyBy('name')
@@ -160,7 +160,7 @@ class ChallengeService
     {
         $pivot = $challenge->users()
             ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
-            ->whereNull(columns: 'challenge_user.completed_at')
+            ->whereNull(columns: config('level-up.tables.challenge_user').'.completed_at')
             ->first()
             ?->pivot;
 
@@ -279,7 +279,7 @@ class ChallengeService
 
     protected function completeChallenge(Model $user, Challenge $challenge): void
     {
-        $affected = DB::table('challenge_user')
+        $affected = DB::table(config('level-up.tables.challenge_user'))
             ->where(config(key: 'level-up.user.foreign_key'), $user->id)
             ->where('challenge_id', $challenge->id)
             ->whereNull('completed_at')
@@ -345,7 +345,7 @@ class ChallengeService
             return;
         }
 
-        if ($user->allAchievements()->where('achievements.id', $achievement->id)->exists()) {
+        if ($user->allAchievements()->where(config('level-up.tables.achievements').'.id', $achievement->id)->exists()) {
             return;
         }
 
