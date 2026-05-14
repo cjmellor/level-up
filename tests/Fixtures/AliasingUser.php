@@ -12,7 +12,6 @@ use LevelUp\Experience\Concerns\HasChallenges;
 use LevelUp\Experience\Concerns\HasStreaks;
 use RuntimeException;
 
-#[\Illuminate\Database\Eloquent\Attributes\Table(name: 'users')]
 class AliasingUser extends Model
 {
     use GiveExperience {
@@ -27,6 +26,8 @@ class AliasingUser extends Model
     use HasStreaks {
         streaks as packageStreaks;
     }
+
+    protected $table = 'users';
 
     protected $guarded = [];
 
