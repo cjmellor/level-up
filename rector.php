@@ -22,8 +22,6 @@ return RectorConfig::configure()
         AddOverrideAttributeToOverriddenMethodsRector::class,
         AddHasFactoryToModelsRector::class,
         MakeModelAttributesAndScopesProtectedRector::class,
-        // #[Table] is silently ignored on Laravel 12.x; keep $table property
-        // so models resolve their table on every supported Laravel version.
         TablePropertyToTableAttributeRector::class,
     ])
     ->withPreparedSets(
