@@ -10,9 +10,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 
 class Multiplier extends Model
 {
+    use HasConfigurableIds;
+
     protected $guarded = [];
 
     protected $casts = [
@@ -42,7 +45,7 @@ class Multiplier extends Model
         foreach ($models as $model) {
             $this->scopes()->firstOrCreate([
                 'scopeable_type' => $model->getMorphClass(),
-                'scopeable_id' => $model->getKey(),
+                'scopeable_id' => (string) $model->getKey(),
             ]);
         }
 
@@ -95,12 +98,12 @@ class Multiplier extends Model
                 ->where(fn (Builder $match) => $match
                     ->where([
                         'scopeable_type' => $user->getMorphClass(),
-                        'scopeable_id' => $user->getKey(),
+                        'scopeable_id' => (string) $user->getKey(),
                     ])
                     ->when($tierId, fn (Builder $tierMatch) => $tierMatch
                         ->orWhere([
                             'scopeable_type' => (new $tierClass)->getMorphClass(),
-                            'scopeable_id' => $tierId,
+                            'scopeable_id' => (string) $tierId,
                         ])
                     )
                 )

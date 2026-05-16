@@ -166,7 +166,7 @@ test(description: 'scopeTo creates scopes for given models', closure: function (
 
     expect($multiplier->scopes)->toHaveCount(1)
         ->and($multiplier->scopes->first()->scopeable_type)->toBe(User::class)
-        ->and($multiplier->scopes->first()->scopeable_id)->toBe($this->user->id);
+        ->and($multiplier->scopes->first()->scopeable_id)->toBe((string) $this->user->id);
 });
 
 test(description: 'scopeTo is idempotent for the same model', closure: function (): void {

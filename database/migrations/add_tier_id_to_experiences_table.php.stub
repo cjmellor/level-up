@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table(config('level-up.table'), function (Blueprint $table) {
-            $table->foreignId('tier_id')->nullable()->constrained('tiers')->nullOnDelete();
+            $table->entityForeignId('tier_id')->nullable()->constrained('tiers')->nullOnDelete();
         });
     }
 

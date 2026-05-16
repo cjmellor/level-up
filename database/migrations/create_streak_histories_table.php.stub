@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(table: 'streak_histories', callback: function (Blueprint $table) {
-            $table->id();
+            $table->entityId();
             $table->foreignId(column: config(key: 'level-up.user.foreign_key'))->constrained(table: config(key: 'level-up.user.users_table'))->cascadeOnDelete();
-            $table->foreignId(column: 'activity_id')->constrained(table: 'streak_activities');
+            $table->entityForeignId(column: 'activity_id')->constrained(table: 'streak_activities');
             $table->integer(column: 'count')->default(value: 1);
             $table->timestamp(column: 'started_at');
             $table->timestamp(column: 'ended_at')->nullable();

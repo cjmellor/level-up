@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('challenges', function (Blueprint $table) {
-            $table->id();
+            $table->entityId();
             $table->string(column: 'name');
             $table->text(column: 'description')->nullable();
             $table->string(column: 'image')->nullable();
