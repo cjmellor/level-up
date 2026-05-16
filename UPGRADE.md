@@ -178,6 +178,12 @@ class User extends Model
 
 **To disable challenges entirely**, set `CHALLENGES_ENABLED=false` in your `.env` file.
 
+### New: Configurable Entity ID Type
+
+**Likelihood of Impact: Low**
+
+The package's own primary keys can now be configured as `uuid` or `ulid` via `level-up.entities.id_type` (default remains `bigint`). Existing installs are unaffected on `composer update` — the setting only changes how *new* migrations build their tables. See the [Customizing Identifiers section in the README](README.md#customizing-identifiers) for the conversion path if you want to migrate an existing install.
+
 ### Bug Fixes Included
 
 - `levelUp()` now correctly fires `UserLevelledUp` events for all intermediate levels (previously only fired for the final level)

@@ -48,6 +48,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Package Entities
+    |--------------------------------------------------------------------------
+    |
+    | Set 'id_type' to 'uuid' or 'ulid' if you want package IDs to be opaque.
+    | Only affects fresh installs — see "Customizing Identifiers" below.
+    |
+    */
+    'entities' => [
+        'id_type' => 'bigint',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Experience Table
     |--------------------------------------------------------------------------
     |
@@ -958,6 +971,50 @@ Challenges are enabled by default. To disable:
 ```
 CHALLENGES_ENABLED=false
 ```
+
+# Customizing Identifiers
+
+By default, the package's tables use auto-incrementing `bigint` primary keys. Set `level-up.entities.id_type` to `uuid` or `ulid` if you want package IDs to be opaque — useful when exposing Experience or Achievement records on a public API without leaking row counts.
+
+```php
+'entities' => [
+    'id_type' => 'uuid', // 'bigint' (default) | 'uuid' | 'ulid'
+],
+```
+
+This applies to every package primary key (experiences, levels, achievements, streaks, tiers, multipliers, challenges, and the pivot tables) and every internal foreign key between them. Two columns are intentionally unaffected:
+
+- `user_id` columns — these match whatever your `users` table uses, since they belong to the host application.
+- `multiplier_scopes.scopeable_id` — always a string column, because it polymorphically stores keys from both the host's User table and the package's Tier table.
+
+> [!IMPORTANT]
+> This setting is for **fresh installs**. Existing installs cannot be flipped automatically — column types are baked in at migration time. The accordion below contains an AI prompt that generates the conversion migrations for your specific schema.
+
+<details>
+<summary>AI prompt: convert an existing install to <code>uuid</code> or <code>ulid</code></summary>
+
+Paste this into your AI assistant. Replace `<TARGET>` with `uuid` or `ulid` and `<DB>` with `postgres`, `mysql`, or `sqlite`.
+
+```text
+I'm switching cjmellor/level-up's `entities.id_type` from `bigint` to `<TARGET>` on an existing `<DB>` install.
+
+Generate a Laravel migration (or sequence of migrations) that:
+
+1. For every level-up package table (experiences, levels, achievements, achievement_user, streak_activities, streaks, streak_histories, tiers, multipliers, multiplier_scopes, challenges, challenge_user, experience_audits): add a new `<TARGET>` column called `id_new`, generate a unique value for every existing row, then later drop the old `id` and rename `id_new` to `id`.
+
+2. For every internal foreign key column (`level_id`, `activity_id`, `achievement_id`, `challenge_id`, `tier_id`, `multiplier_id`, etc.): add a corresponding `_new` column, populate it by joining on the parent table's new ids, then drop the old column and rename.
+
+3. Re-establish primary key and foreign key constraints in the correct order. Wrap in a transaction if `<DB>` supports DDL transactions.
+
+Constraints:
+- Do NOT touch `multiplier_scopes.scopeable_id` — that column is intentionally a string and stores morph keys from both User (host-driven) and Tier (package-driven) targets.
+- Do NOT change `user_id` columns in any package table — those follow the host's `users` table type.
+- After the migration runs, update `level-up.entities.id_type` in `config/level-up.php` to `<TARGET>`.
+```
+
+Review the generated migration carefully against your schema and data volume before running it on production.
+
+</details>
 
 # Testing
 
