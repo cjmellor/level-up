@@ -3,6 +3,7 @@
 namespace LevelUp\Experience\Tests;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Schema;
 use LevelUp\Experience\LevelUpServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -34,7 +35,7 @@ class TestCase extends Orchestra
         config()->set('database.default', 'testing');
         config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
 
-        \Illuminate\Support\Facades\Schema::create('users', function ($table): void {
+        Schema::create('users', function ($table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
@@ -43,7 +44,10 @@ class TestCase extends Orchestra
             $table->rememberToken();
             $table->timestamps();
         });
+    }
 
+    protected function defineDatabaseMigrations(): void
+    {
         $migrations = [
             'create_levels_table',
             'create_experiences_table',
