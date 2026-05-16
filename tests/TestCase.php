@@ -34,6 +34,7 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
         config()->set('level-up.user.model', \LevelUp\Experience\Tests\Fixtures\User::class);
+        config()->set('level-up.entities.id_type', env('LEVELUP_TEST_KEY_TYPE', 'bigint'));
 
         Schema::create('users', function ($table): void {
             $table->id();

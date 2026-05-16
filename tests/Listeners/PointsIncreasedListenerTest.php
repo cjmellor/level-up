@@ -26,11 +26,11 @@ test(description: 'the Event and Listener run when points are added to a User Mo
 test(description: 'the level_id in Experience table defaults to 1 on Model creation', closure: function (): void {
     $this->user->addPoints(1);
 
-    expect($this->user->experience->level_id)->toBe(expected: 1);
+    expect($this->user->experience->level_id)->toBe($this->levels[1]->id);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
-        'level_id' => 1,
+        'level_id' => $this->levels[1]->id,
     ]);
 });
 
@@ -74,14 +74,14 @@ test(description: 'user levels are correct', closure: function (): void {
     $this->user->addPoints(amount: 100);
 
     expect($this->user->getLevel())->toBe(expected: 2)
-        ->and($this->user->experience->level_id)->toBe(expected: 2)
+        ->and($this->user->experience->level_id)->toBe($this->levels[2]->id)
         ->and($this->user->nextLevelAt())->toBe(expected: 150)
         ->and($this->user->experience->status->level)->toBe(expected: 2);
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
         'experience_points' => 100,
-        'level_id' => 2,
+        'level_id' => $this->levels[2]->id,
     ]);
 
     $this->user->addPoints(amount: 150);
@@ -92,7 +92,7 @@ test(description: 'user levels are correct', closure: function (): void {
 
     $this->assertDatabaseHas(table: 'experiences', data: [
         'user_id' => $this->user->id,
-        'level_id' => 3,
+        'level_id' => $this->levels[3]->id,
     ]);
 });
 
