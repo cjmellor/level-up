@@ -11,6 +11,11 @@ trait HasConfigurableIds
 {
     use HasUniqueIds;
 
+    public function initializeHasConfigurableIds(): void
+    {
+        $this->usesUniqueIds = $this->packageIdType() !== 'bigint';
+    }
+
     public function getKeyType(): string
     {
         return $this->packageIdType() === 'bigint' ? 'int' : 'string';
