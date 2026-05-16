@@ -36,6 +36,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Package Entities
+    |--------------------------------------------------------------------------
+    |
+    | 'id_type' controls the primary key column type used for the package's
+    | own tables (experiences, levels, achievements, etc.) and every internal
+    | foreign key between them. Set to 'uuid' or 'ulid' if you want package
+    | IDs to be opaque (e.g., for safe exposure on a public API surface).
+    | Leave as 'bigint' for standard auto-increment IDs. Only affects fresh
+    | migrations; existing installs keep whichever column type they already
+    | migrated with. See the README "Customizing Identifiers" section for
+    | guidance on switching an existing install.
+    |
+    */
+    'entities' => [
+        'id_type' => 'bigint',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Experience Table
     |--------------------------------------------------------------------------
     |

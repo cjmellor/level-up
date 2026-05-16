@@ -6,9 +6,12 @@ namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 
 class Experience extends Model
 {
+    use HasConfigurableIds;
+
     protected $guarded = [];
 
     public function __construct(array $attributes = [])
