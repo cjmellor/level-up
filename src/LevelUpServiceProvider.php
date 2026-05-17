@@ -58,30 +58,35 @@ class LevelUpServiceProvider extends PackageServiceProvider
 
     protected function registerEntityKeyMacros(): void
     {
+        $resolveIdType = static function (): string {
+            $idType = config('level-up.entities.id_type', 'bigint');
+
+            return match ($idType) {
+                'bigint', 'uuid', 'ulid' => $idType,
+                default => throw new InvalidArgumentException(
+                    "Unknown level-up.entities.id_type [{$idType}]. Expected 'bigint', 'uuid', or 'ulid'."
+                ),
+            };
+        };
+
         if (! Blueprint::hasMacro('entityId')) {
-            Blueprint::macro('entityId', function (string $column = 'id'): void {
+            Blueprint::macro('entityId', function (string $column = 'id') use ($resolveIdType): void {
                 /** @var Blueprint $this */
-                match (config('level-up.entities.id_type', 'bigint')) {
+                match ($resolveIdType()) {
                     'bigint' => $this->id($column),
                     'uuid' => $this->uuid($column)->primary(),
                     'ulid' => $this->ulid($column)->primary(),
-                    default => throw new InvalidArgumentException(
-                        'Unknown level-up.entities.id_type ['.config('level-up.entities.id_type')."]. Expected 'bigint', 'uuid', or 'ulid'."
-                    ),
                 };
             });
         }
 
         if (! Blueprint::hasMacro('entityForeignId')) {
-            Blueprint::macro('entityForeignId', function (string $column): ForeignIdColumnDefinition {
+            Blueprint::macro('entityForeignId', function (string $column) use ($resolveIdType): ForeignIdColumnDefinition {
                 /** @var Blueprint $this */
-                return match (config('level-up.entities.id_type', 'bigint')) {
+                return match ($resolveIdType()) {
                     'bigint' => $this->foreignId($column),
                     'uuid' => $this->foreignUuid($column),
                     'ulid' => $this->foreignUlid($column),
-                    default => throw new InvalidArgumentException(
-                        'Unknown level-up.entities.id_type ['.config('level-up.entities.id_type')."]. Expected 'bigint', 'uuid', or 'ulid'."
-                    ),
                 };
             });
         }

@@ -6,6 +6,7 @@ namespace LevelUp\Experience\Concerns;
 
 use Illuminate\Database\Eloquent\Concerns\HasUniqueIds;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 trait HasConfigurableIds
 {
@@ -13,7 +14,7 @@ trait HasConfigurableIds
 
     public function initializeHasConfigurableIds(): void
     {
-        $this->usesUniqueIds = $this->packageIdType() !== 'bigint';
+        $this->usesUniqueIds = in_array($this->packageIdType(), ['uuid', 'ulid'], true);
     }
 
     public function getKeyType(): string
@@ -28,10 +29,14 @@ trait HasConfigurableIds
 
     public function newUniqueId(): string
     {
-        return match ($this->packageIdType()) {
+        $type = $this->packageIdType();
+
+        return match ($type) {
             'ulid' => strtolower((string) Str::ulid()),
             'uuid' => (string) Str::uuid(),
-            default => '',
+            default => throw new InvalidArgumentException(
+                "Unknown level-up.entities.id_type [{$type}]. Expected 'bigint', 'uuid', or 'ulid'."
+            ),
         };
     }
 

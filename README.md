@@ -1000,7 +1000,7 @@ I'm switching cjmellor/level-up's `entities.id_type` from `bigint` to `<TARGET>`
 
 Generate a Laravel migration (or sequence of migrations) that:
 
-1. For every level-up package table (experiences, levels, achievements, achievement_user, streak_activities, streaks, streak_histories, tiers, multipliers, multiplier_scopes, challenges, challenge_user, experience_audits): add a new `<TARGET>` column called `id_new`, generate a unique value for every existing row, then later drop the old `id` and rename `id_new` to `id`.
+1. For every level-up package table (experiences, levels, achievements, achievement_user, streak_activities, streaks, streak_histories, tiers, multipliers, multiplier_scopes, challenges, challenge_user, experience_audits): add a new `<TARGET>` column called `id_new`, generate a unique value for every existing row, then later drop the old `id` and rename `id_new` to `id`. For `multiplier_scopes`, this applies only to the `id` primary key — do NOT touch `scopeable_id` (see Constraints below).
 
 2. For every internal foreign key column (`level_id`, `activity_id`, `achievement_id`, `challenge_id`, `tier_id`, `multiplier_id`, etc.): add a corresponding `_new` column, populate it by joining on the parent table's new ids, then drop the old column and rename.
 
