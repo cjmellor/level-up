@@ -14,20 +14,6 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LevelUpServiceProvider extends PackageServiceProvider
 {
-    public function bootingPackage(): void
-    {
-        $this->registerEntityKeyMacros();
-    }
-
-    public function packageBooted(): void
-    {
-        config()->set('level-up.tables', static::resolveTables(
-            prefix: (string) config('level-up.table_prefix', ''),
-            overrides: (array) config('level-up.tables', []),
-            legacyName: config('level-up.table'),
-        ));
-    }
-
     public static function resolveTables(string $prefix, array $overrides, mixed $legacyName): array
     {
         $defaults = [
@@ -73,6 +59,20 @@ class LevelUpServiceProvider extends PackageServiceProvider
         }
 
         return $resolved;
+    }
+
+    public function bootingPackage(): void
+    {
+        $this->registerEntityKeyMacros();
+    }
+
+    public function packageBooted(): void
+    {
+        config()->set('level-up.tables', static::resolveTables(
+            prefix: (string) config('level-up.table_prefix', ''),
+            overrides: (array) config('level-up.tables', []),
+            legacyName: config('level-up.table'),
+        ));
     }
 
     public function configurePackage(Package $package): void
