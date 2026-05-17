@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('experience_audits', function (Blueprint $table) {
-            $table->id();
+            $table->entityId();
             $table->foreignId(config('level-up.user.foreign_key'))->constrained(config('level-up.user.users_table'));
             $table->integer('points')->index();
             $table->boolean('levelled_up')->default(false);

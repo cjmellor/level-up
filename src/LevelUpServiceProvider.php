@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience;
 
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Schema\ForeignIdColumnDefinition;
+use InvalidArgumentException;
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
 use Spatie\LaravelPackageTools\Package;
@@ -11,6 +14,11 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LevelUpServiceProvider extends PackageServiceProvider
 {
+    public function bootingPackage(): void
+    {
+        $this->registerEntityKeyMacros();
+    }
+
     public function configurePackage(Package $package): void
     {
         $package
@@ -46,5 +54,41 @@ class LevelUpServiceProvider extends PackageServiceProvider
 
         $this->app->register(provider: EventServiceProvider::class);
         $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
+    }
+
+    protected function registerEntityKeyMacros(): void
+    {
+        $resolveIdType = static function (): string {
+            $idType = config('level-up.entities.id_type', 'bigint');
+
+            return match ($idType) {
+                'bigint', 'uuid', 'ulid' => $idType,
+                default => throw new InvalidArgumentException(
+                    "Unknown level-up.entities.id_type [{$idType}]. Expected 'bigint', 'uuid', or 'ulid'."
+                ),
+            };
+        };
+
+        if (! Blueprint::hasMacro('entityId')) {
+            Blueprint::macro('entityId', function (string $column = 'id') use ($resolveIdType): void {
+                /** @var Blueprint $this */
+                match ($resolveIdType()) {
+                    'bigint' => $this->id($column),
+                    'uuid' => $this->uuid($column)->primary(),
+                    'ulid' => $this->ulid($column)->primary(),
+                };
+            });
+        }
+
+        if (! Blueprint::hasMacro('entityForeignId')) {
+            Blueprint::macro('entityForeignId', function (string $column) use ($resolveIdType): ForeignIdColumnDefinition {
+                /** @var Blueprint $this */
+                return match ($resolveIdType()) {
+                    'bigint' => $this->foreignId($column),
+                    'uuid' => $this->foreignUuid($column),
+                    'ulid' => $this->foreignUlid($column),
+                };
+            });
+        }
     }
 }

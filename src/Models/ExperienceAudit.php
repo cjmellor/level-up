@@ -6,10 +6,13 @@ namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Enums\AuditType;
 
 class ExperienceAudit extends Model
 {
+    use HasConfigurableIds;
+
     protected $guarded = [];
 
     protected $casts = [

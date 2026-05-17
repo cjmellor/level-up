@@ -252,4 +252,18 @@ Review every match and ensure the corresponding fix from Step 5 has been applied
    - `TypeError` from strict types — cast parameters to correct types
    - `Exception` from `incrementAchievementProgress()` — grant the achievement first
 3. Re-run tests until green.
-4. Inform the user: "Upgrade to v2 complete. All breaking changes have been applied."
+
+## Step 9: Optionally switch entity ID type
+
+v2 introduces `level-up.entities.id_type` (default `bigint`) which controls the primary-key column type for the package's own tables. The other supported values are `uuid` and `ulid`.
+
+Ask the user:
+
+> "Would you like to switch the package's entity IDs to `uuid` or `ulid`? This is useful if you plan to expose Experience, Achievement, etc. records on a public API and don't want sequential IDs to leak row counts. It requires a one-time data migration."
+
+- If **No**: continue without changes. The default `bigint` is identical to v1 behaviour and needs no action.
+- If **Yes**: **do not attempt the conversion in this skill.** Point the user at the [Customizing Identifiers section in the README](../../../../README.md#customizing-identifiers). That section contains an AI prompt the user can paste into a fresh assistant session to generate conversion migrations tailored to their schema and database driver. The conversion is intentionally out of scope here because it depends on data volume, downtime tolerance, and DB driver specifics that this skill has no visibility into.
+
+## Step 10: Finish
+
+Inform the user: "Upgrade to v2 complete. All breaking changes have been applied."

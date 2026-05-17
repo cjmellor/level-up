@@ -8,10 +8,10 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('multiplier_scopes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('multiplier_id')->constrained()->cascadeOnDelete();
+            $table->entityId();
+            $table->entityForeignId('multiplier_id')->constrained()->cascadeOnDelete();
             $table->string('scopeable_type');
-            $table->unsignedBigInteger('scopeable_id');
+            $table->string('scopeable_id');
             $table->timestamps();
 
             $table->unique(['multiplier_id', 'scopeable_type', 'scopeable_id'], 'multiplier_scopes_unique');

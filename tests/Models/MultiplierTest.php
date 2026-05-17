@@ -70,7 +70,7 @@ test(description: 'forUser scope filters by user scope', closure: function (): v
 
     $multiplier->scopes()->create([
         'scopeable_type' => User::class,
-        'scopeable_id' => $this->user->id,
+        'scopeable_id' => (string) $this->user->id,
     ]);
 
     $otherUser = User::query()->create(['name' => 'Other', 'email' => 'other@test.com', 'password' => bcrypt(value: 'password')]);
@@ -90,7 +90,7 @@ test(description: 'forUser scope filters by tier scope', closure: function (): v
     $multiplier = Multiplier::query()->create(['name' => 'Silver Bonus', 'multiplier' => 2, 'is_active' => true]);
     $multiplier->scopes()->create([
         'scopeable_type' => Tier::class,
-        'scopeable_id' => $silverTier->id,
+        'scopeable_id' => (string) $silverTier->id,
     ]);
 
     $this->user->addPoints(amount: 10);
@@ -124,8 +124,8 @@ test(description: 'multiplier has many scopes relationship', closure: function (
     $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
 
     $multiplier->scopes()->createMany([
-        ['scopeable_type' => User::class, 'scopeable_id' => 1],
-        ['scopeable_type' => Tier::class, 'scopeable_id' => 1],
+        ['scopeable_type' => User::class, 'scopeable_id' => '1'],
+        ['scopeable_type' => Tier::class, 'scopeable_id' => '1'],
     ]);
 
     expect($multiplier->scopes)->toHaveCount(2);
@@ -133,7 +133,7 @@ test(description: 'multiplier has many scopes relationship', closure: function (
 
 test(description: 'multiplier scopes are associated correctly', closure: function (): void {
     $multiplier = Multiplier::query()->create(['name' => 'Scoped', 'multiplier' => 2, 'is_active' => true]);
-    $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => 1]);
+    $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => '1']);
 
     expect(MultiplierScope::query()->count())->toBe(1)
         ->and(MultiplierScope::query()->first()->multiplier_id)->toBe($multiplier->id);
@@ -166,7 +166,7 @@ test(description: 'scopeTo creates scopes for given models', closure: function (
 
     expect($multiplier->scopes)->toHaveCount(1)
         ->and($multiplier->scopes->first()->scopeable_type)->toBe(User::class)
-        ->and($multiplier->scopes->first()->scopeable_id)->toBe($this->user->id);
+        ->and($multiplier->scopes->first()->scopeable_id)->toBe((string) $this->user->id);
 });
 
 test(description: 'scopeTo is idempotent for the same model', closure: function (): void {
@@ -186,7 +186,7 @@ test(description: 'multiplier scoped to both user and tier is only applied once'
 
     $multiplier = Multiplier::query()->create(['name' => 'Dual Scoped', 'multiplier' => 3, 'is_active' => true]);
     $multiplier->scopeTo($this->user);
-    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
+    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => (string) $tier->id]);
 
     $this->user->addPoints(amount: 10);
     $this->user->experience->update(['tier_id' => $tier->id]);
@@ -200,7 +200,7 @@ test(description: 'multiplier scoped to both user and tier is only applied once'
 test(description: 'tiers relationship returns morphed tiers', closure: function (): void {
     $tier = Tier::query()->create(['name' => 'Gold', 'experience' => 500]);
     $multiplier = Multiplier::query()->create(['name' => 'Tier Bonus', 'multiplier' => 3, 'is_active' => true]);
-    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => $tier->id]);
+    $multiplier->scopes()->create(['scopeable_type' => Tier::class, 'scopeable_id' => (string) $tier->id]);
 
     expect($multiplier->tiers)->toHaveCount(1)
         ->and($multiplier->tiers->first()->name)->toBe('Gold');
@@ -210,7 +210,7 @@ test(description: 'users relationship returns morphed users', closure: function 
     config()->set('level-up.user.model', User::class);
 
     $multiplier = Multiplier::query()->create(['name' => 'User Bonus', 'multiplier' => 2, 'is_active' => true]);
-    $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => $this->user->id]);
+    $multiplier->scopes()->create(['scopeable_type' => User::class, 'scopeable_id' => (string) $this->user->id]);
 
     expect($multiplier->users)->toHaveCount(1)
         ->and($multiplier->users->first()->id)->toBe($this->user->id);

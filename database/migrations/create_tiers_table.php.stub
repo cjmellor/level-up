@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('tiers', function (Blueprint $table) {
-            $table->id();
+            $table->entityId();
             $table->string('name')->unique();
             $table->unsignedBigInteger('experience')->unique();
             $table->json('metadata')->nullable();

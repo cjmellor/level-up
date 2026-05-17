@@ -15,13 +15,26 @@ jobs:
         php: [8.3, 8.4, 8.5]
         laravel: ['12.*', '13.*']
         stability: [prefer-stable]
+        key_type: [bigint]
         include:
           - php: 8.3
             laravel: '12.*'
             stability: prefer-lowest
+            key_type: bigint
+          - php: 8.3
+            laravel: '12.*'
+            stability: prefer-stable
+            key_type: uuid
+          - php: 8.3
+            laravel: '12.*'
+            stability: prefer-stable
+            key_type: ulid
 
     name: >
-      PHP: v${{ matrix.php }} [${{ matrix.stability }}]
+      PHP: v${{ matrix.php }} [${{ matrix.stability }}] (id: ${{ matrix.key_type }})
+
+    env:
+      LEVELUP_TEST_KEY_TYPE: ${{ matrix.key_type }}
 
     steps:
       - name: Checkout

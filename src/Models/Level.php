@@ -7,10 +7,13 @@ namespace LevelUp\Experience\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Exceptions\LevelExistsException;
 
 class Level extends Model
 {
+    use HasConfigurableIds;
+
     protected $guarded = [];
 
     /**

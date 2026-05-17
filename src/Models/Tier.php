@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Exceptions\TierExistsException;
 
 class Tier extends Model
 {
-    use HasFactory;
+    use HasConfigurableIds, HasFactory;
 
     protected $guarded = [];
 

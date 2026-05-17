@@ -7,10 +7,11 @@ namespace LevelUp\Experience\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use LevelUp\Experience\Concerns\HasConfigurableIds;
 
 class Activity extends Model
 {
-    use HasFactory;
+    use HasConfigurableIds, HasFactory;
 
     protected $table = 'streak_activities';
 
