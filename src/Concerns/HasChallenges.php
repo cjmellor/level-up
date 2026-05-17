@@ -16,10 +16,7 @@ trait HasChallenges
 {
     public function challenges(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.challenge'), table: 'challenge_user')
-            ->using(config(key: 'level-up.models.challenge_user'))
-            ->withPivot(columns: ['progress', 'completed_at'])
-            ->withTimestamps();
+        return $this->challengesRelation();
     }
 
     /**
@@ -39,10 +36,10 @@ trait HasChallenges
             message: 'This challenge has expired.',
         );
 
-        $existingPivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
+        $existingPivot = $this->challengesRelation()->where('challenge_id', $challenge->id)->first()?->pivot;
 
         if ($existingPivot && $existingPivot->completed_at !== null && $challenge->is_repeatable) {
-            $this->challenges()->updateExistingPivot($challenge->id, [
+            $this->challengesRelation()->updateExistingPivot($challenge->id, [
                 'progress' => $this->freshChallengeProgress($challenge),
                 'completed_at' => null,
             ]);
@@ -61,7 +58,7 @@ trait HasChallenges
         );
 
         try {
-            $this->challenges()->attach($challenge->id, [
+            $this->challengesRelation()->attach($challenge->id, [
                 'progress' => $this->freshChallengeProgress($challenge),
             ]);
         } catch (UniqueConstraintViolationException) {
@@ -76,7 +73,7 @@ trait HasChallenges
      */
     public function unenrollFromChallenge(Challenge $challenge): void
     {
-        $pivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
+        $pivot = $this->challengesRelation()->where('challenge_id', $challenge->id)->first()?->pivot;
 
         throw_if(
             condition: ! $pivot,
@@ -90,26 +87,26 @@ trait HasChallenges
             message: 'Cannot unenroll from a completed challenge.',
         );
 
-        $this->challenges()->detach($challenge->id);
+        $this->challengesRelation()->detach($challenge->id);
 
         event(new ChallengeUnenrolled(challenge: $challenge, user: $this));
     }
 
     public function activeChallenges(): BelongsToMany
     {
-        return $this->challenges()
+        return $this->challengesRelation()
             ->whereNull(columns: 'challenge_user.completed_at');
     }
 
     public function completedChallenges(): BelongsToMany
     {
-        return $this->challenges()
+        return $this->challengesRelation()
             ->whereNotNull(columns: 'challenge_user.completed_at');
     }
 
     public function getChallengeProgress(Challenge $challenge): ?array
     {
-        $pivot = $this->challenges()->where('challenge_id', $challenge->id)->first()?->pivot;
+        $pivot = $this->challengesRelation()->where('challenge_id', $challenge->id)->first()?->pivot;
 
         return $pivot?->progress;
     }
@@ -125,6 +122,14 @@ trait HasChallenges
         $completed = count(array_filter($progress, fn (array $entry): bool => $entry['completed'] ?? false));
 
         return round(num: ($completed / count($progress)) * 100, precision: 1);
+    }
+
+    private function challengesRelation(): BelongsToMany
+    {
+        return $this->belongsToMany(related: config(key: 'level-up.models.challenge'), table: 'challenge_user')
+            ->using(config(key: 'level-up.models.challenge_user'))
+            ->withPivot(columns: ['progress', 'completed_at'])
+            ->withTimestamps();
     }
 
     private function freshChallengeProgress(Challenge $challenge): array
