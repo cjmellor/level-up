@@ -6,10 +6,11 @@ namespace LevelUp\Experience\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 class StreakHistory extends Model
 {
-    use HasConfigurableIds;
+    use HasConfigurableIds, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -17,4 +18,9 @@ class StreakHistory extends Model
         'started_at' => 'datetime',
         'ended_at' => 'datetime',
     ];
+
+    protected function configuredTableKey(): string
+    {
+        return 'streak_histories';
+    }
 }

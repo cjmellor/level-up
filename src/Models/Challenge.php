@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Contracts\ChallengeCondition;
 
 class Challenge extends Model
 {
-    use HasConfigurableIds, HasFactory;
+    use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -45,7 +46,7 @@ class Challenge extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: 'challenge_user')
+        return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: config('level-up.tables.challenge_user'))
             ->using(config(key: 'level-up.models.challenge_user'))
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
@@ -95,6 +96,11 @@ class Challenge extends Model
             rules: self::$rewardRules,
             label: 'Reward',
         );
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'challenges';
     }
 
     /**

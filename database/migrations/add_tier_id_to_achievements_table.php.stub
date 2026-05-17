@@ -7,14 +7,14 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('achievements', function (Blueprint $table) {
-            $table->entityForeignId('tier_id')->nullable()->constrained('tiers')->nullOnDelete();
+        Schema::table(config('level-up.tables.achievements'), function (Blueprint $table) {
+            $table->entityForeignId('tier_id')->nullable()->constrained(table: config('level-up.tables.tiers'))->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::table('achievements', function (Blueprint $table) {
+        Schema::table(config('level-up.tables.achievements'), function (Blueprint $table) {
             $table->dropConstrainedForeignId('tier_id');
         });
     }

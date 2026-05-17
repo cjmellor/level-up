@@ -62,10 +62,49 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Experience Table
+    | Table Prefix
     |--------------------------------------------------------------------------
     |
-    | This value is the name of the table that will be used to store experience data.
+    | Prepended to every default package table name. Leave empty for no prefix.
+    | Per-table overrides in 'tables' below are taken verbatim and are NOT
+    | prefixed.
+    |
+    */
+    'table_prefix' => env('LEVEL_UP_TABLE_PREFIX', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tables
+    |--------------------------------------------------------------------------
+    |
+    | The table name used for each of the package's models. Leave a value
+    | equal to the default to apply table_prefix above; set it to any other
+    | string to override that table's name exactly (no prefix applied).
+    |
+    */
+    'tables' => [
+        'experiences' => 'experiences',
+        'experience_audits' => 'experience_audits',
+        'levels' => 'levels',
+        'achievements' => 'achievements',
+        'achievement_user' => 'achievement_user',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
+        'streak_activities' => 'streak_activities',
+        'tiers' => 'tiers',
+        'multipliers' => 'multipliers',
+        'multiplier_scopes' => 'multiplier_scopes',
+        'challenges' => 'challenges',
+        'challenge_user' => 'challenge_user',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Experience Table (deprecated — use tables.experiences)
+    |--------------------------------------------------------------------------
+    |
+    | Kept for backwards compatibility. If you customised this key in v1.x,
+    | it still works. New installs should prefer 'tables.experiences' above.
     |
      */
     'table' => 'experiences',

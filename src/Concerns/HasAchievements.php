@@ -47,15 +47,13 @@ trait HasAchievements
 
     public function allAchievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
-            ->withPivot(columns: 'progress');
+        return $this->achievementsRelation();
     }
 
     public function achievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
+        return $this->achievementsRelation()
             ->withTimestamps()
-            ->withPivot(columns: 'progress')
             ->where('is_secret', false)
             ->using(config(key: 'level-up.models.achievement_user'));
     }
@@ -82,8 +80,7 @@ trait HasAchievements
 
     public function achievementsWithProgress(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
-            ->withPivot(columns: 'progress')
+        return $this->achievementsRelation()
             ->where('is_secret', false)
             ->wherePivotNotNull(column: 'progress');
     }
@@ -96,8 +93,7 @@ trait HasAchievements
 
     public function secretAchievements(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.achievement'))
-            ->withPivot(columns: 'progress')
+        return $this->achievementsRelation()
             ->where('is_secret', true);
     }
 
@@ -108,5 +104,13 @@ trait HasAchievements
         $this->achievements()->detach($achievement->id);
 
         event(new AchievementRevoked(achievement: $achievement, user: $this));
+    }
+
+    private function achievementsRelation(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            related: config(key: 'level-up.models.achievement'),
+            table: config('level-up.tables.achievement_user'),
+        )->withPivot(columns: 'progress');
     }
 }

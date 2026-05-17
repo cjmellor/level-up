@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Exceptions\TierExistsException;
 
 class Tier extends Model
 {
-    use HasConfigurableIds, HasFactory;
+    use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -45,6 +46,11 @@ class Tier extends Model
             ->where(column: 'experience', operator: '<=', value: $points)
             ->orderByDesc(column: 'experience')
             ->first();
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'tiers';
     }
 
     private static function createTier(array $tier): static

@@ -7,9 +7,9 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::create('multiplier_scopes', function (Blueprint $table) {
+        Schema::create(config('level-up.tables.multiplier_scopes'), function (Blueprint $table) {
             $table->entityId();
-            $table->entityForeignId('multiplier_id')->constrained()->cascadeOnDelete();
+            $table->entityForeignId('multiplier_id')->constrained(table: config('level-up.tables.multipliers'))->cascadeOnDelete();
             $table->string('scopeable_type');
             $table->string('scopeable_id');
             $table->timestamps();
@@ -21,6 +21,6 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('multiplier_scopes');
+        Schema::dropIfExists(config('level-up.tables.multiplier_scopes'));
     }
 };

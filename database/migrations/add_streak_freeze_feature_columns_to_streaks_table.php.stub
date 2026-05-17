@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('streaks', function (Blueprint $table) {
+        Schema::table(config('level-up.tables.streaks'), function (Blueprint $table) {
             $table->after('activity_at', function (Blueprint $table) {
                 $table->timestamp('frozen_until')->nullable();
             });
@@ -16,7 +16,7 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::table('streaks', function (Blueprint $table) {
+        Schema::table(config('level-up.tables.streaks'), function (Blueprint $table) {
             $table->dropColumn('frozen_until');
         });
     }

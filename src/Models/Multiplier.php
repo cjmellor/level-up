@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
+use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 class Multiplier extends Model
 {
-    use HasConfigurableIds;
+    use HasConfigurableIds, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
@@ -32,12 +33,14 @@ class Multiplier extends Model
 
     public function tiers(): MorphToMany
     {
-        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', 'multiplier_scopes');
+        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', config('level-up.tables.multiplier_scopes'))
+            ->using(config(key: 'level-up.models.multiplier_scope'));
     }
 
     public function users(): MorphToMany
     {
-        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', 'multiplier_scopes');
+        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', config('level-up.tables.multiplier_scopes'))
+            ->using(config(key: 'level-up.models.multiplier_scope'));
     }
 
     public function scopeTo(Model ...$models): static
@@ -126,5 +129,10 @@ class Multiplier extends Model
         $query
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now());
+    }
+
+    protected function configuredTableKey(): string
+    {
+        return 'multipliers';
     }
 }

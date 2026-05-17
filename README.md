@@ -153,6 +153,56 @@ return [
 ];
 ```
 
+# Customizing Table Names
+
+If you're installing into an app that already has tables called `experiences`, `levels`, `tiers`, `multipliers`, `challenges`, or any of the package's other defaults, you can rename them via config — no need to patch published migrations.
+
+**Option 1 — Apply a single prefix to every package table:**
+
+Set an env var (no config publish required):
+
+```dotenv
+LEVEL_UP_TABLE_PREFIX=levelup_
+```
+
+…or publish the config and edit the prefix line:
+
+```bash
+php artisan vendor:publish --tag=level-up-config
+```
+
+```php
+// config/level-up.php
+'table_prefix' => 'levelup_',
+```
+
+All package tables now use the prefix: `levelup_experiences`, `levelup_levels`, `levelup_tiers`, `levelup_multipliers`, `levelup_challenges`, and so on.
+
+**Option 2 — Rename specific tables:**
+
+Edit the `tables` array in the published config:
+
+```php
+'tables' => [
+    'experiences' => 'xp_log',         // renamed
+    'levels'      => 'user_tiers',     // renamed
+    'tiers'       => 'rank_brackets',  // renamed
+    // leave the rest at their defaults
+],
+```
+
+**Combining both:** any value left equal to the default receives the `table_prefix`; any value you change is taken verbatim and the prefix is NOT applied. This lets you prefix everything but override one or two outliers:
+
+```php
+'table_prefix' => 'lvl_',
+'tables' => [
+    'levels' => 'xp_levels',  // → 'xp_levels' (NO prefix)
+    // others stay default → all become 'lvl_<default>'
+],
+```
+
+> **Upgrading from v1.x or earlier v2:** the previous top-level `'table'` config key (used to override only the experiences table) still works as a fallback. New installations should prefer `'tables.experiences'` instead.
+
 # Usage
 
 ## 💯 Experience Points (XP)
