@@ -10,7 +10,6 @@ use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
  * @property \LevelUp\Experience\Tests\Fixtures\User $user
- * @property \LevelUp\Experience\Tests\Fixtures\AliasingUser $aliasUser
  * @property \LevelUp\Experience\Models\Challenge $challenge
  * @property \LevelUp\Experience\Models\Activity $activity
  */

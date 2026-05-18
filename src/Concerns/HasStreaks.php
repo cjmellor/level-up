@@ -39,12 +39,12 @@ trait HasStreaks
         if ($diffInDays > 1) {
             $this->resetStreak($activity);
 
-            event(new StreakBroken($this, $activity, $this->streaksRelation()->whereBelongsTo(related: $activity)->first()));
+            event(new StreakBroken($this, $activity, $this->streaks()->whereBelongsTo(related: $activity)->first()));
 
             return;
         }
 
-        $streak = $this->streaksRelation()->whereBelongsTo(related: $activity);
+        $streak = $this->streaks()->whereBelongsTo(related: $activity);
         $streak->increment(column: 'count');
         $streak->update(values: ['activity_at' => now()]);
 
@@ -53,7 +53,7 @@ trait HasStreaks
 
     public function streaks(): HasMany
     {
-        return $this->streaksRelation();
+        return $this->hasMany(related: config('level-up.models.streak'));
     }
 
     public function resetStreak(Activity $activity): void
@@ -62,7 +62,7 @@ trait HasStreaks
             $this->archiveStreak($activity);
         }
 
-        $this->streaksRelation()
+        $this->streaks()
             ->whereBelongsTo(related: $activity)
             ->update([
                 'count' => 1,
@@ -72,7 +72,7 @@ trait HasStreaks
 
     public function getCurrentStreakCount(Activity $activity): int
     {
-        return $this->streaksRelation()->whereBelongsTo(related: $activity)->first()?->count ?? 0;
+        return $this->streaks()->whereBelongsTo(related: $activity)->first()?->count ?? 0;
     }
 
     public function hasStreakToday(Activity $activity): bool
@@ -119,7 +119,7 @@ trait HasStreaks
 
     protected function hasStreakForActivity(Activity $activity): bool
     {
-        return $this->streaksRelation()
+        return $this->streaks()
             ->whereBelongsTo(related: $activity)
             ->exists();
     }
@@ -140,7 +140,7 @@ trait HasStreaks
 
     protected function getStreakLastActivity(Activity $activity): ?Streak
     {
-        return $this->streaksRelation()
+        return $this->streaks()
             ->whereBelongsTo(related: $activity)
             ->latest(column: 'activity_at')
             ->first();
@@ -182,10 +182,5 @@ trait HasStreaks
             'started_at' => $latestStreak->activity_at->subDays($latestStreak->count - 1),
             'ended_at' => $latestStreak->activity_at,
         ]);
-    }
-
-    private function streaksRelation(): HasMany
-    {
-        return $this->hasMany(related: config('level-up.models.streak'));
     }
 }
