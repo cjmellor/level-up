@@ -14,7 +14,7 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LevelUpServiceProvider extends PackageServiceProvider
 {
-    public static function resolveTables(string $prefix, array $overrides, mixed $legacyName): array
+    public static function resolveTables(string $prefix, array $overrides): array
     {
         $defaults = [
             'experiences' => 'experiences',
@@ -27,7 +27,8 @@ class LevelUpServiceProvider extends PackageServiceProvider
             'streak_activities' => 'streak_activities',
             'tiers' => 'tiers',
             'multipliers' => 'multipliers',
-            'multiplier_scopes' => 'multiplier_scopes',
+            'multiplier_user' => 'multiplier_user',
+            'multiplier_tier' => 'multiplier_tier',
             'challenges' => 'challenges',
             'challenge_user' => 'challenge_user',
         ];
@@ -38,24 +39,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
             $override = $overrides[$key] ?? null;
             $overrideIsExplicit = is_string($override) && $override !== '' && $override !== $default;
 
-            if ($key === 'experiences'
-                && ! $overrideIsExplicit
-                && is_string($legacyName)
-                && $legacyName !== ''
-                && $legacyName !== $default
-            ) {
-                $resolved[$key] = $legacyName;
-
-                continue;
-            }
-
-            if ($overrideIsExplicit) {
-                $resolved[$key] = $override;
-
-                continue;
-            }
-
-            $resolved[$key] = $prefix.$default;
+            $resolved[$key] = $overrideIsExplicit ? $override : $prefix.$default;
         }
 
         return $resolved;
@@ -71,7 +55,6 @@ class LevelUpServiceProvider extends PackageServiceProvider
         config()->set('level-up.tables', static::resolveTables(
             prefix: (string) config('level-up.table_prefix', ''),
             overrides: (array) config('level-up.tables', []),
-            legacyName: config('level-up.table'),
         ));
     }
 
@@ -97,7 +80,9 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'add_tier_id_to_experiences_table',
                 'add_tier_id_to_achievements_table',
                 'create_multipliers_table',
-                'create_multiplier_scopes_table',
+                'create_multiplier_user_table',
+                'create_multiplier_tier_table',
+                'migrate_multiplier_scopes_to_typed_pivots',
                 'add_multipliers_column_to_experience_audits_table',
                 'create_challenges_table',
                 'create_challenge_user_table',
@@ -143,6 +128,23 @@ class LevelUpServiceProvider extends PackageServiceProvider
                     'bigint' => $this->foreignId($column),
                     'uuid' => $this->foreignUuid($column),
                     'ulid' => $this->foreignUlid($column),
+                };
+            });
+        }
+
+        if (! Blueprint::hasMacro('userForeignId')) {
+            Blueprint::macro('userForeignId', function (?string $column = null): ForeignIdColumnDefinition {
+                /** @var Blueprint $this */
+                $column ??= config('level-up.user.foreign_key', 'user_id');
+                $type = config('level-up.user.foreign_key_type', 'bigint');
+
+                return match ($type) {
+                    'bigint' => $this->foreignId($column),
+                    'uuid' => $this->foreignUuid($column),
+                    'ulid' => $this->foreignUlid($column),
+                    default => throw new InvalidArgumentException(
+                        "Unknown level-up.user.foreign_key_type [{$type}]. Expected 'bigint', 'uuid', or 'ulid'."
+                    ),
                 };
             });
         }
