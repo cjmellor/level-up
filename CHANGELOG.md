@@ -2,12 +2,26 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v2.1.0 - 2026-05-24
+
+### Fixed
+
+- **PostgreSQL: `Multiplier::scopeTo()` with User or Tier targets now works.** Eloquent's morph join previously generated `multiplier_scopes.scopeable_id = tiers.id`, which Postgres rejects as a varchar/bigint type mismatch. A new `MorphToManyWithTextCast` relation class wraps the join key in `CAST(... AS TEXT)` on `pgsql` connections only; MySQL and SQLite are unchanged. The workaround will be removed in v3 when `multiplier_scopes` is replaced with typed pivot tables.
+- **v1.x → v2.x upgrade no longer crashes on `addPoints()`.** Laravel's `mergeConfigFrom` is a shallow merge, so v1.x users whose published `config/level-up.php` lacked the v2-era `models` block hit a null-class instantiation in the points listener. The service provider now deep-merges the package's bundled defaults into the published config at runtime, so any missing keys fall back to package defaults while user-set keys are preserved.
+
+### Documentation
+
+- Added `## v2.0 -> v2.1` section to `UPGRADE.md` with database compatibility notes and an explicit callout that feature toggles (`tiers.enabled`, `multipliers.enabled`, `challenges.enabled`) now default to `true` for v1.x upgraders — explicitly disable them in your published config if you don't want them.
+- Added `CONTRIBUTING.md` with Laravel-style branch policy.
+
 ## [Unreleased]
 
 ### Added
+
 - Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
 
 ### Deprecated
+
 - The top-level `'table'` config key is deprecated in favour of `'tables.experiences'`. The old key still works as a fallback for existing installs — no action required.
 
 ## v2.0.0 - 2026-04-03
