@@ -114,14 +114,6 @@ class LevelUpServiceProvider extends PackageServiceProvider
         $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
     }
 
-    /**
-     * Backfill the published config with the package's bundled defaults.
-     *
-     * Spatie's hasConfigFile() uses Laravel's shallow mergeConfigFrom, so a
-     * user's published config from an earlier version is missing any keys we
-     * have added since (e.g. the models block). Deep-merging here means
-     * upgrades don't crash on undefined config reads.
-     */
     protected function mergePackageDefaults(): void
     {
         $defaults = require __DIR__.'/../config/level-up.php';

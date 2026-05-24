@@ -44,32 +44,6 @@ class Multiplier extends Model
             ->using(config(key: 'level-up.models.multiplier_scope'));
     }
 
-    protected function newMorphToMany(
-        $query,
-        Model $parent,
-        $name,
-        $table,
-        $foreignPivotKey,
-        $relatedPivotKey,
-        $parentKey,
-        $relatedKey,
-        $relationName = null,
-        $inverse = false,
-    ): MorphToMany {
-        return new MorphToManyWithTextCast(
-            $query,
-            $parent,
-            $name,
-            $table,
-            $foreignPivotKey,
-            $relatedPivotKey,
-            $parentKey,
-            $relatedKey,
-            $relationName,
-            $inverse,
-        );
-    }
-
     public function scopeTo(Model ...$models): static
     {
         foreach ($models as $model) {
@@ -97,6 +71,32 @@ class Multiplier extends Model
                 message: 'starts_at must be before expires_at.',
             );
         });
+    }
+
+    protected function newMorphToMany(
+        $query,
+        Model $parent,
+        $name,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+        $inverse = false,
+    ): MorphToMany {
+        return new MorphToManyWithTextCast(
+            $query,
+            $parent,
+            $name,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+            $inverse,
+        );
     }
 
     #[Scope]

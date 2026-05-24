@@ -8,15 +8,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Query\JoinClause;
 
-/**
- * MorphToMany variant that casts the related table's key to text before
- * comparing it against the pivot's polymorphic id column.
- *
- * Postgres rejects implicit comparisons between bigint/uuid and varchar
- * (the type of `multiplier_scopes.scopeable_id`). MySQL and SQLite coerce
- * silently. The cast is only applied on Postgres connections; other drivers
- * use the standard parent join unchanged.
- */
 class MorphToManyWithTextCast extends MorphToMany
 {
     protected function performJoin($query = null)
