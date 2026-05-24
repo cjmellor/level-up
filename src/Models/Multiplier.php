@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
+use LevelUp\Experience\Database\Eloquent\Relations\MorphToManyWithTextCast;
 
 class Multiplier extends Model
 {
@@ -70,6 +71,32 @@ class Multiplier extends Model
                 message: 'starts_at must be before expires_at.',
             );
         });
+    }
+
+    protected function newMorphToMany(
+        $query,
+        Model $parent,
+        $name,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+        $inverse = false,
+    ): MorphToMany {
+        return new MorphToManyWithTextCast(
+            $query,
+            $parent,
+            $name,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+            $inverse,
+        );
     }
 
     #[Scope]

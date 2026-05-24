@@ -1,5 +1,53 @@
 # Upgrade Guide
 
+## v2.0 -> v2.1
+
+v2.1 is a bug-fix release. No public API changes, no schema changes. Most upgraders need only update Composer; the two fixes below take effect automatically.
+
+### PostgreSQL: Multiplier scoping now works
+
+**Likelihood Of Impact: High** (Postgres users with tier-scoped or user-scoped multipliers); **None** (MySQL, SQLite, or non-scoped multipliers).
+
+Before v2.1, calling `$multiplier->tiers` or `$multiplier->users` on PostgreSQL raised `SQLSTATE[42883]: operator does not exist: bigint = character varying`. The morph pivot column (`multiplier_scopes.scopeable_id`) is varchar, and Postgres refuses to implicitly compare it against the related model's bigint/uuid primary key.
+
+v2.1 ships a Postgres-specific cast in the join clause. No user action required. MySQL and SQLite are unchanged — the cast only activates on `pgsql` connections.
+
+This workaround will be removed in v3, when `multiplier_scopes` is replaced with two typed pivot tables.
+
+### Config: published configs from v1.x are now backfilled
+
+**Likelihood Of Impact: Critical** (users who upgraded from v1.x and published their config before v2.0); **None** (fresh v2.x installs).
+
+Before v2.1, an app that had published `config/level-up.php` under v1.x crashed on `addPoints()` after upgrading to v2.x. The cause: Laravel's `mergeConfigFrom` is a shallow merge, so the v2-era `models` block in the package's bundled config was overridden by its absence in the published file. `config('level-up.models.experience')` returned `null`, and the points-increased listener tried to instantiate a null class.
+
+v2.1 backfills missing config keys with package defaults at runtime. Your published config is still the source of truth for anything you have set; only keys absent from your published config fall back to defaults. No action required.
+
+### Heads-up: feature toggles now default to `true` after upgrade
+
+**Likelihood Of Impact: Medium** (v1.x users upgrading whose published config predates the new feature toggles).
+
+A side-effect of the config fix above: keys like `level-up.tiers.enabled`, `level-up.multipliers.enabled`, and `level-up.challenges.enabled` — which didn't exist in v1.x — now fall back to their bundled defaults, which are `true`. Before v2.1, the shallow-merge bug accidentally made these features look "off" (the keys returned `null`) for upgraders.
+
+If you upgraded from v1.x and **do not** want tiers, multipliers, or challenges enabled, explicitly set them in your published config:
+
+```php
+// config/level-up.php
+return [
+    // ...
+    'tiers' => ['enabled' => false],
+    'multipliers' => ['enabled' => false],
+    'challenges' => ['enabled' => false],
+];
+```
+
+Fresh v2.x installs are unaffected — their published config already reflects the intended defaults.
+
+### Database compatibility notes
+
+- **PostgreSQL:** now fully supported across all features, including `Multiplier::scopeTo()`. PostgreSQL 14+ recommended.
+- **MySQL:** no known limitations. MySQL 8.0+ recommended.
+- **SQLite:** supported, but ensure foreign-key enforcement is enabled (`PRAGMA foreign_keys = ON`) — Laravel does this by default, but check your `database.php` connection config if you've customised it.
+
 ## v1.x -> v2.0
 
 ### Requirements

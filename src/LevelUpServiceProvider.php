@@ -108,8 +108,20 @@ class LevelUpServiceProvider extends PackageServiceProvider
     {
         parent::register();
 
+        $this->mergePackageDefaults();
+
         $this->app->register(provider: EventServiceProvider::class);
         $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
+    }
+
+    protected function mergePackageDefaults(): void
+    {
+        $defaults = require __DIR__.'/../config/level-up.php';
+
+        config()->set('level-up', array_replace_recursive(
+            $defaults,
+            (array) config('level-up', []),
+        ));
     }
 
     protected function registerEntityKeyMacros(): void
