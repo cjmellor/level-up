@@ -30,12 +30,6 @@ trait GiveExperience
 
         $levelClass = config(key: 'level-up.models.level');
 
-        $lastLevel = $levelClass::orderByDesc(column: 'level')->first();
-        throw_if(
-            condition: isset($lastLevel->next_level_experience) && $amount > $lastLevel->next_level_experience,
-            message: 'Points exceed the last level\'s experience points.',
-        );
-
         [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
         $experience = $this->loadedExperience();

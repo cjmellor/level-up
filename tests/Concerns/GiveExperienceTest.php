@@ -425,9 +425,15 @@ test(description: 'Add default level if not applied before trying to add points'
     ]);
 });
 
-it(description: 'throws an error when points added exceed the last levels experience requirement')
-    ->defer(fn () => $this->user->addPoints(amount: 1000))
-    ->throws(exception: Exception::class);
+test(description: 'caps at the top level when added points exceed the highest level threshold', closure: function (): void {
+    $this->user->addPoints(amount: 1000);
+
+    expect($this->user)
+        ->getPoints()->toBe(expected: 1000)
+        ->getLevel()->toBe(expected: 5);
+
+    expect($this->user->experience->level_id)->toBe($this->levels[5]->id);
+});
 
 test(description: 'the level is correct when adding more points than available on initial experience gain', closure: function (): void {
     $this->user->addPoints(amount: 10);
