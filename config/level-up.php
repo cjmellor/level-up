@@ -15,6 +15,8 @@ return [
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_user' => LevelUp\Experience\Models\Pivots\MultiplierUser::class,
+        'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],

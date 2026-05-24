@@ -32,7 +32,9 @@ class Multiplier extends Model
             table: config('level-up.tables.multiplier_user'),
             foreignPivotKey: 'multiplier_id',
             relatedPivotKey: config('level-up.user.foreign_key', 'user_id'),
-        )->withTimestamps();
+        )
+            ->using(config(key: 'level-up.models.multiplier_user'))
+            ->withTimestamps();
     }
 
     public function tiers(): BelongsToMany
@@ -42,7 +44,9 @@ class Multiplier extends Model
             table: config('level-up.tables.multiplier_tier'),
             foreignPivotKey: 'multiplier_id',
             relatedPivotKey: 'tier_id',
-        )->withTimestamps();
+        )
+            ->using(config(key: 'level-up.models.multiplier_tier'))
+            ->withTimestamps();
     }
 
     public function scopeToUser(Model ...$users): static
