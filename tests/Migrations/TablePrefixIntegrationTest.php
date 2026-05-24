@@ -54,7 +54,7 @@ class TablePrefixIntegrationTest extends TestCase
             ['level' => 2, 'next_level_experience' => 100],
         );
 
-        Experience::create([
+        Experience::query()->create([
             'user_id' => $user->id,
             'level_id' => 1,
             'experience_points' => 50,
@@ -118,13 +118,13 @@ class TablePrefixIntegrationTest extends TestCase
 
     protected function getEnvironmentSetUp($app): void
     {
-        $app['config']->set('level-up.table_prefix', 'pfx_');
-        $app['config']->set('level-up.tables.achievements', 'custom_achievements');
+        $app->make(\Illuminate\Contracts\Config\Repository::class)->set('level-up.table_prefix', 'pfx_');
+        $app->make(\Illuminate\Contracts\Config\Repository::class)->set('level-up.tables.achievements', 'custom_achievements');
 
-        $app['config']->set('level-up.tables', \LevelUp\Experience\LevelUpServiceProvider::resolveTables(
+        $app->make(\Illuminate\Contracts\Config\Repository::class)->set('level-up.tables', \LevelUp\Experience\LevelUpServiceProvider::resolveTables(
             prefix: 'pfx_',
-            overrides: $app['config']->get('level-up.tables', []),
-            legacyName: $app['config']->get('level-up.table'),
+            overrides: $app->make(\Illuminate\Contracts\Config\Repository::class)->get('level-up.tables', []),
+            legacyName: $app->make(\Illuminate\Contracts\Config\Repository::class)->get('level-up.table'),
         ));
 
         parent::getEnvironmentSetUp($app);

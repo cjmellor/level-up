@@ -207,9 +207,15 @@ trait GiveExperience
             return;
         }
 
-        $newLevel = $levelClass::query()
+        $query = $levelClass::query()
             ->where(column: 'next_level_experience', operator: '<=', value: $points)
-            ->whereNotNull(columns: 'next_level_experience')
+            ->whereNotNull(columns: 'next_level_experience');
+
+        if (config(key: 'level-up.level_cap.enabled')) {
+            $query->where(column: 'level', operator: '<=', value: config(key: 'level-up.level_cap.level'));
+        }
+
+        $newLevel = $query
             ->orderByDesc(column: 'level')
             ->first()
             ?? $levelClass::firstWhere(column: 'level', operator: '=', value: config(key: 'level-up.starting_level'));
@@ -252,15 +258,24 @@ trait GiveExperience
 
         $previousTier = $previousTierId ? $tierClass::find($previousTierId) : null;
 
+        $direction = match (true) {
+            $previousTier === null => TierDirection::Promoted,
+            $newTier === null => TierDirection::Demoted,
+            $newTier->experience > $previousTier->experience => TierDirection::Promoted,
+            default => TierDirection::Demoted,
+        };
+
+        if ($direction === TierDirection::Demoted && ! config(key: 'level-up.tiers.demotion')) {
+            return;
+        }
+
         $experience->update(['tier_id' => $newTier?->id]);
 
         event(new UserTierUpdated(
             user: $this,
             previousTier: $previousTier,
             newTier: $newTier,
-            direction: ($newTier?->id ?? 0) > ($previousTierId ?? 0)
-                ? TierDirection::Promoted
-                : TierDirection::Demoted,
+            direction: $direction,
         ));
     }
 
