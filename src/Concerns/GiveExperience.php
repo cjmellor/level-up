@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Events\MultiplierApplied;
@@ -36,53 +37,55 @@ trait GiveExperience
             message: 'Points exceed the last level\'s experience points.',
         );
 
-        [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
+        return DB::transaction(function () use ($amount, $multiplier, $type, $reason, $levelClass): Experience {
+            [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
-        $experience = $this->loadedExperience();
+            $experience = $this->loadedExperience();
 
-        if (! $experience) {
-            $startingLevel = config(key: 'level-up.starting_level');
+            if (! $experience) {
+                $startingLevel = config(key: 'level-up.starting_level');
 
-            $level = $levelClass::query()
-                ->where(column: 'next_level_experience', operator: '<=', value: $amount)
-                ->whereNotNull(columns: 'next_level_experience')
-                ->orderByDesc(column: 'next_level_experience')
-                ->first();
+                $level = $levelClass::query()
+                    ->where(column: 'next_level_experience', operator: '<=', value: $amount)
+                    ->whereNotNull(columns: 'next_level_experience')
+                    ->orderByDesc(column: 'next_level_experience')
+                    ->first();
 
-            if (! $level) {
-                $level = $levelClass::firstOrCreate(
-                    ['level' => $startingLevel],
-                    ['next_level_experience' => null]
-                );
+                if (! $level) {
+                    $level = $levelClass::firstOrCreate(
+                        ['level' => $startingLevel],
+                        ['next_level_experience' => null]
+                    );
+                }
+
+                $experience = $this->experienceRelation()->create(attributes: [
+                    'level_id' => $level->id,
+                    'experience_points' => $amount,
+                ]);
+
+                $this->setRelation('experience', $experience);
+
+                $this->dispatchEvent($experience, $amount, $type, $reason, $appliedMultipliers, $multiplier);
+
+                if ($level->level > $startingLevel) {
+                    for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
+                        event(new UserLevelledUp(user: $this, level: $lvl));
+                    }
+                }
+
+                return $experience;
             }
 
-            $experience = $this->experienceRelation()->create(attributes: [
-                'level_id' => $level->id,
-                'experience_points' => $amount,
-            ]);
+            if ($this->levelCapExceedsUserLevel()) {
+                return $experience;
+            }
 
-            $this->setRelation('experience', $experience);
+            $experience->increment(column: 'experience_points', amount: $amount);
 
             $this->dispatchEvent($experience, $amount, $type, $reason, $appliedMultipliers, $multiplier);
 
-            if ($level->level > $startingLevel) {
-                for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
-                    event(new UserLevelledUp(user: $this, level: $lvl));
-                }
-            }
-
             return $experience;
-        }
-
-        if ($this->levelCapExceedsUserLevel()) {
-            return $experience;
-        }
-
-        $experience->increment(column: 'experience_points', amount: $amount);
-
-        $this->dispatchEvent($experience, $amount, $type, $reason, $appliedMultipliers, $multiplier);
-
-        return $experience;
+        });
     }
 
     public function experience(): HasOne
