@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
+use LevelUp\Experience\Database\Eloquent\Relations\MorphToManyWithTextCast;
 
 class Multiplier extends Model
 {
@@ -41,6 +42,32 @@ class Multiplier extends Model
     {
         return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', config('level-up.tables.multiplier_scopes'))
             ->using(config(key: 'level-up.models.multiplier_scope'));
+    }
+
+    protected function newMorphToMany(
+        $query,
+        Model $parent,
+        $name,
+        $table,
+        $foreignPivotKey,
+        $relatedPivotKey,
+        $parentKey,
+        $relatedKey,
+        $relationName = null,
+        $inverse = false,
+    ): MorphToMany {
+        return new MorphToManyWithTextCast(
+            $query,
+            $parent,
+            $name,
+            $table,
+            $foreignPivotKey,
+            $relatedPivotKey,
+            $parentKey,
+            $relatedKey,
+            $relationName,
+            $inverse,
+        );
     }
 
     public function scopeTo(Model ...$models): static
