@@ -146,5 +146,22 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 };
             });
         }
+
+        if (! Blueprint::hasMacro('userForeignId')) {
+            Blueprint::macro('userForeignId', function (?string $column = null): ForeignIdColumnDefinition {
+                /** @var Blueprint $this */
+                $column ??= config('level-up.user.foreign_key', 'user_id');
+                $type = config('level-up.user.foreign_key_type', 'bigint');
+
+                return match ($type) {
+                    'bigint' => $this->foreignId($column),
+                    'uuid' => $this->foreignUuid($column),
+                    'ulid' => $this->foreignUlid($column),
+                    default => throw new InvalidArgumentException(
+                        "Unknown level-up.user.foreign_key_type [{$type}]. Expected 'bigint', 'uuid', or 'ulid'."
+                    ),
+                };
+            });
+        }
     }
 }
