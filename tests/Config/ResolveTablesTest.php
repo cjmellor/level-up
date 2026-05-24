@@ -21,7 +21,8 @@ it('returns defaults when no prefix or overrides are set', function (): void {
         'streak_activities' => 'streak_activities',
         'tiers' => 'tiers',
         'multipliers' => 'multipliers',
-        'multiplier_scopes' => 'multiplier_scopes',
+        'multiplier_user' => 'multiplier_user',
+        'multiplier_tier' => 'multiplier_tier',
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
     ]);
@@ -36,7 +37,8 @@ it('applies the prefix to every default table', function (): void {
     expect($resolved['experiences'])->toBe('lvl_experiences')
         ->and($resolved['levels'])->toBe('lvl_levels')
         ->and($resolved['streak_activities'])->toBe('lvl_streak_activities')
-        ->and($resolved['multiplier_scopes'])->toBe('lvl_multiplier_scopes')
+        ->and($resolved['multiplier_user'])->toBe('lvl_multiplier_user')
+        ->and($resolved['multiplier_tier'])->toBe('lvl_multiplier_tier')
         ->and($resolved['challenge_user'])->toBe('lvl_challenge_user');
 });
 
