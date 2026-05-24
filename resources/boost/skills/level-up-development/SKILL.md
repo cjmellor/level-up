@@ -159,15 +159,26 @@ Active multipliers are automatically applied when `addPoints()` is called. The `
 
 ### Scope Multipliers
 
-Multipliers with no scopes apply to all users. Use `scopeTo()` to restrict:
+Multipliers with no scopes apply to all users. Use the typed `scopeToUser` / `scopeToTier` methods to restrict:
 
 ```php
-$multiplier->scopeTo($user);           // Specific user only
-$multiplier->scopeTo($goldTier);       // Gold tier users only
-$multiplier->scopeTo($user, $tier);    // Multiple scopes (variadic)
+$multiplier->scopeToUser($user);                 // Specific user only
+$multiplier->scopeToTier($goldTier);             // Gold tier users only
+$multiplier->scopeToUser($user)->scopeToTier($tier); // Both — chains via fluent return
+
+// Variadic — attach multiple of the same type in one call
+$multiplier->scopeToUser($alice, $bob, $carol);
+$multiplier->scopeToTier($silver, $gold, $platinum);
+
+// Reverse the scope
+$multiplier->unscopeFromUser($user);
+$multiplier->unscopeFromTier($goldTier);
+
+// Check whether a multiplier has any scopes attached
+$multiplier->isGlobal();  // true when no users or tiers attached
 ```
 
-`scopeTo()` is idempotent — calling it twice with the same model does not create duplicates.
+`scopeToUser` and `scopeToTier` are idempotent (they use `syncWithoutDetaching` internally) — calling them twice with the same model does not create duplicates.
 
 ### Inline Multiplier
 
@@ -260,7 +271,7 @@ $multiplier = Multiplier::create([
 ]);
 
 $goldTier = Tier::where('name', 'Gold')->first();
-$multiplier->scopeTo($goldTier);
+$multiplier->scopeToTier($goldTier);
 ```
 
 When a Gold-tier user calls `addPoints()`, this multiplier is automatically included.
@@ -673,7 +684,6 @@ return [
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
-        'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],

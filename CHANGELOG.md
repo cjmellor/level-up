@@ -2,6 +2,41 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v3.0.0-beta1 - Unreleased
+
+### Breaking changes
+
+- **`Multiplier::scopeTo(Model ...$models)` removed.** Replaced with typed methods: `scopeToUser(Model ...$users)`, `scopeToTier(Tier ...$tiers)`, plus companion `unscopeFromUser` / `unscopeFromTier` / `isGlobal`. See UPGRADE.md.
+- **`multiplier_scopes` polymorphic table replaced with two typed pivots** — `multiplier_user` and `multiplier_tier`. A backfill migration runs automatically during `php artisan migrate` and migrates existing data into the new schema. Removes the `MorphToManyWithTextCast` Postgres workaround that shipped in v2.1.
+- **`MultiplierScope` model removed.** Both `config('level-up.models.multiplier_scope')` and `config('level-up.tables.multiplier_scopes')` config keys are no longer read.
+- **`'level-up.table'` legacy config key removed.** Deprecated since v2.0 in favour of `'level-up.tables.experiences'`.
+- **`LevelUp\Experience\Support\UserForeignKey` helper class removed.** Replaced by a `$table->userForeignId()` Blueprint macro that reads the same config and routes to `foreignId()` / `foreignUuid()` / `foreignUlid()`.
+- **Trait method aliasing helpers removed** (cherry-picked from v2.1's revert of PR #123). Host User models with colliding `challenges()` / `streaks()` / `experience()` / `experienceHistory()` methods need to rename or compose into a wrapper model.
+- **`setPoints()` recalculates level and tier.** Previously a raw column write with no side effects; now fires `UserLevelledUp` / `UserTierUpdated` events when the new point total implies a different placement.
+- **Excess points cap at the top level instead of throwing.** `addPoints($amount)` where `$amount` exceeds the highest defined level's threshold no longer throws — the user is capped at the highest level.
+
+### Added
+
+- `Multiplier::scopeToUser`, `scopeToTier`, `unscopeFromUser`, `unscopeFromTier`, `isGlobal` methods.
+- `$table->userForeignId()` Blueprint macro alongside `entityId()` / `entityForeignId()`.
+- `migrate_multiplier_scopes_to_typed_pivots` migration — backfills v2.x data into the v3 schema, no-op on fresh installs.
+
+### Fixed
+
+- **`addPoints()` is now wrapped in `DB::transaction()`** so synchronous listener exceptions roll back the partial points write atomically instead of leaving stale state.
+- **`revokeAchievement()` clears the cached `achievements` relation** so subsequent reads reflect the detached state without needing a manual `refresh()`.
+- **`alter_experience_audits_type_to_string` migration's `down()` now works on PostgreSQL** (reported by @christoph-kluge in discussion #121). Driver-aware fallback splits the `ALTER COLUMN TYPE` and `ADD CONSTRAINT` into separate statements on `pgsql`; MySQL and SQLite use the existing Blueprint path.
+
+### Removed
+
+- `Multiplier::scopeTo`, `Multiplier::scopes` (`HasMany` to `MultiplierScope`).
+- `src/Models/MultiplierScope.php`.
+- `src/Support/UserForeignKey.php`.
+- `database/migrations/create_multiplier_scopes_table.php.stub`.
+- `config('level-up.table')` (legacy experiences-table key).
+- `config('level-up.models.multiplier_scope')` config key.
+- `config('level-up.tables.multiplier_scopes')` config key (replaced by `tables.multiplier_user` + `tables.multiplier_tier`).
+
 ## v2.1.0 - 2026-05-24
 
 ### Fixed
