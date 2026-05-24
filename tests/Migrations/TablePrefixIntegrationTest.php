@@ -124,7 +124,6 @@ class TablePrefixIntegrationTest extends TestCase
         $app['config']->set('level-up.tables', \LevelUp\Experience\LevelUpServiceProvider::resolveTables(
             prefix: 'pfx_',
             overrides: $app['config']->get('level-up.tables', []),
-            legacyName: $app['config']->get('level-up.table'),
         ));
 
         parent::getEnvironmentSetUp($app);

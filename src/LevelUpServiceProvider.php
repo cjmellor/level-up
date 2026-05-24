@@ -14,7 +14,7 @@ use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class LevelUpServiceProvider extends PackageServiceProvider
 {
-    public static function resolveTables(string $prefix, array $overrides, mixed $legacyName): array
+    public static function resolveTables(string $prefix, array $overrides): array
     {
         $defaults = [
             'experiences' => 'experiences',
@@ -38,24 +38,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
             $override = $overrides[$key] ?? null;
             $overrideIsExplicit = is_string($override) && $override !== '' && $override !== $default;
 
-            if ($key === 'experiences'
-                && ! $overrideIsExplicit
-                && is_string($legacyName)
-                && $legacyName !== ''
-                && $legacyName !== $default
-            ) {
-                $resolved[$key] = $legacyName;
-
-                continue;
-            }
-
-            if ($overrideIsExplicit) {
-                $resolved[$key] = $override;
-
-                continue;
-            }
-
-            $resolved[$key] = $prefix.$default;
+            $resolved[$key] = $overrideIsExplicit ? $override : $prefix.$default;
         }
 
         return $resolved;
@@ -71,7 +54,6 @@ class LevelUpServiceProvider extends PackageServiceProvider
         config()->set('level-up.tables', static::resolveTables(
             prefix: (string) config('level-up.table_prefix', ''),
             overrides: (array) config('level-up.tables', []),
-            legacyName: config('level-up.table'),
         ));
     }
 

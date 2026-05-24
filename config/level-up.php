@@ -99,17 +99,6 @@ return [
     ],
 
     /*
-    |--------------------------------------------------------------------------
-    | Experience Table (deprecated — use tables.experiences)
-    |--------------------------------------------------------------------------
-    |
-    | Kept for backwards compatibility. If you customised this key in v1.x,
-    | it still works. New installs should prefer 'tables.experiences' above.
-    |
-     */
-    'table' => 'experiences',
-
-    /*
     |-----------------------------------------------------------------------
     | Starting Level
     |-----------------------------------------------------------------------
