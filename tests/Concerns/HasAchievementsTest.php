@@ -167,3 +167,42 @@ test(description: 'revoking a secret Achievement works correctly', closure: func
 test(description: 'incrementAchievementProgress throws when user does not have the achievement', closure: function (): void {
     $this->user->incrementAchievementProgress($this->achievement);
 })->throws(Exception::class, 'User does not have this Achievement. Grant it first before incrementing progress.');
+
+test(description: 'granting an Achievement is visible on the same instance without fresh()', closure: function (): void {
+    $this->user->load('achievements');
+    expect($this->user->achievements)->toHaveCount(count: 0);
+
+    $this->user->grantAchievement($this->achievement);
+
+    expect($this->user->achievements)->toHaveCount(count: 1)
+        ->and($this->user->allAchievements)->toHaveCount(count: 1);
+});
+
+test(description: 'incrementing progress is visible on the same instance without fresh()', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, 25);
+    $this->user->load('achievementsWithProgress');
+    expect($this->user->achievementsWithProgress->first()->pivot->progress)->toBe(25);
+
+    $this->user->incrementAchievementProgress($this->achievement, 30);
+
+    expect($this->user->achievementsWithProgress->first()->pivot->progress)->toBe(55);
+});
+
+test(description: 'revoking an Achievement clears sibling relation caches on the same instance', closure: function (): void {
+    $secretAchievement = Achievement::factory()->secret()->create();
+    $this->user->grantAchievement($this->achievement, 50);
+    $this->user->grantAchievement($secretAchievement);
+
+    expect($this->user->achievements)->toHaveCount(count: 1)
+        ->and($this->user->allAchievements)->toHaveCount(count: 2)
+        ->and($this->user->achievementsWithProgress)->toHaveCount(count: 1)
+        ->and($this->user->secretAchievements)->toHaveCount(count: 1);
+
+    $this->user->revokeAchievement($this->achievement);
+    $this->user->revokeAchievement($secretAchievement);
+
+    expect($this->user->achievements)->toHaveCount(count: 0)
+        ->and($this->user->allAchievements)->toHaveCount(count: 0)
+        ->and($this->user->achievementsWithProgress)->toHaveCount(count: 0)
+        ->and($this->user->secretAchievements)->toHaveCount(count: 0);
+});
