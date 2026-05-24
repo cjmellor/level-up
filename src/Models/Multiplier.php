@@ -7,8 +7,7 @@ namespace LevelUp\Experience\Models;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
@@ -26,33 +25,65 @@ class Multiplier extends Model
         'expires_at' => 'datetime',
     ];
 
-    public function scopes(): HasMany
+    public function users(): BelongsToMany
     {
-        return $this->hasMany(config(key: 'level-up.models.multiplier_scope'));
+        return $this->belongsToMany(
+            related: config(key: 'level-up.user.model'),
+            table: config('level-up.tables.multiplier_user'),
+            foreignPivotKey: 'multiplier_id',
+            relatedPivotKey: config('level-up.user.foreign_key', 'user_id'),
+        )->withTimestamps();
     }
 
-    public function tiers(): MorphToMany
+    public function tiers(): BelongsToMany
     {
-        return $this->morphedByMany(config(key: 'level-up.models.tier'), 'scopeable', config('level-up.tables.multiplier_scopes'))
-            ->using(config(key: 'level-up.models.multiplier_scope'));
+        return $this->belongsToMany(
+            related: config(key: 'level-up.models.tier'),
+            table: config('level-up.tables.multiplier_tier'),
+            foreignPivotKey: 'multiplier_id',
+            relatedPivotKey: 'tier_id',
+        )->withTimestamps();
     }
 
-    public function users(): MorphToMany
+    public function scopeToUser(Model ...$users): static
     {
-        return $this->morphedByMany(config(key: 'level-up.user.model'), 'scopeable', config('level-up.tables.multiplier_scopes'))
-            ->using(config(key: 'level-up.models.multiplier_scope'));
-    }
-
-    public function scopeTo(Model ...$models): static
-    {
-        foreach ($models as $model) {
-            $this->scopes()->firstOrCreate([
-                'scopeable_type' => $model->getMorphClass(),
-                'scopeable_id' => (string) $model->getKey(),
-            ]);
-        }
+        $this->users()->syncWithoutDetaching(
+            collect($users)->map->getKey()->all()
+        );
 
         return $this;
+    }
+
+    public function scopeToTier(Tier ...$tiers): static
+    {
+        $this->tiers()->syncWithoutDetaching(
+            collect($tiers)->map->getKey()->all()
+        );
+
+        return $this;
+    }
+
+    public function unscopeFromUser(Model ...$users): static
+    {
+        $this->users()->detach(
+            collect($users)->map->getKey()->all()
+        );
+
+        return $this;
+    }
+
+    public function unscopeFromTier(Tier ...$tiers): static
+    {
+        $this->tiers()->detach(
+            collect($tiers)->map->getKey()->all()
+        );
+
+        return $this;
+    }
+
+    public function isGlobal(): bool
+    {
+        return ! $this->users()->exists() && ! $this->tiers()->exists();
     }
 
     protected static function booted(): void
@@ -93,23 +124,14 @@ class Multiplier extends Model
     protected function forUser(Builder $query, Model $user): void
     {
         $tierId = $user->experience?->tier_id;
-        $tierClass = config(key: 'level-up.models.tier');
 
         $query->where(fn (Builder $outer) => $outer
-            ->whereDoesntHave('scopes')
-            ->orWhereHas('scopes', fn (Builder $scopeQuery) => $scopeQuery
-                ->where(fn (Builder $match) => $match
-                    ->where([
-                        'scopeable_type' => $user->getMorphClass(),
-                        'scopeable_id' => (string) $user->getKey(),
-                    ])
-                    ->when($tierId, fn (Builder $tierMatch) => $tierMatch
-                        ->orWhere([
-                            'scopeable_type' => (new $tierClass)->getMorphClass(),
-                            'scopeable_id' => (string) $tierId,
-                        ])
-                    )
-                )
+            ->where(fn (Builder $global) => $global
+                ->whereDoesntHave('users')
+                ->whereDoesntHave('tiers'))
+            ->orWhereHas('users', fn (Builder $u) => $u->whereKey($user->getKey()))
+            ->when($tierId, fn (Builder $q) => $q
+                ->orWhereHas('tiers', fn (Builder $t) => $t->whereKey($tierId))
             )
         );
     }
