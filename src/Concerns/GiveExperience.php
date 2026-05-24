@@ -10,10 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
+use LevelUp\Experience\Enums\TierDirection;
 use LevelUp\Experience\Events\MultiplierApplied;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\UserLevelledUp;
+use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Models\Experience;
 
 trait GiveExperience
@@ -122,14 +124,17 @@ trait GiveExperience
             'experience_points' => $amount,
         ]);
 
-        return $this->experience;
+        $this->recalculateLevelFor($amount);
+        $this->recalculateTierFor($amount);
+
+        return $this->experience->refresh();
     }
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
     {
         $levelClass = config(key: 'level-up.models.level');
 
-        $nextLevel = $levelClass::firstWhere(column: 'level', operator: '=', value: is_null($checkAgainst) ? $this->getLevel() + 1 : $checkAgainst);
+        $nextLevel = $levelClass::firstWhere(column: 'level', operator: '=', value: $checkAgainst ?? $this->getLevel() + 1);
 
         if ($this->levelCapExceedsUserLevel()) {
             return 0;
@@ -181,6 +186,87 @@ trait GiveExperience
         for ($lvl = $previousLevel + 1; $lvl <= $to; $lvl++) {
             event(new UserLevelledUp(user: $this, level: $lvl));
         }
+    }
+
+    protected function recalculateLevelFor(int $points): void
+    {
+        $levelClass = config(key: 'level-up.models.level');
+        $experience = $this->experience;
+
+        if (! $experience) {
+            return;
+        }
+
+        $query = $levelClass::query()
+            ->where(column: 'next_level_experience', operator: '<=', value: $points)
+            ->whereNotNull(columns: 'next_level_experience');
+
+        if (config(key: 'level-up.level_cap.enabled')) {
+            $query->where(column: 'level', operator: '<=', value: config(key: 'level-up.level_cap.level'));
+        }
+
+        $newLevel = $query
+            ->orderByDesc(column: 'level')
+            ->first()
+            ?? $levelClass::firstWhere(column: 'level', operator: '=', value: config(key: 'level-up.starting_level'));
+
+        if (! $newLevel || $newLevel->id === $experience->level_id) {
+            return;
+        }
+
+        $previousLevel = $this->getLevel();
+
+        $experience->status()->associate($newLevel);
+        $experience->save();
+
+        if ($newLevel->level > $previousLevel) {
+            for ($lvl = $previousLevel + 1; $lvl <= $newLevel->level; $lvl++) {
+                event(new UserLevelledUp(user: $this, level: $lvl));
+            }
+        }
+    }
+
+    protected function recalculateTierFor(int $points): void
+    {
+        if (! config(key: 'level-up.tiers.enabled')) {
+            return;
+        }
+
+        $experience = $this->experience;
+
+        if (! $experience) {
+            return;
+        }
+
+        $tierClass = config(key: 'level-up.models.tier');
+        $newTier = $tierClass::forPoints(points: $points);
+        $previousTierId = $experience->tier_id;
+
+        if ($newTier?->id === $previousTierId) {
+            return;
+        }
+
+        $previousTier = $previousTierId ? $tierClass::find($previousTierId) : null;
+
+        $direction = match (true) {
+            $previousTier === null => TierDirection::Promoted,
+            $newTier === null => TierDirection::Demoted,
+            $newTier->experience > $previousTier->experience => TierDirection::Promoted,
+            default => TierDirection::Demoted,
+        };
+
+        if ($direction === TierDirection::Demoted && ! config(key: 'level-up.tiers.demotion')) {
+            return;
+        }
+
+        $experience->update(['tier_id' => $newTier?->id]);
+
+        event(new UserTierUpdated(
+            user: $this,
+            previousTier: $previousTier,
+            newTier: $newTier,
+            direction: $direction,
+        ));
     }
 
     /**

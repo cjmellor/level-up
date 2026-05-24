@@ -586,3 +586,37 @@ test(description: 'unknown stacking strategy throws InvalidArgumentException', c
 
     $this->user->addPoints(amount: 10);
 })->throws(InvalidArgumentException::class, 'Unknown multiplier stack strategy: invalid_strategy');
+
+test(description: 'setPoints recalculates level upward and dispatches UserLevelledUp for each crossed level', closure: function (): void {
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->getLevel())->toBe(expected: 1);
+
+    Event::fake([UserLevelledUp::class]);
+
+    $this->user->setPoints(amount: 300);
+
+    expect($this->user->fresh()->getLevel())->toBe(expected: 3);
+
+    Event::assertDispatched(
+        event: UserLevelledUp::class,
+        callback: fn (UserLevelledUp $event): bool => $event->level === 2,
+    );
+    Event::assertDispatched(
+        event: UserLevelledUp::class,
+        callback: fn (UserLevelledUp $event): bool => $event->level === 3,
+    );
+});
+
+test(description: 'setPoints clamps recalculated level to level_cap when enabled', closure: function (): void {
+    config()->set(key: 'level-up.level_cap.enabled', value: true);
+    config()->set(key: 'level-up.level_cap.level', value: 2);
+
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user->getLevel())->toBe(expected: 1);
+
+    $this->user->setPoints(amount: 500);
+
+    expect($this->user->fresh()->getLevel())->toBe(expected: 2);
+});
