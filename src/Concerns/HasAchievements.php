@@ -102,6 +102,7 @@ trait HasAchievements
         throw_unless($this->allAchievements()->find($achievement->id), Exception::class, message: 'User does not have this Achievement');
 
         $this->achievements()->detach($achievement->id);
+        $this->unsetRelation('achievements');
 
         event(new AchievementRevoked(achievement: $achievement, user: $this));
     }
