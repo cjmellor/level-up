@@ -40,9 +40,7 @@ trait GiveExperience
 
         [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
-        $experience = $this->loadedExperience();
-
-        if (! $experience) {
+        if ($this->experience()->doesntExist()) {
             $startingLevel = config(key: 'level-up.starting_level');
 
             $level = $levelClass::query()
@@ -58,14 +56,14 @@ trait GiveExperience
                 );
             }
 
-            $experience = $this->experienceRelation()->create(attributes: [
+            $this->experience()->create(attributes: [
                 'level_id' => $level->id,
                 'experience_points' => $amount,
             ]);
 
-            $this->setRelation('experience', $experience);
+            $this->load('experience');
 
-            $this->dispatchEvent($experience, $amount, $type, $reason, $appliedMultipliers, $multiplier);
+            $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
 
             if ($level->level > $startingLevel) {
                 for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
@@ -73,67 +71,63 @@ trait GiveExperience
                 }
             }
 
-            return $experience;
+            return $this->experience;
         }
 
         if ($this->levelCapExceedsUserLevel()) {
-            return $experience;
+            return $this->experience;
         }
 
-        $experience->increment(column: 'experience_points', amount: $amount);
+        $this->experience->increment(column: 'experience_points', amount: $amount);
 
-        $this->dispatchEvent($experience, $amount, $type, $reason, $appliedMultipliers, $multiplier);
+        $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
 
-        return $experience;
+        return $this->experience;
     }
 
     public function experience(): HasOne
     {
-        return $this->experienceRelation();
+        return $this->hasOne(related: config('level-up.models.experience'));
     }
 
     public function getLevel(): int
     {
-        return $this->loadedExperience()?->status?->level ?? 0;
+        return $this->experience?->status?->level ?? 0;
     }
 
     public function experienceHistory(): HasMany
     {
-        return $this->experienceHistoryRelation();
+        return $this->hasMany(related: config('level-up.models.experience_audit'));
     }
 
     public function deductPoints(int $amount, ?string $reason = null): Experience
     {
-        $experience = $this->loadedExperience();
+        throw_unless($this->experience()->exists(), Exception::class, 'User has no experience record.');
 
-        throw_unless($experience, Exception::class, 'User has no experience record.');
-
-        $experience->decrement(column: 'experience_points', amount: $amount);
+        $this->experience->decrement(column: 'experience_points', amount: $amount);
 
         event(new PointsDecreased(
             pointsDecreasedBy: $amount,
-            totalPoints: $experience->experience_points,
+            totalPoints: $this->experience->experience_points,
             reason: $reason,
             user: $this,
         ));
 
-        return $experience;
+        return $this->experience;
     }
 
     public function setPoints(int $amount): Experience
     {
-        $experience = $this->loadedExperience();
+        throw_unless($this->experience()->exists(), Exception::class, message: 'User has no experience record.');
 
-        throw_unless($experience, Exception::class, message: 'User has no experience record.');
-
-        $experience->update(attributes: [
+        $this->experience->update(attributes: [
             'experience_points' => $amount,
         ]);
 
         $this->recalculateLevelFor($amount);
         $this->recalculateTierFor($amount);
 
-        return $experience->refresh();
+        return $this->experience->refresh();
     }
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
@@ -170,7 +164,7 @@ trait GiveExperience
 
     public function getPoints(): int
     {
-        return $this->loadedExperience()?->experience_points ?? 0;
+        return $this->experience?->experience_points ?? 0;
     }
 
     public function levelUp(int $to): void
@@ -184,14 +178,10 @@ trait GiveExperience
 
         throw_unless($level, InvalidArgumentException::class, "Level {$to} does not exist.");
 
-        $experience = $this->loadedExperience();
-
-        throw_unless($experience, Exception::class, message: 'User has no experience record.');
-
         $previousLevel = $this->getLevel();
 
-        $experience->status()->associate(model: $level);
-        $experience->save();
+        $this->experience->status()->associate(model: $level);
+        $this->experience->save();
 
         for ($lvl = $previousLevel + 1; $lvl <= $to; $lvl++) {
             event(new UserLevelledUp(user: $this, level: $lvl));
@@ -201,7 +191,7 @@ trait GiveExperience
     protected function recalculateLevelFor(int $points): void
     {
         $levelClass = config(key: 'level-up.models.level');
-        $experience = $this->loadedExperience();
+        $experience = $this->experience;
 
         if (! $experience) {
             return;
@@ -242,7 +232,7 @@ trait GiveExperience
             return;
         }
 
-        $experience = $this->loadedExperience();
+        $experience = $this->experience;
 
         if (! $experience) {
             return;
@@ -333,13 +323,13 @@ trait GiveExperience
         });
     }
 
-    protected function dispatchEvent(Experience $experience, int $amount, string $type, ?string $reason, ?Collection $appliedMultipliers = null, int|float|null $inlineMultiplier = null): void
+    protected function dispatchEvent(int $amount, string $type, ?string $reason, ?Collection $appliedMultipliers = null, int|float|null $inlineMultiplier = null): void
     {
         $auditData = $this->buildMultiplierAuditData($appliedMultipliers, $inlineMultiplier);
 
         event(new PointsIncreased(
             pointsAdded: $amount,
-            totalPoints: $experience->experience_points,
+            totalPoints: $this->experience->experience_points,
             type: $type,
             reason: $reason,
             user: $this,
@@ -370,30 +360,5 @@ trait GiveExperience
         return config(key: 'level-up.level_cap.enabled')
             && $this->getLevel() >= config(key: 'level-up.level_cap.level')
             && ! config(key: 'level-up.level_cap.points_continue');
-    }
-
-    private function experienceRelation(): HasOne
-    {
-        return $this->hasOne(related: config('level-up.models.experience'));
-    }
-
-    private function experienceHistoryRelation(): HasMany
-    {
-        return $this->hasMany(related: config('level-up.models.experience_audit'));
-    }
-
-    private function loadedExperience(): ?Experience
-    {
-        if ($this->relationLoaded('experience')) {
-            return $this->getRelation('experience');
-        }
-
-        $experience = $this->experienceRelation()->first();
-
-        if ($experience !== null) {
-            $this->setRelation('experience', $experience);
-        }
-
-        return $experience;
     }
 }

@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use LevelUp\Experience\Support\UserForeignKey;
 
 return new class extends Migration
 {
@@ -11,7 +10,7 @@ return new class extends Migration
     {
         Schema::create(table: config('level-up.tables.streak_histories'), callback: function (Blueprint $table) {
             $table->entityId();
-            UserForeignKey::on(table: $table)->constrained(table: config(key: 'level-up.user.users_table'))->cascadeOnDelete();
+            $table->userForeignId()->constrained(table: config(key: 'level-up.user.users_table'))->cascadeOnDelete();
             $table->entityForeignId(column: 'activity_id')->constrained(table: config('level-up.tables.streak_activities'));
             $table->integer(column: 'count')->default(value: 1);
             $table->timestamp(column: 'started_at');

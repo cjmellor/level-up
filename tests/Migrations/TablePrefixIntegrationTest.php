@@ -27,7 +27,8 @@ class TablePrefixIntegrationTest extends TestCase
         $this->assertTrue(Schema::hasTable('pfx_streak_activities'));
         $this->assertTrue(Schema::hasTable('pfx_tiers'));
         $this->assertTrue(Schema::hasTable('pfx_multipliers'));
-        $this->assertTrue(Schema::hasTable('pfx_multiplier_scopes'));
+        $this->assertTrue(Schema::hasTable('pfx_multiplier_user'));
+        $this->assertTrue(Schema::hasTable('pfx_multiplier_tier'));
         $this->assertTrue(Schema::hasTable('pfx_challenges'));
         $this->assertTrue(Schema::hasTable('pfx_challenge_user'));
     }
@@ -110,9 +111,10 @@ class TablePrefixIntegrationTest extends TestCase
             'is_active' => true,
         ]);
 
-        $multiplier->users()->attach($user);
+        $multiplier->scopeToUser($user);
 
-        $this->assertSame(1, DB::table('pfx_multiplier_scopes')->count());
+        $this->assertSame(1, DB::table('pfx_multiplier_user')->count());
+        $this->assertFalse(Schema::hasTable('multiplier_user'));
         $this->assertFalse(Schema::hasTable('multiplier_scopes'));
     }
 
@@ -124,7 +126,6 @@ class TablePrefixIntegrationTest extends TestCase
         $app->make(\Illuminate\Contracts\Config\Repository::class)->set('level-up.tables', \LevelUp\Experience\LevelUpServiceProvider::resolveTables(
             prefix: 'pfx_',
             overrides: $app->make(\Illuminate\Contracts\Config\Repository::class)->get('level-up.tables', []),
-            legacyName: $app->make(\Illuminate\Contracts\Config\Repository::class)->get('level-up.table'),
         ));
 
         parent::getEnvironmentSetUp($app);
