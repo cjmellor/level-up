@@ -20,9 +20,15 @@ All notable changes to `level-up` will be documented in this file.
 
 - Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
 
+### Changed
+
+- **Behavioural (v3):** `addPoints()` no longer throws when called with an amount that would exceed the highest level's `next_level_experience`. The user is capped at the highest qualifying level instead. The exception (`'Points exceed the last level\'s experience points.'`) has been removed.
+- **Behavioural (v3):** the first-time-experience branch of `addPoints()` now resolves the starting level via `orderByDesc('level')` to match `PointsIncreasedListener::__invoke()`. Previously it ordered by `next_level_experience`, which would diverge from the listener when level thresholds aren't strictly monotonic.
+
 ### Removed
 
 - **Breaking (v3):** the top-level `'table'` config key has been removed. It was deprecated since v2.0 in favour of `'tables.experiences'`. Set the experiences table name via `'tables.experiences'` instead.
+- **Breaking (v3):** the `Points exceed the last level's experience points.` exception thrown by `addPoints()` is gone. Callers catching this exception should remove their catch block (or convert it to a level-cap check via `level-up.level_cap.*`).
 
 ## v2.0.0 - 2026-04-03
 

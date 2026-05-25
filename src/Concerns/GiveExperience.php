@@ -40,7 +40,7 @@ trait GiveExperience
             $level = $levelClass::query()
                 ->where(column: 'next_level_experience', operator: '<=', value: $amount)
                 ->whereNotNull(columns: 'next_level_experience')
-                ->orderByDesc(column: 'next_level_experience')
+                ->orderByDesc(column: 'level')
                 ->first();
 
             if (! $level) {

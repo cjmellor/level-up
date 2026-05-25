@@ -435,6 +435,18 @@ test(description: 'caps at the top level when added points exceed the highest le
     expect($this->user->experience->level_id)->toBe($this->levels[5]->id);
 });
 
+test(description: 'caps at the top level when an increment crosses past the highest threshold', closure: function (): void {
+    $this->user->addPoints(amount: 10);
+
+    expect($this->user)->getLevel()->toBe(expected: 1);
+
+    $this->user->addPoints(amount: 5000);
+
+    expect($this->user->fresh())
+        ->getPoints()->toBe(expected: 5010)
+        ->getLevel()->toBe(expected: 5);
+});
+
 test(description: 'the level is correct when adding more points than available on initial experience gain', closure: function (): void {
     $this->user->addPoints(amount: 10);
     expect($this->user->experience->level_id)->toBe($this->levels[1]->id);
