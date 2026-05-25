@@ -107,30 +107,34 @@ trait GiveExperience
     {
         throw_unless($this->experience()->exists(), Exception::class, 'User has no experience record.');
 
-        $this->experience->decrement(column: 'experience_points', amount: $amount);
+        return DB::transaction(function () use ($amount, $reason): Experience {
+            $this->experience->decrement(column: 'experience_points', amount: $amount);
 
-        event(new PointsDecreased(
-            pointsDecreasedBy: $amount,
-            totalPoints: $this->experience->experience_points,
-            reason: $reason,
-            user: $this,
-        ));
+            event(new PointsDecreased(
+                pointsDecreasedBy: $amount,
+                totalPoints: $this->experience->experience_points,
+                reason: $reason,
+                user: $this,
+            ));
 
-        return $this->experience;
+            return $this->experience;
+        });
     }
 
     public function setPoints(int $amount): Experience
     {
         throw_unless($this->experience()->exists(), Exception::class, message: 'User has no experience record.');
 
-        $this->experience->update(attributes: [
-            'experience_points' => $amount,
-        ]);
+        return DB::transaction(function () use ($amount): Experience {
+            $this->experience->update(attributes: [
+                'experience_points' => $amount,
+            ]);
 
-        $this->recalculateLevelFor($amount);
-        $this->recalculateTierFor($amount);
+            $this->recalculateLevelFor($amount);
+            $this->recalculateTierFor($amount);
 
-        return $this->experience->refresh();
+            return $this->experience->refresh();
+        });
     }
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int

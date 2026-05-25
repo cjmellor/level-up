@@ -20,6 +20,10 @@ All notable changes to `level-up` will be documented in this file.
 
 - Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
 
+### Changed
+
+- **Behavioural (v3):** `addPoints()`, `deductPoints()`, and `setPoints()` now wrap their writes in `DB::transaction()`. The package's points/level/tier/multiplier events (`PointsIncreased`, `PointsDecreased`, `UserLevelledUp`, `UserTierUpdated`, `MultiplierApplied`) now implement `ShouldDispatchAfterCommit`, so listeners run only once the surrounding transaction has committed. If your listeners performed external side effects (HTTP, mail, non-`ShouldQueueAfterCommit` queue jobs) inside the package's transaction in v2.x, those effects would persist even when the transaction rolled back. In v3, they run only after a successful commit.
+
 ### Removed
 
 - **Breaking (v3):** the top-level `'table'` config key has been removed. It was deprecated since v2.0 in favour of `'tables.experiences'`. Set the experiences table name via `'tables.experiences'` instead.
