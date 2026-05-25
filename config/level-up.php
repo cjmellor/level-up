@@ -15,7 +15,8 @@ return [
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
-        'multiplier_scope' => LevelUp\Experience\Models\MultiplierScope::class,
+        'multiplier_user' => LevelUp\Experience\Models\Pivots\MultiplierUser::class,
+        'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
     ],
@@ -93,21 +94,11 @@ return [
         'streak_activities' => 'streak_activities',
         'tiers' => 'tiers',
         'multipliers' => 'multipliers',
-        'multiplier_scopes' => 'multiplier_scopes',
+        'multiplier_user' => 'multiplier_user',
+        'multiplier_tier' => 'multiplier_tier',
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Experience Table (deprecated — use tables.experiences)
-    |--------------------------------------------------------------------------
-    |
-    | Kept for backwards compatibility. If you customised this key in v1.x,
-    | it still works. New installs should prefer 'tables.experiences' above.
-    |
-     */
-    'table' => 'experiences',
 
     /*
     |-----------------------------------------------------------------------

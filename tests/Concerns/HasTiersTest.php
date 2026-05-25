@@ -280,3 +280,90 @@ test(description: 'demotion below all tiers sets tier to null', closure: functio
             && ! $event->newTier instanceof Tier
     );
 });
+
+test(description: 'setPoints promotes tier and dispatches Promoted event when raising points across a boundary', closure: function (): void {
+    $this->user->addPoints(amount: 100);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Bronze');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->setPoints(amount: 2500);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Gold');
+
+    Event::assertDispatched(
+        event: UserTierUpdated::class,
+        callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Promoted
+            && $event->previousTier->name === 'Bronze'
+            && $event->newTier->name === 'Gold'
+    );
+});
+
+test(description: 'setPoints demotes tier and dispatches Demoted event when demotion is enabled', closure: function (): void {
+    config()->set('level-up.tiers.demotion', true);
+
+    $this->user->addPoints(amount: 100);
+    $this->user->setPoints(amount: 2500);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Gold');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->setPoints(amount: 100);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Bronze');
+
+    Event::assertDispatched(
+        event: UserTierUpdated::class,
+        callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Demoted
+            && $event->previousTier->name === 'Gold'
+            && $event->newTier->name === 'Bronze'
+    );
+});
+
+test(description: 'setPoints preserves tier and skips event when demotion is disabled', closure: function (): void {
+    config()->set('level-up.tiers.demotion', false);
+
+    $this->user->addPoints(amount: 100);
+    $this->user->setPoints(amount: 2500);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Gold');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->setPoints(amount: 100);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Gold');
+
+    Event::assertNotDispatched(event: UserTierUpdated::class);
+});
+
+test(description: 'setPoints determines tier direction by experience threshold, not insertion order', closure: function (): void {
+    config()->set('level-up.tiers.demotion', true);
+
+    Tier::query()->delete();
+    Tier::add(
+        ['name' => 'Bronze', 'experience' => 0],
+        ['name' => 'Gold', 'experience' => 2000],
+        ['name' => 'Silver', 'experience' => 500],
+        ['name' => 'Platinum', 'experience' => 5000],
+    );
+
+    $this->user->addPoints(amount: 550);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Silver');
+
+    Event::fake([UserTierUpdated::class]);
+
+    $this->user->setPoints(amount: 2500);
+
+    expect($this->user->fresh()->getTier())->name->toBe(expected: 'Gold');
+
+    Event::assertDispatched(
+        event: UserTierUpdated::class,
+        callback: fn (UserTierUpdated $event): bool => $event->direction === TierDirection::Promoted
+            && $event->previousTier->name === 'Silver'
+            && $event->newTier->name === 'Gold'
+    );
+});

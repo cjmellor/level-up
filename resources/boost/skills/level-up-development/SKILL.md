@@ -692,7 +692,6 @@ return [
         'model' => App\Models\User::class,
         'users_table' => 'users',
     ],
-    'table' => 'experiences',
     'starting_level' => 1,
     'multiplier' => [
         'enabled' => env('MULTIPLIER_ENABLED', true),
