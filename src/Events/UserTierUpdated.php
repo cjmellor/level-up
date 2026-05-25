@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Events;
 
+use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use LevelUp\Experience\Enums\TierDirection;
 use LevelUp\Experience\Models\Tier;
 
-class UserTierUpdated
+class UserTierUpdated implements ShouldDispatchAfterCommit
 {
     use Dispatchable;
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\MultiplierApplied;
 use LevelUp\Experience\Events\PointsDecreased;
@@ -637,4 +638,45 @@ test(description: 'setPoints clamps recalculated level to level_cap when enabled
     $this->user->setPoints(amount: 500);
 
     expect($this->user->fresh()->getLevel())->toBe(expected: 2);
+});
+
+test(description: 'PointsIncreased fires after the addPoints transaction commits', closure: function (): void {
+    $levelDuringDispatch = null;
+    Event::listen(PointsIncreased::class, function () use (&$levelDuringDispatch): void {
+        $levelDuringDispatch = DB::transactionLevel();
+    });
+
+    $levelBefore = DB::transactionLevel();
+    $this->user->addPoints(amount: 10);
+
+    expect($levelDuringDispatch)->toBe(expected: $levelBefore);
+});
+
+test(description: 'PointsDecreased fires after the deductPoints transaction commits', closure: function (): void {
+    $this->user->addPoints(amount: 100);
+
+    $levelDuringDispatch = null;
+    Event::listen(PointsDecreased::class, function () use (&$levelDuringDispatch): void {
+        $levelDuringDispatch = DB::transactionLevel();
+    });
+
+    $levelBefore = DB::transactionLevel();
+    $this->user->deductPoints(amount: 10);
+
+    expect($levelDuringDispatch)->toBe(expected: $levelBefore);
+});
+
+test(description: 'addPoints rolls back when the surrounding transaction fails', closure: function (): void {
+    try {
+        DB::transaction(function (): void {
+            $this->user->addPoints(amount: 50);
+            throw new RuntimeException(message: 'forced failure');
+        });
+    } catch (RuntimeException) {
+        //
+    }
+
+    $this->assertDatabaseMissing(table: 'experiences', data: [
+        'user_id' => $this->user->id,
+    ]);
 });
