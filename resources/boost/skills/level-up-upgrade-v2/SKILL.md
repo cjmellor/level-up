@@ -3,6 +3,8 @@ name: level-up-upgrade-v2
 description: Automatically upgrade cjmellor/level-up from v1 to v2, applying all breaking changes to the user's codebase.
 ---
 
+> **Upgrading to v3?** Use the `level-up-upgrade-v3` skill instead. This skill covers v1 → v2 only.
+
 ## When to use this skill
 
 Use this skill when a user needs to upgrade from cjmellor/level-up v1.x to v2.x.

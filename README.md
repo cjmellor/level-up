@@ -269,19 +269,23 @@ Active multipliers are automatically applied when a User earns points via `addPo
 By default, a multiplier applies to all Users. You can restrict it to specific Users or Tiers:
 
 ```php
-// Scope to specific tiers
-$multiplier->tiers()->attach([$premiumTier->id, $diamondTier->id]);
+// Scope to one or more tiers (variadic, idempotent)
+$multiplier->scopeToTier($premiumTier, $diamondTier);
 
-// Scope to a specific user
-$multiplier->users()->attach($user->id);
+// Scope to one or more users (variadic, idempotent)
+$multiplier->scopeToUser($user);
 
-// Or use the convenience method with any model
-$multiplier->scopeTo($premiumTier, $diamondTier, $user);
+// Reverse either with unscope helpers
+$multiplier->unscopeFromTier($diamondTier);
+$multiplier->unscopeFromUser($user);
+
+// Check whether a multiplier has any scopes
+$multiplier->isGlobal();  // true if no users or tiers attached
 ```
 
 If a multiplier has no scopes, it applies to everyone. If it has scopes, it only applies to Users who match (either directly or via their Tier).
 
-You can also use `detach()` and `sync()` on the `tiers()` and `users()` relationships.
+The `tiers()` and `users()` relations are standard `belongsToMany` — you can drop down to `attach()` / `detach()` / `sync()` for full control, but `scopeToUser` / `scopeToTier` are the recommended convenience methods because they're idempotent (they use `syncWithoutDetaching` under the hood, so calling them twice with the same model doesn't create duplicates).
 
 **Query Multipliers**
 
@@ -794,7 +798,7 @@ TIER_DEMOTION=true
 
 ### Tier-Scoped Multipliers
 
-You can create multipliers that only apply to Users in specific tiers using the polymorphic scoping system (see the [Multipliers](#multipliers) section above):
+You can create multipliers that only apply to Users in specific tiers using `scopeToTier()` (see the [Multipliers](#multipliers) section above):
 
 ```php
 $goldMultiplier = Multiplier::create([
@@ -1022,10 +1026,9 @@ By default, the package's tables use auto-incrementing `bigint` primary keys. Se
 ],
 ```
 
-This applies to every package primary key (experiences, levels, achievements, streaks, tiers, multipliers, challenges, and the pivot tables) and every internal foreign key between them. Two columns are intentionally unaffected:
+This applies to every package primary key (experiences, levels, achievements, streaks, tiers, multipliers, challenges, and the pivot tables) and every internal foreign key between them. One set of columns is intentionally unaffected:
 
-- `user_id` columns — these match whatever your `users` table uses, since they belong to the host application.
-- `multiplier_scopes.scopeable_id` — always a string column, because it polymorphically stores keys from both the host's User table and the package's Tier table.
+- `user_id` columns — these match whatever your `users` table uses, since they belong to the host application. The dedicated `level-up.user.foreign_key_type` config knob controls those independently of `entities.id_type`.
 
 > [!IMPORTANT]
 > This setting is for **fresh installs**. Existing installs cannot be flipped automatically — column types are baked in at migration time. The accordion below contains an AI prompt that generates the conversion migrations for your specific schema.
@@ -1040,15 +1043,14 @@ I'm switching cjmellor/level-up's `entities.id_type` from `bigint` to `<TARGET>`
 
 Generate a Laravel migration (or sequence of migrations) that:
 
-1. For every level-up package table (experiences, levels, achievements, achievement_user, streak_activities, streaks, streak_histories, tiers, multipliers, multiplier_scopes, challenges, challenge_user, experience_audits): add a new `<TARGET>` column called `id_new`, generate a unique value for every existing row, then later drop the old `id` and rename `id_new` to `id`. For `multiplier_scopes`, this applies only to the `id` primary key — do NOT touch `scopeable_id` (see Constraints below).
+1. For every level-up package table (experiences, levels, achievements, achievement_user, streak_activities, streaks, streak_histories, tiers, multipliers, multiplier_user, multiplier_tier, challenges, challenge_user, experience_audits): add a new `<TARGET>` column called `id_new`, generate a unique value for every existing row, then later drop the old `id` and rename `id_new` to `id`.
 
 2. For every internal foreign key column (`level_id`, `activity_id`, `achievement_id`, `challenge_id`, `tier_id`, `multiplier_id`, etc.): add a corresponding `_new` column, populate it by joining on the parent table's new ids, then drop the old column and rename.
 
 3. Re-establish primary key and foreign key constraints in the correct order. Wrap in a transaction if `<DB>` supports DDL transactions.
 
 Constraints:
-- Do NOT touch `multiplier_scopes.scopeable_id` — that column is intentionally a string and stores morph keys from both User (host-driven) and Tier (package-driven) targets.
-- Do NOT change `user_id` columns in any package table — those follow the host's `users` table type.
+- Do NOT change `user_id` columns in any package table — those follow the host's `users` table type and are controlled by `level-up.user.foreign_key_type` separately.
 - After the migration runs, update `level-up.entities.id_type` in `config/level-up.php` to `<TARGET>`.
 ```
 

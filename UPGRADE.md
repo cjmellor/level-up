@@ -1,5 +1,145 @@
 # Upgrade Guide
 
+## v2.x -> v3.0
+
+v3.0 is a breaking-change release. Most users only need to run `composer require cjmellor/level-up:^3.0` then `php artisan migrate` — the multiplier schema reshape is backfilled automatically. Application code touching `Multiplier::scopeTo()` needs updating; the legacy `'table'` config key and the `UserForeignKey::on()` migration helper are gone.
+
+The boost skill `level-up-upgrade-v3` walks an LLM through this upgrade interactively if you're using boost.
+
+### Requirements
+
+**Likelihood Of Impact: None** — no PHP or Laravel version bump in v3. Same requirements as v2.x (PHP 8.3+, Laravel 12 or 13).
+
+### `Multiplier::scopeTo()` replaced with typed methods
+
+**Likelihood Of Impact: High** (if you use `Multiplier::scopeTo()` anywhere in app code); **None** (if you only use unscoped/global multipliers).
+
+The polymorphic `scopeTo(Model ...$models)` API is removed. Replace it with the typed equivalents:
+
+```php
+// Before (v2.x)
+$multiplier->scopeTo($user);
+$multiplier->scopeTo($goldTier);
+$multiplier->scopeTo($user, $goldTier);
+
+// After (v3.0)
+$multiplier->scopeToUser($user);
+$multiplier->scopeToTier($goldTier);
+$multiplier->scopeToUser($user)->scopeToTier($goldTier);
+```
+
+New companion methods: `unscopeFromUser(...)`, `unscopeFromTier(...)`, `isGlobal()`.
+
+The `users()` and `tiers()` relations are now standard `belongsToMany` (not `morphedByMany`). Direct Eloquent calls (`$multiplier->users()->attach($u)`) still work but bypass the idempotency that `scopeToUser` adds — prefer the convenience methods.
+
+### `multiplier_scopes` table replaced with `multiplier_user` + `multiplier_tier`
+
+**Likelihood Of Impact: Critical** (everyone) but **automatic** — the bundled migration `migrate_multiplier_scopes_to_typed_pivots` runs as part of `php artisan migrate` and reads any existing morph rows in chunks of 500, splits them into the new typed pivots by `scopeable_type`, and drops the old table. Prints a summary to stdout:
+
+```
+  level-up: migrated 47 multiplier scope rows (32 user, 15 tier) into typed pivot tables; dropped multiplier_scopes.
+```
+
+If your published config customised `'tables.multiplier_scopes'`, that config key is no longer read — replace it with `'tables.multiplier_user'` and `'tables.multiplier_tier'`. The `MultiplierScope` model and the `'level-up.models.multiplier_scope'` config key are also removed.
+
+If you have application code querying `multiplier_scopes` directly (raw `DB::table('multiplier_scopes')` calls or custom relations), you need to migrate it to the two typed tables before running `php artisan migrate` in production.
+
+### `'table'` config key removed
+
+**Likelihood Of Impact: Medium** (anyone whose published config still has `'table' => 'experiences'`).
+
+The top-level `'level-up.table'` key was deprecated in v2.0 in favour of `'level-up.tables.experiences'`. v3 removes it entirely.
+
+```php
+// Before (in your published config/level-up.php)
+'table' => 'my_experiences',
+
+// After
+'tables' => [
+    'experiences' => 'my_experiences',
+    // ... other table overrides
+],
+```
+
+### `UserForeignKey::on()` replaced by `$table->userForeignId()` macro
+
+**Likelihood Of Impact: Low** (only affects you if you copied the `UserForeignKey` import + call pattern into your own application migrations).
+
+```php
+// Before
+use LevelUp\Experience\Support\UserForeignKey;
+// ...
+UserForeignKey::on($table)->constrained(config('level-up.user.users_table'))->cascadeOnDelete();
+
+// After
+$table->userForeignId()->constrained(config('level-up.user.users_table'))->cascadeOnDelete();
+```
+
+The macro reads `level-up.user.foreign_key_type` from config and routes to `foreignId()` / `foreignUuid()` / `foreignUlid()` — identical behavior, fluent syntax, matches the existing `entityForeignId()` macro.
+
+### Trait method aliasing helpers removed
+
+**Likelihood Of Impact: Low** (only affects v2.x dev-branch users who adopted the `*Relation()` private helpers from PR #123 before they were reverted in v2.1.0).
+
+Internal trait helpers like `experienceRelation()`, `challengesRelation()`, `streaksRelation()`, and `loadedExperience()` were removed. v3 treats trait method names as part of the public API. If your User model defines a colliding `challenges()`, `streaks()`, `experience()`, or `experienceHistory()` method:
+
+- Rename your method to avoid the collision (e.g. `userChallenges()`), or
+- Move the level-up traits onto a separate `UserProfile` / `Gamification` model and compose it onto User (same pattern Spatie's permission package uses).
+
+### `setPoints()` now recalculates level and tier
+
+**Likelihood Of Impact: Medium** (silent behavior change for anyone using `setPoints`).
+
+```php
+$user->setPoints(2500);
+```
+
+In v2.x this wrote the raw column with no side effects. In v3:
+
+- Level is recomputed based on the new point total. If the user moved up, `UserLevelledUp` fires for each crossed level. If they moved down, `level_id` is updated silently (no demotion event in the package).
+- Tier is recomputed via `Tier::forPoints($amount)`. If the user moved tier, `UserTierUpdated` fires with `TierDirection::Promoted` or `Demoted`.
+- The returned `Experience` model is refreshed so the caller sees the updated `level_id` / `tier_id`.
+
+If you previously relied on `setPoints` not firing events, dispatch the points write directly: `$user->experience->update(['experience_points' => $amount])`.
+
+### `revokeAchievement()` clears the cached relation
+
+**Likelihood Of Impact: Low** (subtle improvement — most callers will benefit).
+
+After `revokeAchievement`, the cached `$user->achievements` collection no longer contains the detached row without needing a manual `$user->refresh()`. This was a footgun in the README's example flow and is fixed.
+
+### Excess points cap at the top level instead of throwing
+
+**Likelihood Of Impact: Medium** (changes a previously-thrown error into success).
+
+```php
+// Level ladder ends at level 5 with next_level_experience = 600.
+$user->addPoints(1000);
+
+// Before: throws Exception('Points exceed the last level's experience points.')
+// After:  user is at level 5 with 1000 points
+```
+
+If you were catching that exception, you can stop — it no longer fires.
+
+### `addPoints()` is now transactional
+
+**Likelihood Of Impact: Low** (internal robustness; visible only when synchronous listeners throw).
+
+The mutation phase of `addPoints` is wrapped in `DB::transaction()`. Synchronous listener exceptions on `PointsIncreased` or `UserLevelledUp` now roll back the partial points write atomically — previously they left stale state behind. Queued listeners (`ShouldQueue`) are unaffected.
+
+### Postgres rollback fix for `alter_experience_audits_type_to_string`
+
+**Likelihood Of Impact: None** unless you're rolling back that specific migration on Postgres.
+
+The migration's `down()` previously generated invalid Postgres syntax (`ALTER COLUMN ... TYPE varchar(255) check (...)`). Fixed by emitting `ALTER COLUMN TYPE` and `ADD CONSTRAINT` as separate statements on `pgsql` connections; MySQL and SQLite continue using the standard Blueprint path.
+
+### Database compatibility
+
+- **PostgreSQL:** fully supported across all features, natively. The `MorphToManyWithTextCast` workaround from v2.1 is gone — schema is now Postgres-native.
+- **MySQL:** no behaviour change vs v2.1.
+- **SQLite:** ensure foreign-key enforcement is enabled (`PRAGMA foreign_keys = ON`) — Laravel's default does this, but verify if you've customised your `database.php` connection config.
+
 ## v1.x -> v2.0
 
 ### Requirements
