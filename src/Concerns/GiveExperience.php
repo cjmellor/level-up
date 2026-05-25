@@ -8,6 +8,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LevelUp\Experience\Enums\AuditType;
 use LevelUp\Experience\Enums\TierDirection;
@@ -38,51 +39,53 @@ trait GiveExperience
             message: 'Points exceed the last level\'s experience points.',
         );
 
-        [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
+        return DB::transaction(function () use ($amount, $multiplier, $type, $reason, $levelClass): Experience {
+            [$amount, $appliedMultipliers] = $this->resolveMultipliers($amount, $multiplier);
 
-        if ($this->experience()->doesntExist()) {
-            $startingLevel = config(key: 'level-up.starting_level');
+            if ($this->experience()->doesntExist()) {
+                $startingLevel = config(key: 'level-up.starting_level');
 
-            $level = $levelClass::query()
-                ->where(column: 'next_level_experience', operator: '<=', value: $amount)
-                ->whereNotNull(columns: 'next_level_experience')
-                ->orderByDesc(column: 'next_level_experience')
-                ->first();
+                $level = $levelClass::query()
+                    ->where(column: 'next_level_experience', operator: '<=', value: $amount)
+                    ->whereNotNull(columns: 'next_level_experience')
+                    ->orderByDesc(column: 'next_level_experience')
+                    ->first();
 
-            if (! $level) {
-                $level = $levelClass::firstOrCreate(
-                    ['level' => $startingLevel],
-                    ['next_level_experience' => null]
-                );
+                if (! $level) {
+                    $level = $levelClass::firstOrCreate(
+                        ['level' => $startingLevel],
+                        ['next_level_experience' => null]
+                    );
+                }
+
+                $this->experience()->create(attributes: [
+                    'level_id' => $level->id,
+                    'experience_points' => $amount,
+                ]);
+
+                $this->load('experience');
+
+                $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
+
+                if ($level->level > $startingLevel) {
+                    for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
+                        event(new UserLevelledUp(user: $this, level: $lvl));
+                    }
+                }
+
+                return $this->experience;
             }
 
-            $this->experience()->create(attributes: [
-                'level_id' => $level->id,
-                'experience_points' => $amount,
-            ]);
+            if ($this->levelCapExceedsUserLevel()) {
+                return $this->experience;
+            }
 
-            $this->load('experience');
+            $this->experience->increment(column: 'experience_points', amount: $amount);
 
             $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
 
-            if ($level->level > $startingLevel) {
-                for ($lvl = $startingLevel; $lvl <= $level->level; $lvl++) {
-                    event(new UserLevelledUp(user: $this, level: $lvl));
-                }
-            }
-
             return $this->experience;
-        }
-
-        if ($this->levelCapExceedsUserLevel()) {
-            return $this->experience;
-        }
-
-        $this->experience->increment(column: 'experience_points', amount: $amount);
-
-        $this->dispatchEvent($amount, $type, $reason, $appliedMultipliers, $multiplier);
-
-        return $this->experience;
+        });
     }
 
     public function experience(): HasOne
@@ -104,30 +107,34 @@ trait GiveExperience
     {
         throw_unless($this->experience()->exists(), Exception::class, 'User has no experience record.');
 
-        $this->experience->decrement(column: 'experience_points', amount: $amount);
+        return DB::transaction(function () use ($amount, $reason): Experience {
+            $this->experience->decrement(column: 'experience_points', amount: $amount);
 
-        event(new PointsDecreased(
-            pointsDecreasedBy: $amount,
-            totalPoints: $this->experience->experience_points,
-            reason: $reason,
-            user: $this,
-        ));
+            event(new PointsDecreased(
+                pointsDecreasedBy: $amount,
+                totalPoints: $this->experience->experience_points,
+                reason: $reason,
+                user: $this,
+            ));
 
-        return $this->experience;
+            return $this->experience;
+        });
     }
 
     public function setPoints(int $amount): Experience
     {
         throw_unless($this->experience()->exists(), Exception::class, message: 'User has no experience record.');
 
-        $this->experience->update(attributes: [
-            'experience_points' => $amount,
-        ]);
+        return DB::transaction(function () use ($amount): Experience {
+            $this->experience->update(attributes: [
+                'experience_points' => $amount,
+            ]);
 
-        $this->recalculateLevelFor($amount);
-        $this->recalculateTierFor($amount);
+            $this->recalculateLevelFor($amount);
+            $this->recalculateTierFor($amount);
 
-        return $this->experience->refresh();
+            return $this->experience->refresh();
+        });
     }
 
     public function nextLevelAt(?int $checkAgainst = null, bool $showAsPercentage = false): int
