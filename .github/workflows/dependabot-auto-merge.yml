@@ -3,13 +3,15 @@ name: "Dependabot Auto-Merge"
 on: pull_request_target
 
 permissions:
-  pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
 
       - name: Dependabot metadata
