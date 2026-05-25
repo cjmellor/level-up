@@ -23,8 +23,9 @@ All notable changes to `level-up` will be documented in this file.
 
 ### Fixed
 
-- **`addPoints()` is now wrapped in `DB::transaction()`** so synchronous listener exceptions roll back the partial points write atomically instead of leaving stale state.
-- **`revokeAchievement()` clears the cached `achievements` relation** so subsequent reads reflect the detached state without needing a manual `refresh()`.
+- **`addPoints()`, `deductPoints()`, and `setPoints()` are now wrapped in `DB::transaction()`** so the points/level/tier writes are atomic. The package's points/level/tier/multiplier events (`PointsIncreased`, `PointsDecreased`, `UserLevelledUp`, `UserTierUpdated`, `MultiplierApplied`) now implement `ShouldDispatchAfterCommit`, so listeners run only once the surrounding transaction has committed — external side effects (HTTP, mail, non-`ShouldQueueAfterCommit` queue jobs) no longer fire on a transaction that later rolls back.
+- **`grantAchievement()`, `incrementAchievementProgress()`, and `revokeAchievement()` clear the cached `achievements` relation** (and `allAchievements`, `achievementsWithProgress`, `secretAchievements`) so subsequent reads on the same instance reflect the mutation without needing a manual `refresh()`.
+- **`addPoints()` first-time-experience branch resolves the starting level via `orderByDesc('level')`** to match `PointsIncreasedListener`. Previously it ordered by `next_level_experience`, which would diverge from the listener when level thresholds aren't strictly monotonic.
 - **`alter_experience_audits_type_to_string` migration's `down()` now works on PostgreSQL** (reported by @christoph-kluge in discussion #121). Driver-aware fallback splits the `ALTER COLUMN TYPE` and `ADD CONSTRAINT` into separate statements on `pgsql`; MySQL and SQLite use the existing Blueprint path.
 
 ### Removed
@@ -39,6 +40,10 @@ All notable changes to `level-up` will be documented in this file.
 
 ## v2.1.0 - 2026-05-24
 
+### Added
+
+- Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
+
 ### Fixed
 
 - **PostgreSQL: `Multiplier::scopeTo()` with User or Tier targets now works.** Eloquent's morph join previously generated `multiplier_scopes.scopeable_id = tiers.id`, which Postgres rejects as a varchar/bigint type mismatch. A new `MorphToManyWithTextCast` relation class wraps the join key in `CAST(... AS TEXT)` on `pgsql` connections only; MySQL and SQLite are unchanged. The workaround will be removed in v3 when `multiplier_scopes` is replaced with typed pivot tables.
@@ -48,20 +53,6 @@ All notable changes to `level-up` will be documented in this file.
 
 - Added `## v2.0 -> v2.1` section to `UPGRADE.md` with database compatibility notes and an explicit callout that feature toggles (`tiers.enabled`, `multipliers.enabled`, `challenges.enabled`) now default to `true` for v1.x upgraders — explicitly disable them in your published config if you don't want them.
 - Added `CONTRIBUTING.md` with Laravel-style branch policy.
-
-## [Unreleased]
-
-### Added
-
-- Configurable table names: new `table_prefix` config key applies a prefix to every package table; new `tables` array allows per-table overrides for all 13 package tables. See the README "Customizing Table Names" section for usage.
-
-### Changed
-
-- **Behavioural (v3):** `addPoints()`, `deductPoints()`, and `setPoints()` now wrap their writes in `DB::transaction()`. The package's points/level/tier/multiplier events (`PointsIncreased`, `PointsDecreased`, `UserLevelledUp`, `UserTierUpdated`, `MultiplierApplied`) now implement `ShouldDispatchAfterCommit`, so listeners run only once the surrounding transaction has committed. If your listeners performed external side effects (HTTP, mail, non-`ShouldQueueAfterCommit` queue jobs) inside the package's transaction in v2.x, those effects would persist even when the transaction rolled back. In v3, they run only after a successful commit.
-
-### Removed
-
-- **Breaking (v3):** the top-level `'table'` config key has been removed. It was deprecated since v2.0 in favour of `'tables.experiences'`. Set the experiences table name via `'tables.experiences'` instead.
 
 ## v2.0.0 - 2026-04-03
 

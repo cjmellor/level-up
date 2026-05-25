@@ -798,7 +798,7 @@ TIER_DEMOTION=true
 
 ### Tier-Scoped Multipliers
 
-You can create multipliers that only apply to Users in specific tiers using the polymorphic scoping system (see the [Multipliers](#multipliers) section above):
+You can create multipliers that only apply to Users in specific tiers using `scopeToTier()` (see the [Multipliers](#multipliers) section above):
 
 ```php
 $goldMultiplier = Multiplier::create([
