@@ -42,6 +42,8 @@ trait HasAchievements
             'progress' => $progress,
         ]);
 
+        $this->clearAchievementRelationCache();
+
         $this->when(value: ($progress === null) || ($progress === 100), callback: fn (): ?array => event(new AchievementAwarded(achievement: $achievement, user: $this)));
     }
 
@@ -67,6 +69,8 @@ trait HasAchievements
         $newProgress = min(100, ($userAchievement->pivot->progress ?? 0) + $amount);
 
         $this->achievements()->updateExistingPivot($achievement->id, attributes: ['progress' => $newProgress]);
+
+        $this->clearAchievementRelationCache();
 
         event(new AchievementProgressionIncreased(achievement: $achievement, user: $this, amount: $amount));
 
@@ -103,6 +107,8 @@ trait HasAchievements
 
         $this->achievements()->detach($achievement->id);
 
+        $this->clearAchievementRelationCache();
+
         event(new AchievementRevoked(achievement: $achievement, user: $this));
     }
 
@@ -112,5 +118,12 @@ trait HasAchievements
             related: config(key: 'level-up.models.achievement'),
             table: config('level-up.tables.achievement_user'),
         )->withPivot(columns: 'progress');
+    }
+
+    private function clearAchievementRelationCache(): void
+    {
+        foreach (['achievements', 'allAchievements', 'achievementsWithProgress', 'secretAchievements'] as $relation) {
+            $this->unsetRelation($relation);
+        }
     }
 }
