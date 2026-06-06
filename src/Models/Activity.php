@@ -10,15 +10,28 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
+/**
+ * @property int|string $id
+ * @property string $name
+ * @property string|null $description
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Activity extends Model
 {
     use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
 
     protected $guarded = [];
 
+    /**
+     * @return HasMany<Streak, $this>
+     */
     public function streaks(): HasMany
     {
-        return $this->hasMany(related: config(key: 'level-up.models.streak'));
+        /** @var class-string<Streak> $streakClass */
+        $streakClass = config(key: 'level-up.models.streak');
+
+        return $this->hasMany(related: $streakClass);
     }
 
     protected function configuredTableKey(): string

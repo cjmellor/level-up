@@ -13,7 +13,7 @@ class UserLevelledUpListener
     {
         if (config(key: 'level-up.audit.enabled')) {
             $event->user->experienceHistory()->create(attributes: [
-                config(key: 'level-up.user.foreign_key', default: 'user_id') => $event->user->id,
+                config(key: 'level-up.user.foreign_key', default: 'user_id') => $event->user->getKey(),
                 'points' => $event->user->getPoints(),
                 'levelled_up' => true,
                 'level_to' => $event->level,

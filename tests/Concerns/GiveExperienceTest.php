@@ -680,3 +680,40 @@ test(description: 'addPoints rolls back when the surrounding transaction fails',
         'user_id' => $this->user->id,
     ]);
 });
+
+test(description: 'nextLevelAt returns zero when there is no next level', closure: function (): void {
+    $this->user->addPoints(amount: 600);
+
+    expect($this->user->getLevel())->toBe(expected: 5)
+        ->and($this->user->nextLevelAt())->toBe(expected: 0);
+});
+
+test(description: 'recalculations are skipped when the experience relation is unset', closure: function (): void {
+    $recalculate = function (): void {
+        $this->recalculateLevelFor(points: 100);
+        $this->recalculateTierFor(points: 100);
+    };
+
+    $recalculate->call($this->user);
+
+    expect($this->user->experience)->toBeNull();
+});
+
+test(description: 'setting points promotes a user without a tier', closure: function (): void {
+    $this->user->addPoints(amount: 10);
+
+    LevelUp\Experience\Models\Tier::add(
+        ['name' => 'Bronze', 'experience' => 0],
+        ['name' => 'Silver', 'experience' => 500],
+    );
+
+    Event::fakeFor(callable: function (): void {
+        $this->user->setPoints(amount: 600);
+
+        Event::assertDispatched(event: LevelUp\Experience\Events\UserTierUpdated::class, callback: fn (LevelUp\Experience\Events\UserTierUpdated $event): bool => ! $event->previousTier instanceof LevelUp\Experience\Models\Tier
+            && $event->newTier?->name === 'Silver'
+            && $event->direction === LevelUp\Experience\Enums\TierDirection::Promoted);
+    });
+
+    expect($this->user->experience->refresh()->tier_id)->not->toBeNull();
+});

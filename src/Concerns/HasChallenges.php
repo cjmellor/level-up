@@ -14,10 +14,18 @@ use LevelUp\Experience\Services\ChallengeService;
 
 trait HasChallenges
 {
+    /**
+     * @return BelongsToMany<Challenge, $this, \LevelUp\Experience\Models\Pivots\ChallengeUser, 'pivot'>
+     */
     public function challenges(): BelongsToMany
     {
-        return $this->belongsToMany(related: config(key: 'level-up.models.challenge'), table: config('level-up.tables.challenge_user'))
-            ->using(config(key: 'level-up.models.challenge_user'))
+        /** @var class-string<Challenge> $challengeClass */
+        $challengeClass = config(key: 'level-up.models.challenge');
+        /** @var class-string<\LevelUp\Experience\Models\Pivots\ChallengeUser> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.challenge_user');
+
+        return $this->belongsToMany(related: $challengeClass, table: config('level-up.tables.challenge_user'))
+            ->using($pivotClass)
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
     }

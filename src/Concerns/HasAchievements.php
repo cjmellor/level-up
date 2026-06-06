@@ -47,17 +47,22 @@ trait HasAchievements
         $this->when(value: ($progress === null) || ($progress === 100), callback: fn (): ?array => event(new AchievementAwarded(achievement: $achievement, user: $this)));
     }
 
+    /**
+     * @return BelongsToMany<Achievement, $this, \LevelUp\Experience\Models\Pivots\AchievementUser, 'pivot'>
+     */
     public function allAchievements(): BelongsToMany
     {
         return $this->achievementsRelation();
     }
 
+    /**
+     * @return BelongsToMany<Achievement, $this, \LevelUp\Experience\Models\Pivots\AchievementUser, 'pivot'>
+     */
     public function achievements(): BelongsToMany
     {
         return $this->achievementsRelation()
             ->withTimestamps()
-            ->where('is_secret', false)
-            ->using(config(key: 'level-up.models.achievement_user'));
+            ->where('is_secret', false);
     }
 
     public function incrementAchievementProgress(Achievement $achievement, int $amount = 1): int
@@ -112,12 +117,20 @@ trait HasAchievements
         event(new AchievementRevoked(achievement: $achievement, user: $this));
     }
 
+    /**
+     * @return BelongsToMany<Achievement, $this, \LevelUp\Experience\Models\Pivots\AchievementUser, 'pivot'>
+     */
     private function achievementsRelation(): BelongsToMany
     {
+        /** @var class-string<Achievement> $achievementClass */
+        $achievementClass = config(key: 'level-up.models.achievement');
+        /** @var class-string<\LevelUp\Experience\Models\Pivots\AchievementUser> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.achievement_user');
+
         return $this->belongsToMany(
-            related: config(key: 'level-up.models.achievement'),
+            related: $achievementClass,
             table: config('level-up.tables.achievement_user'),
-        )->withPivot(columns: 'progress');
+        )->using($pivotClass)->withPivot(columns: 'progress');
     }
 
     private function clearAchievementRelationCache(): void

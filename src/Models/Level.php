@@ -11,6 +11,13 @@ use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Exceptions\LevelExistsException;
 
+/**
+ * @property int|string $id
+ * @property int $level
+ * @property int|null $next_level_experience
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Level extends Model
 {
     use HasConfigurableIds, ResolvesConfiguredTable;
@@ -40,6 +47,9 @@ class Level extends Model
         return $newLevels;
     }
 
+    /**
+     * @return HasMany<Model, $this>
+     */
     public function users(): HasMany
     {
         return $this->hasMany(related: config(key: 'level-up.user.model'));

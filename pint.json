@@ -1,8 +1,6 @@
 {
     "preset": "laravel",
-    "notPath": [
-        "tests/TestCase.php"
-    ],
+    "notPath": ["tests/TestCase.php"],
     "rules": {
         "array_push": true,
         "backtick_to_shell_exec": true,
@@ -11,7 +9,7 @@
         "lowercase_keywords": true,
         "lowercase_static_reference": true,
         "final_class": false,
-        "final_internal_class": false,
+        "final_internal_class": true,
         "final_public_method_for_abstract_class": false,
         "fully_qualified_strict_types": true,
         "global_namespace_import": {

@@ -24,6 +24,7 @@
     },
     "require-dev": {
         "driftingly/rector-laravel": "*",
+        "larastan/larastan": "^3.0",
         "laravel/pint": "^1.10",
         "nunomaduro/collision": "^8.0",
         "orchestra/testbench": "^10.0|^11.0",
@@ -40,21 +41,26 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "LevelUp\\Experience\\Tests\\": "tests/",
-            "Workbench\\App\\": "workbench/app/",
-            "Workbench\\Database\\Factories\\": "workbench/database/factories/",
-            "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
+            "LevelUp\\Experience\\Tests\\": "tests/"
         }
     },
     "scripts": {
-        "lint": "vendor/bin/pint",
-        "format": "vendor/bin/rector process",
-        "format:dry": "vendor/bin/rector process --dry-run",
         "post-autoload-dump": [
             "@php ./vendor/bin/testbench package:discover --ansi"
         ],
-        "test": "vendor/bin/pest",
-        "test-coverage": "vendor/bin/pest --coverage"
+        "test:lint": [
+            "pint --parallel --test",
+            "rector --dry-run"
+        ],
+        "test:type-coverage": "vendor/bin/pest --type-coverage --min=100",
+        "test:types": "vendor/bin/phpstan",
+        "test:unit": "XDEBUG_MODE=\"coverage\" pest --parallel --coverage --exactly=100.0",
+        "test": [
+            "@test:lint",
+            "@test:type-coverage",
+            "@test:types",
+            "@test:unit"
+        ]
     },
     "config": {
         "allow-plugins": {

@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
+/**
+ * @property array|null $progress
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ */
 class ChallengeUser extends Pivot
 {
     use HasConfigurableIds, ResolvesConfiguredTable;

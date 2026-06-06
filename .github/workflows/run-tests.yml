@@ -38,10 +38,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
         with:
           php-version: ${{ matrix.php }}
           tools: composer:v2
@@ -58,3 +58,34 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --parallel
+
+  quality:
+    runs-on: ubuntu-latest
+
+    name: "Static analysis & 100% coverage"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@7c071dfe9dc99bdf297fa79cb49ea005b9fcadbc # v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          coverage: xdebug
+
+      - name: Install dependencies
+        run: composer update --prefer-stable --prefer-dist --no-interaction
+
+      - name: Lint (Pint + Rector dry-run)
+        run: composer test:lint
+
+      - name: Static analysis (PHPStan)
+        run: composer test:types
+
+      - name: Type coverage (100%)
+        run: composer test:type-coverage
+
+      - name: Tests with line coverage (exactly 100%)
+        run: composer test:unit

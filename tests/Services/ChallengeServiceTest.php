@@ -586,3 +586,237 @@ test(description: 'validation rejects missing required keys on reward', closure:
         'rewards' => [['type' => 'points']],
     ]))->toThrow(exception: InvalidArgumentException::class, exceptionMessage: "missing required key 'amount'");
 });
+
+test(description: 'evaluation is skipped when challenges are disabled', closure: function (): void {
+    config()->set(key: 'level-up.challenges.enabled', value: false);
+
+    Challenge::factory()->autoEnroll()->create();
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['points_earned']);
+
+    expect($this->user->challenges()->count())->toBe(expected: 0);
+});
+
+test(description: 'progress baselines start at zero when not using the current baseline', closure: function (): void {
+    $challenge = Challenge::factory()->create();
+
+    $this->user->addPoints(amount: 50);
+
+    $progress = resolve(name: ChallengeService::class)->initializeProgress(user: $this->user, challenge: $challenge, useCurrentBaseline: false);
+
+    expect($progress[0]['baseline'])->toBe(expected: 0);
+});
+
+test(description: 'auto-enrollment tolerates a concurrent enrollment race', closure: function (): void {
+    $challenge = Challenge::factory()->autoEnroll()->create();
+
+    $service = new class extends ChallengeService
+    {
+        public function initializeProgress(Illuminate\Database\Eloquent\Model $user, Challenge $challenge, bool $useCurrentBaseline = true): array
+        {
+            $table = Illuminate\Support\Facades\DB::table(config('level-up.tables.challenge_user'));
+
+            if ($table->where('challenge_id', $challenge->id)->doesntExist()) {
+                $pivot = new LevelUp\Experience\Models\Pivots\ChallengeUser;
+
+                $row = [
+                    config(key: 'level-up.user.foreign_key') => $user->id,
+                    'challenge_id' => $challenge->id,
+                    'progress' => json_encode(value: []),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                foreach ($pivot->uniqueIds() as $column) {
+                    $row[$column] = $pivot->newUniqueId();
+                }
+
+                $table->insert($row);
+            }
+
+            return parent::initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: $useCurrentBaseline);
+        }
+    };
+
+    $service->evaluateForUser(user: $this->user, conditionTypes: ['points_earned']);
+
+    expect($this->user->challenges()->count())->toBe(expected: 1);
+});
+
+test(description: 'evaluation skips a challenge whose enrollment disappears mid-run', closure: function (): void {
+    $challenge = Challenge::factory()->create();
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    $service = new class extends ChallengeService
+    {
+        protected function preloadConditionData(Illuminate\Database\Eloquent\Model $user, Illuminate\Support\Collection $challenges): array
+        {
+            Illuminate\Support\Facades\DB::table(config('level-up.tables.challenge_user'))->delete();
+
+            return parent::preloadConditionData(user: $user, challenges: $challenges);
+        }
+    };
+
+    $service->evaluateForUser(user: $this->user, conditionTypes: ['points_earned']);
+
+    expect($this->user->completedChallenges()->count())->toBe(expected: 0);
+});
+
+test(description: 'evaluation skips challenges without conditions', closure: function (): void {
+    $challenge = Challenge::factory()->create(['conditions' => []]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    $service = new class extends ChallengeService
+    {
+        protected function hasMatchingCondition(Challenge $challenge, array $conditionTypes): bool
+        {
+            return true;
+        }
+    };
+
+    $service->evaluateForUser(user: $this->user, conditionTypes: ['points_earned']);
+
+    expect($this->user->completedChallenges()->count())->toBe(expected: 0);
+});
+
+test(description: 'condition checks fail gracefully for users without the experience traits', closure: function (): void {
+    $bareUser = new class extends Illuminate\Database\Eloquent\Model
+    {
+        protected $table = 'users';
+
+        protected $guarded = [];
+    };
+
+    $bareUser->fill(attributes: ['name' => 'Bare User', 'email' => 'bare@example.test', 'password' => 'secret'])->save();
+
+    $challenge = Challenge::factory()->autoEnroll()->create([
+        'conditions' => [
+            ['type' => 'points_earned', 'amount' => 10],
+            ['type' => 'level_reached', 'level' => 2],
+            ['type' => 'streak_count', 'activity' => 'login', 'count' => 3],
+            ['type' => 'tier_reached', 'tier' => 'Gold'],
+        ],
+    ]);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $bareUser, conditionTypes: ['points_earned']);
+
+    expect($challenge->users()->count())->toBe(expected: 1)
+        ->and($challenge->users()->whereNotNull(config('level-up.tables.challenge_user').'.completed_at')->count())->toBe(expected: 0);
+});
+
+test(description: 'reward dispatch reports users missing reward methods and unknown reward types', closure: function (): void {
+    $bareUser = new class extends Illuminate\Database\Eloquent\Model
+    {
+        protected $table = 'users';
+
+        protected $guarded = [];
+    };
+
+    $bareUser->fill(attributes: ['name' => 'Bare Winner', 'email' => 'bare-winner@example.test', 'password' => 'secret'])->save();
+
+    $achievement = Achievement::factory()->create();
+
+    $challenge = Challenge::factory()->autoEnroll()->create([
+        'conditions' => [['type' => 'custom', 'class' => AlwaysTrueCondition::class]],
+        'rewards' => [
+            ['type' => 'points', 'amount' => 10],
+            ['type' => 'achievement', 'achievement_id' => $achievement->id],
+        ],
+    ]);
+
+    Illuminate\Support\Facades\DB::table('challenges')->where('id', $challenge->id)->update([
+        'rewards' => json_encode(value: [
+            ['type' => 'points', 'amount' => 10],
+            ['type' => 'achievement', 'achievement_id' => $achievement->id],
+            ['type' => 'unknown-reward'],
+        ]),
+    ]);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $bareUser, conditionTypes: ['custom']);
+
+    expect($challenge->users()->whereNotNull(config('level-up.tables.challenge_user').'.completed_at')->count())->toBe(expected: 1);
+});
+
+test(description: 'a points reward with a non-positive amount is reported and skipped', closure: function (): void {
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'custom', 'class' => AlwaysTrueCondition::class]],
+        'rewards' => [['type' => 'points', 'amount' => 0]],
+    ]);
+
+    $this->user->addPoints(amount: 5);
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+
+    expect($this->user->completedChallenges()->count())->toBe(expected: 1)
+        ->and($this->user->getPoints())->toBe(expected: 5);
+});
+
+test(description: 'an achievement reward is skipped when the user already has it', closure: function (): void {
+    $achievement = Achievement::factory()->create();
+
+    $this->user->grantAchievement(achievement: $achievement);
+
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'custom', 'class' => AlwaysTrueCondition::class]],
+        'rewards' => [['type' => 'achievement', 'achievement_id' => $achievement->id]],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+
+    expect($this->user->allAchievements()->count())->toBe(expected: 1);
+});
+
+test(description: 'completion is skipped when another process already completed the challenge', closure: function (): void {
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'custom', 'class' => LevelUp\Experience\Tests\Fixtures\Challenges\CompletesPivotCondition::class]],
+        'rewards' => [['type' => 'points', 'amount' => 50]],
+    ]);
+
+    $this->user->addPoints(amount: 1);
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    Event::fake(eventsToFake: [ChallengeCompleted::class]);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+
+    Event::assertNotDispatched(event: ChallengeCompleted::class);
+
+    expect($this->user->getPoints())->toBe(expected: 1);
+});
+
+test(description: 'a missing custom condition class is reported and fails the check', closure: function (): void {
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'custom', 'class' => AlwaysTrueCondition::class]],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    Illuminate\Support\Facades\DB::table('challenges')->where('id', $challenge->id)->update([
+        'conditions' => json_encode(value: [['type' => 'custom', 'class' => 'App\NonExistent\ClassName']]),
+    ]);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+
+    expect($this->user->completedChallenges()->count())->toBe(expected: 0);
+});
+
+test(description: 'a custom condition class that does not implement the contract fails the check', closure: function (): void {
+    $challenge = Challenge::factory()->create([
+        'conditions' => [['type' => 'custom', 'class' => AlwaysTrueCondition::class]],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+
+    Illuminate\Support\Facades\DB::table('challenges')->where('id', $challenge->id)->update([
+        'conditions' => json_encode(value: [['type' => 'custom', 'class' => NotACondition::class]]),
+    ]);
+
+    resolve(name: ChallengeService::class)->evaluateForUser(user: $this->user, conditionTypes: ['custom']);
+
+    expect($this->user->completedChallenges()->count())->toBe(expected: 0);
+});

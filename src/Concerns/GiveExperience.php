@@ -82,19 +82,31 @@ trait GiveExperience
         });
     }
 
+    /**
+     * @return HasOne<Experience, $this>
+     */
     public function experience(): HasOne
     {
-        return $this->hasOne(related: config('level-up.models.experience'));
+        /** @var class-string<Experience> $experienceClass */
+        $experienceClass = config('level-up.models.experience');
+
+        return $this->hasOne(related: $experienceClass);
     }
 
     public function getLevel(): int
     {
-        return $this->experience?->status?->level ?? 0;
+        return $this->experience?->status->level ?? 0;
     }
 
+    /**
+     * @return HasMany<\LevelUp\Experience\Models\ExperienceAudit, $this>
+     */
     public function experienceHistory(): HasMany
     {
-        return $this->hasMany(related: config('level-up.models.experience_audit'));
+        /** @var class-string<\LevelUp\Experience\Models\ExperienceAudit> $auditClass */
+        $auditClass = config('level-up.models.experience_audit');
+
+        return $this->hasMany(related: $auditClass);
     }
 
     public function deductPoints(int $amount, ?string $reason = null): Experience
@@ -165,7 +177,7 @@ trait GiveExperience
 
     public function getPoints(): int
     {
-        return $this->experience?->experience_points ?? 0;
+        return $this->experience->experience_points ?? 0;
     }
 
     public function levelUp(int $to): void

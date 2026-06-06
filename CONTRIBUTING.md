@@ -50,13 +50,17 @@ The package's own tests run against SQLite by default and require no further set
 Before opening a pull request, run the full check suite locally:
 
 ```bash
-composer test         # Pest test suite
-composer lint         # Laravel Pint (code style)
-composer format:dry   # Rector dry-run (refactoring suggestions)
-composer format       # Apply Rector refactorings
+composer test                # Full suite: lint, type coverage, static analysis, tests
+composer test:lint           # Pint + Rector checks (dry-run)
+composer test:type-coverage  # Pest type coverage (must be 100%)
+composer test:types          # PHPStan static analysis (Larastan, level 5)
+composer test:unit           # Pest with line coverage (must be exactly 100%)
 ```
 
-CI runs the same commands and will reject PRs that fail any of them.
+To auto-fix style and refactoring findings, run `vendor/bin/pint` and `vendor/bin/rector`.
+
+CI runs the same suite and will reject PRs that fail any part of it — including the
+100% line- and type-coverage requirements, so new code must ship with tests.
 
 ## Pull request checklist
 
@@ -64,13 +68,13 @@ CI runs the same commands and will reject PRs that fail any of them.
 - [ ] PR title starts with `[2.x]` or `[3.x]` to indicate destination major.
 - [ ] PR description explains the **why**, not just the what.
 - [ ] Tests added or updated for the change.
-- [ ] `composer test`, `composer lint`, and `composer format:dry` all pass.
+- [ ] `composer test` passes (includes linting, static analysis, and the 100% coverage gates).
 - [ ] If the change affects user-facing behavior: `CHANGELOG.md` updated under `## [Unreleased]`.
 - [ ] If the change is a breaking change: `UPGRADE.md` updated with a "Likelihood Of Impact" entry.
 
 ## Coding style and refactoring
 
-Code style is enforced by [Laravel Pint](https://laravel.com/docs/pint) — run `composer lint` to check (and auto-fix). [Rector](https://getrector.com) handles refactoring suggestions — run `composer format:dry` to preview changes and `composer format` to apply them. CI will reject PRs with unresolved Pint violations.
+Code style is enforced by [Laravel Pint](https://laravel.com/docs/pint) and [Rector](https://getrector.com) — run `composer test:lint` to check both, and `vendor/bin/pint` / `vendor/bin/rector` to apply fixes. CI will reject PRs with unresolved violations.
 
 ## Working on a fork
 

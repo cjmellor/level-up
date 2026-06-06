@@ -237,3 +237,31 @@ test(description: 'hasStreakToday returns false when no streak exists', closure:
 test(description: 'freezeStreak returns false when no streak exists', closure: function (): void {
     expect($this->user->freezeStreak($this->activity))->toBeFalse();
 });
+
+test(description: 'recording a streak while frozen leaves the streak untouched', closure: function (): void {
+    $this->user->recordStreak($this->activity);
+
+    $this->user->freezeStreak($this->activity, 2);
+
+    travel(value: 1)->day();
+    $this->user->recordStreak($this->activity);
+
+    expect($this->user)->getCurrentStreakCount($this->activity)->toBe(expected: 1);
+});
+
+test(description: 'the freeze duration falls back to the default when tiers are disabled', closure: function (): void {
+    config()->set(key: 'level-up.tiers.enabled', value: false);
+
+    $this->user->recordStreak($this->activity);
+    $this->user->freezeStreak($this->activity);
+
+    expect($this->user)->streaks->first()->frozen_until->toBeCarbon(now()->addDay()->startOfDay());
+});
+
+test(description: 'resetting a streak without history archives nothing', closure: function (): void {
+    config()->set(key: 'level-up.archive_streak_history.enabled', value: true);
+
+    $this->user->resetStreak($this->activity);
+
+    $this->assertDatabaseCount(table: 'streak_histories', count: 0);
+});

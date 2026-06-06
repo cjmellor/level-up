@@ -58,3 +58,34 @@ test(description: 'deducting points does not create an audit record when the amo
         ->count()
         ->toBe(expected: 1);
 });
+
+test(description: 'no demotion check runs for users without a tier', closure: function (): void {
+    config()->set(key: 'level-up.tiers.enabled', value: true);
+    config()->set(key: 'level-up.tiers.demotion', value: true);
+
+    $this->user->addPoints(amount: 100);
+
+    Event::fake(eventsToFake: [LevelUp\Experience\Events\UserTierUpdated::class]);
+
+    $this->user->deductPoints(amount: 50);
+
+    Event::assertNotDispatched(event: LevelUp\Experience\Events\UserTierUpdated::class);
+});
+
+test(description: 'no demotion happens when the user stays in the same tier', closure: function (): void {
+    config()->set(key: 'level-up.tiers.enabled', value: true);
+    config()->set(key: 'level-up.tiers.demotion', value: true);
+
+    LevelUp\Experience\Models\Tier::add(
+        ['name' => 'Bronze', 'experience' => 0],
+        ['name' => 'Silver', 'experience' => 500],
+    );
+
+    $this->user->addPoints(amount: 600);
+
+    Event::fake(eventsToFake: [LevelUp\Experience\Events\UserTierUpdated::class]);
+
+    $this->user->deductPoints(amount: 10);
+
+    Event::assertNotDispatched(event: LevelUp\Experience\Events\UserTierUpdated::class);
+});

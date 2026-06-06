@@ -14,7 +14,7 @@ use LevelUp\Experience\Tests\Fixtures\User;
 class UserFactory extends Factory
 {
     /**
-     * @var string
+     * @var class-string<User>
      */
     protected $model = User::class;
 

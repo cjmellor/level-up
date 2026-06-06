@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
+/**
+ * @property int|null $progress
+ */
 class AchievementUser extends Pivot
 {
     use HasConfigurableIds, ResolvesConfiguredTable;
