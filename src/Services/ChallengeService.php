@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Services;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
@@ -22,7 +23,7 @@ class ChallengeService
      */
     public function evaluateForUser(Model $user, array $conditionTypes): void
     {
-        if (in_array($user->id, self::$evaluatingUsers, strict: true)) {
+        if (in_array($user->getKey(), self::$evaluatingUsers, strict: true)) {
             return;
         }
 
@@ -30,7 +31,7 @@ class ChallengeService
             return;
         }
 
-        self::$evaluatingUsers[] = $user->id;
+        self::$evaluatingUsers[] = $user->getKey();
 
         try {
             $enrolledChallenges = $this->getEnrolledChallenges(user: $user, conditionTypes: $conditionTypes);
@@ -55,7 +56,7 @@ class ChallengeService
         } finally {
             self::$evaluatingUsers = array_filter(
                 self::$evaluatingUsers,
-                fn (int|string $id): bool => $id !== $user->id,
+                fn (int|string $id): bool => $id !== $user->getKey(),
             );
         }
     }
@@ -88,8 +89,8 @@ class ChallengeService
 
         return $challengeModel::query()
             ->active()
-            ->whereHas('users', fn ($q) => $q
-                ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
+            ->whereHas('users', fn (Builder $q) => $q
+                ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->getKey())
                 ->whereNull(columns: config('level-up.tables.challenge_user').'.completed_at')
             )
             ->get()
@@ -106,9 +107,9 @@ class ChallengeService
         return $challengeModel::query()
             ->active()
             ->autoEnroll()
-            ->when($excludeIds !== [], fn ($q) => $q->whereNotIn('id', $excludeIds))
-            ->whereDoesntHave('users', fn ($q) => $q
-                ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
+            ->when($excludeIds !== [], fn (Builder $q) => $q->whereNotIn('id', $excludeIds))
+            ->whereDoesntHave('users', fn (Builder $q) => $q
+                ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->getKey())
             )
             ->get()
             ->filter(fn (Challenge $challenge): bool => $this->hasMatchingCondition(
@@ -126,11 +127,11 @@ class ChallengeService
     protected function enrollUser(Model $user, Challenge $challenge): void
     {
         try {
-            $challenge->users()->attach($user->id, [
+            $challenge->users()->attach($user->getKey(), [
                 'progress' => $this->initializeProgress(user: $user, challenge: $challenge),
             ]);
         } catch (UniqueConstraintViolationException) {
-            logger()->debug("Challenge auto-enroll race: user {$user->id} already enrolled in challenge {$challenge->id}");
+            logger()->debug("Challenge auto-enroll race: user {$user->getKey()} already enrolled in challenge {$challenge->id}");
         }
     }
 
@@ -159,7 +160,7 @@ class ChallengeService
     protected function evaluateChallenge(Model $user, Challenge $challenge, array $preloaded = []): void
     {
         $pivot = $challenge->users()
-            ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->id)
+            ->where(column: config(key: 'level-up.user.foreign_key'), operator: '=', value: $user->getKey())
             ->whereNull(columns: config('level-up.tables.challenge_user').'.completed_at')
             ->first()
             ?->pivot;
@@ -190,7 +191,7 @@ class ChallengeService
             }
         }
 
-        $challenge->users()->updateExistingPivot($user->id, attributes: [
+        $challenge->users()->updateExistingPivot($user->getKey(), attributes: [
             'progress' => $progress,
         ]);
 
@@ -250,7 +251,7 @@ class ChallengeService
             return false;
         }
 
-        return $user->getCurrentStreakCount(activity: $activity) >= ($condition['count'] ?? 0);
+        return $user->getCurrentStreakCount($activity) >= ($condition['count'] ?? 0);
     }
 
     protected function checkTierReached(Model $user, array $condition): bool
@@ -259,7 +260,7 @@ class ChallengeService
             return false;
         }
 
-        return $user->isAtOrAboveTier(name: $condition['tier'] ?? '');
+        return $user->isAtOrAboveTier($condition['tier'] ?? '');
     }
 
     protected function checkCustomCondition(Model $user, array $condition): bool
@@ -280,7 +281,7 @@ class ChallengeService
     protected function completeChallenge(Model $user, Challenge $challenge): void
     {
         $affected = DB::table(config('level-up.tables.challenge_user'))
-            ->where(config(key: 'level-up.user.foreign_key'), $user->id)
+            ->where(config(key: 'level-up.user.foreign_key'), $user->getKey())
             ->where('challenge_id', $challenge->id)
             ->whereNull('completed_at')
             ->update(['completed_at' => now()]);
@@ -325,12 +326,12 @@ class ChallengeService
             return;
         }
 
-        $user->addPoints(amount: $amount);
+        $user->addPoints($amount);
     }
 
     protected function rewardAchievement(Model $user, array $reward): void
     {
-        if (! method_exists($user, 'grantAchievement')) {
+        if (! method_exists($user, 'grantAchievement') || ! method_exists($user, 'allAchievements')) {
             report('Challenge reward: user model missing grantAchievement method (HasAchievements trait)');
 
             return;
@@ -349,12 +350,12 @@ class ChallengeService
             return;
         }
 
-        $user->grantAchievement(achievement: $achievement);
+        $user->grantAchievement($achievement);
     }
 
     protected function resetChallenge(Model $user, Challenge $challenge): void
     {
-        $challenge->users()->updateExistingPivot($user->id, attributes: [
+        $challenge->users()->updateExistingPivot($user->getKey(), attributes: [
             'progress' => $this->initializeProgress(user: $user, challenge: $challenge),
             'completed_at' => null,
         ]);

@@ -117,3 +117,21 @@ test(description: 'a User can level up multiple times', closure: function (): vo
 
     expect($this->user)->getLevel()->toBe(expected: 5);
 });
+
+test(description: 'a user is not demoted when gaining points below their stored tier', closure: function (): void {
+    config()->set(key: 'level-up.tiers.enabled', value: true);
+
+    LevelUp\Experience\Models\Tier::add(
+        ['name' => 'Bronze', 'experience' => 0],
+        ['name' => 'Gold', 'experience' => 2000],
+    );
+
+    $this->user->addPoints(amount: 10);
+
+    $gold = LevelUp\Experience\Models\Tier::query()->firstWhere('name', 'Gold');
+    $this->user->experience->update(['tier_id' => $gold->id]);
+
+    $this->user->addPoints(amount: 5);
+
+    expect($this->user->experience->refresh()->tier_id)->toBe(expected: $gold->id);
+});

@@ -49,3 +49,10 @@ it(description: 'throws an error if a tier exists', closure: function (): void {
     Tier::add(['name' => 'Bronze', 'experience' => 0]);
     Tier::add(['name' => 'Bronze', 'experience' => 100]);
 })->throws(exception: TierExistsException::class, exceptionMessage: 'The tier with name "Bronze" already exists');
+
+it(description: 'throws an error when duplicate tiers are created in a single call', closure: function (): void {
+    Tier::add(
+        ['name' => 'Bronze', 'experience' => 0],
+        ['name' => 'Bronze', 'experience' => 100],
+    );
+})->throws(exception: TierExistsException::class, exceptionMessage: 'The tier with name "Bronze" already exists');

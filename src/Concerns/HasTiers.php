@@ -98,9 +98,14 @@ trait HasTiers
         return $currentTier->experience >= $targetTier->experience;
     }
 
+    /**
+     * @return HasOneThrough<Tier, \LevelUp\Experience\Models\Experience, $this>
+     */
     public function tier(): HasOneThrough
     {
+        /** @var class-string<\LevelUp\Experience\Models\Experience> $experienceClass */
         $experienceClass = config(key: 'level-up.models.experience');
+        /** @var class-string<Tier> $tierClass */
         $tierClass = config(key: 'level-up.models.tier');
 
         return $this->hasOneThrough(

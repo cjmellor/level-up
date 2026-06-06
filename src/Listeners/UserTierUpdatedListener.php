@@ -18,7 +18,7 @@ class UserTierUpdatedListener
                 'type' => $event->direction === TierDirection::Promoted
                     ? AuditType::TierUp->value
                     : AuditType::TierDown->value,
-                'reason' => sprintf('%s → %s', $event->previousTier?->name ?? 'None', $event->newTier?->name ?? 'None'),
+                'reason' => sprintf('%s → %s', $event->previousTier->name ?? 'None', $event->newTier->name ?? 'None'),
             ]);
         }
     }

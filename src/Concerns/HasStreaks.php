@@ -51,9 +51,15 @@ trait HasStreaks
         event(new StreakIncreased($this, $activity, $streak->first()));
     }
 
+    /**
+     * @return HasMany<Streak, $this>
+     */
     public function streaks(): HasMany
     {
-        return $this->hasMany(related: config('level-up.models.streak'));
+        /** @var class-string<Streak> $streakClass */
+        $streakClass = config('level-up.models.streak');
+
+        return $this->hasMany(related: $streakClass);
     }
 
     public function resetStreak(Activity $activity): void
@@ -72,7 +78,7 @@ trait HasStreaks
 
     public function getCurrentStreakCount(Activity $activity): int
     {
-        return $this->streaks()->whereBelongsTo(related: $activity)->first()?->count ?? 0;
+        return $this->streaks()->whereBelongsTo(related: $activity)->first()->count ?? 0;
     }
 
     public function hasStreakToday(Activity $activity): bool

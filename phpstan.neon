@@ -1,0 +1,40 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - src
+        - config
+        - database
+        - tests/Fixtures
+    configDirectories:
+        - %currentWorkingDirectory%/config
+    ignoreErrors:
+        # The default user model intentionally points at the host application's class.
+        -
+            message: '#^Class App\\Models\\User not found\.$#'
+            path: config/level-up.php
+
+        # The user model is host-defined and only typed as Model; its gamification
+        # surface (experience(), getPoints(), getLevel(), ...) comes from the package
+        # traits the host applies, which static analysis cannot see from here.
+        -
+            identifier: method.notFound
+            paths:
+                - src/Listeners/*
+        -
+            identifier: property.notFound
+            paths:
+                - src/Listeners/*
+        -
+            message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$experience\.$#'
+            path: src/Models/Multiplier.php
+
+        # method_exists() guards protect host user models that skip HasTiers; every
+        # test fixture uses the trait, so the guard is "always true" in their context.
+        -
+            identifier: function.alreadyNarrowedType
+            paths:
+                - src/Concerns/HasAchievements.php
+                - src/Concerns/HasStreaks.php

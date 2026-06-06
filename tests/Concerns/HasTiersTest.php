@@ -367,3 +367,30 @@ test(description: 'setPoints determines tier direction by experience threshold, 
             && $event->newTier->name === 'Gold'
     );
 });
+
+test(description: 'tier progress is capped at 100 when the next tier holds no extra experience', closure: function (): void {
+    $user = new class extends LevelUp\Experience\Tests\Fixtures\User
+    {
+        protected $table = 'users';
+
+        public function getForeignKey(): string
+        {
+            return 'user_id';
+        }
+
+        public function getNextTier(?Tier $currentTier = null): ?Tier
+        {
+            return $currentTier;
+        }
+    };
+
+    $user->fill(attributes: [
+        'name' => 'Capped User',
+        'email' => 'capped@example.test',
+        'password' => bcrypt(value: 'password'),
+    ])->save();
+
+    $user->addPoints(amount: 10);
+
+    expect($user->tierProgress())->toBe(expected: 100);
+});

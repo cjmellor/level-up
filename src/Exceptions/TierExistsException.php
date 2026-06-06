@@ -6,10 +6,10 @@ namespace LevelUp\Experience\Exceptions;
 
 use Exception;
 
-class TierExistsException extends Exception
+final class TierExistsException extends Exception
 {
     public static function handle(string $tierName): static
     {
-        return new static(message: sprintf('The tier with name "%s" already exists.', $tierName));
+        return new self(message: sprintf('The tier with name "%s" already exists.', $tierName));
     }
 }

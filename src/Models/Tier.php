@@ -12,6 +12,14 @@ use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Exceptions\TierExistsException;
 
+/**
+ * @property int|string $id
+ * @property string $name
+ * @property int $experience
+ * @property array|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Tier extends Model
 {
     use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
@@ -31,7 +39,7 @@ class Tier extends Model
     public static function add(array ...$tiers): array
     {
         $names = array_column($tiers, 'name');
-        $existing = self::query()->whereIn('name', $names)->pluck('name')->first();
+        $existing = self::query()->whereIn('name', $names)->value('name');
 
         if ($existing) {
             throw TierExistsException::handle(tierName: $existing);
@@ -42,7 +50,7 @@ class Tier extends Model
 
     public static function forPoints(int $points): ?static
     {
-        return self::query()
+        return static::query()
             ->where(column: 'experience', operator: '<=', value: $points)
             ->orderByDesc(column: 'experience')
             ->first();
@@ -56,7 +64,7 @@ class Tier extends Model
     private static function createTier(array $tier): static
     {
         try {
-            return self::query()->create([
+            return static::query()->create([
                 'name' => $tier['name'],
                 'experience' => $tier['experience'],
                 'metadata' => $tier['metadata'] ?? null,

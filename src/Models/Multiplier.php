@@ -12,6 +12,17 @@ use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
+/**
+ * @property int|string $id
+ * @property string $name
+ * @property string|null $description
+ * @property string $multiplier
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $starts_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Multiplier extends Model
 {
     use HasConfigurableIds, ResolvesConfiguredTable;
@@ -25,27 +36,41 @@ class Multiplier extends Model
         'expires_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsToMany<Model, $this, Pivots\MultiplierUser, 'pivot'>
+     */
     public function users(): BelongsToMany
     {
+        /** @var class-string<Pivots\MultiplierUser> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.multiplier_user');
+
         return $this->belongsToMany(
             related: config(key: 'level-up.user.model'),
             table: config('level-up.tables.multiplier_user'),
             foreignPivotKey: 'multiplier_id',
             relatedPivotKey: config('level-up.user.foreign_key', 'user_id'),
         )
-            ->using(config(key: 'level-up.models.multiplier_user'))
+            ->using($pivotClass)
             ->withTimestamps();
     }
 
+    /**
+     * @return BelongsToMany<Tier, $this, Pivots\MultiplierTier, 'pivot'>
+     */
     public function tiers(): BelongsToMany
     {
+        /** @var class-string<Tier> $tierClass */
+        $tierClass = config(key: 'level-up.models.tier');
+        /** @var class-string<Pivots\MultiplierTier> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.multiplier_tier');
+
         return $this->belongsToMany(
-            related: config(key: 'level-up.models.tier'),
+            related: $tierClass,
             table: config('level-up.tables.multiplier_tier'),
             foreignPivotKey: 'multiplier_id',
             relatedPivotKey: 'tier_id',
         )
-            ->using(config(key: 'level-up.models.multiplier_tier'))
+            ->using($pivotClass)
             ->withTimestamps();
     }
 

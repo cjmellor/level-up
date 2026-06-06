@@ -14,6 +14,21 @@ use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 use LevelUp\Experience\Contracts\ChallengeCondition;
 
+/**
+ * @property int|string $id
+ * @property string $name
+ * @property string|null $description
+ * @property string|null $image
+ * @property array $conditions
+ * @property array $rewards
+ * @property bool $auto_enroll
+ * @property bool $is_repeatable
+ * @property \Illuminate\Support\Carbon|null $starts_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property array|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class Challenge extends Model
 {
     use HasConfigurableIds, HasFactory, ResolvesConfiguredTable;
@@ -44,10 +59,16 @@ class Challenge extends Model
         'achievement' => ['achievement_id'],
     ];
 
+    /**
+     * @return BelongsToMany<Model, $this, Pivots\ChallengeUser, 'pivot'>
+     */
     public function users(): BelongsToMany
     {
+        /** @var class-string<Pivots\ChallengeUser> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.challenge_user');
+
         return $this->belongsToMany(related: config(key: 'level-up.user.model'), table: config('level-up.tables.challenge_user'))
-            ->using(config(key: 'level-up.models.challenge_user'))
+            ->using($pivotClass)
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
     }
