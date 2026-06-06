@@ -552,13 +552,15 @@ Reference it in the condition: `['type' => 'custom', 'class' => HasVerifiedEmail
 ```php
 use LevelUp\Experience\Facades\Leaderboard;
 
-Leaderboard::generate();                        // All users by XP
+Leaderboard::generate();                        // Default metric (XP), score descending
 Leaderboard::generate(paginate: true);          // Paginated
 Leaderboard::generate(limit: 10);              // Top 10
+Leaderboard::by('xp')->generate();              // Explicit metric key
+Leaderboard::by(MyMetric::class)->generate();   // Custom metric (class or instance)
 Leaderboard::forTier('Gold')->generate();       // Gold tier only
 ```
 
-Returns User models with `experience` relationship eager-loaded, ordered by XP descending.
+Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded) and `$entry->score` — ordered by score descending. Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
 
 ## Auditing
 

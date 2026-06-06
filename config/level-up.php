@@ -102,6 +102,23 @@ return [
 
     /*
     |-----------------------------------------------------------------------
+    | Leaderboard
+    |-----------------------------------------------------------------------
+    |
+    | Configure the leaderboard. 'metrics' maps registry keys to
+    | RankingMetric classes — register custom metrics by adding entries.
+    | 'default_metric' is used when no metric is specified.
+    |
+    */
+    'leaderboard' => [
+        'default_metric' => 'xp',
+        'metrics' => [
+            'xp' => LevelUp\Experience\Metrics\ExperienceMetric::class,
+        ],
+    ],
+
+    /*
+    |-----------------------------------------------------------------------
     | Starting Level
     |-----------------------------------------------------------------------
     |
