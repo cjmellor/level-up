@@ -9,7 +9,9 @@ use LevelUp\Experience\Models\Achievement;
 
 uses()->group('entities');
 
-test(description: 'entities use auto-incrementing integer keys by default', closure: function (): void {
+test(description: 'entities use auto-incrementing integer keys for the bigint id type', closure: function (): void {
+    config()->set(key: 'level-up.entities.id_type', value: 'bigint');
+
     $achievement = new Achievement;
 
     expect($achievement->getKeyType())->toBe(expected: 'int')

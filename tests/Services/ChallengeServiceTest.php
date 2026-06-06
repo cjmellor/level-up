@@ -617,13 +617,21 @@ test(description: 'auto-enrollment tolerates a concurrent enrollment race', clos
             $table = Illuminate\Support\Facades\DB::table(config('level-up.tables.challenge_user'));
 
             if ($table->where('challenge_id', $challenge->id)->doesntExist()) {
-                $table->insert([
+                $pivot = new LevelUp\Experience\Models\Pivots\ChallengeUser;
+
+                $row = [
                     config(key: 'level-up.user.foreign_key') => $user->id,
                     'challenge_id' => $challenge->id,
                     'progress' => json_encode(value: []),
                     'created_at' => now(),
                     'updated_at' => now(),
-                ]);
+                ];
+
+                foreach ($pivot->uniqueIds() as $column) {
+                    $row[$column] = $pivot->newUniqueId();
+                }
+
+                $table->insert($row);
             }
 
             return parent::initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: $useCurrentBaseline);

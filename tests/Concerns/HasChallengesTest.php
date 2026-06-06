@@ -191,13 +191,21 @@ test(description: 'enrolling throws when a concurrent enrollment wins the race',
     {
         public function initializeProgress(Illuminate\Database\Eloquent\Model $user, Challenge $challenge, bool $useCurrentBaseline = true): array
         {
-            Illuminate\Support\Facades\DB::table(config('level-up.tables.challenge_user'))->insert([
+            $pivot = new LevelUp\Experience\Models\Pivots\ChallengeUser;
+
+            $row = [
                 config(key: 'level-up.user.foreign_key') => $user->id,
                 'challenge_id' => $challenge->id,
                 'progress' => json_encode(value: []),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+
+            foreach ($pivot->uniqueIds() as $column) {
+                $row[$column] = $pivot->newUniqueId();
+            }
+
+            Illuminate\Support\Facades\DB::table(config('level-up.tables.challenge_user'))->insert($row);
 
             return parent::initializeProgress(user: $user, challenge: $challenge, useCurrentBaseline: $useCurrentBaseline);
         }
