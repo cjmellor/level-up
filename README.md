@@ -1145,7 +1145,34 @@ Challenge::create([
 | `achievement_earned` | `achievement_id` | User has the achievement |
 | `streak_count` | `activity`, `count` | Current streak count for the activity |
 | `tier_reached` | `tier` | User is at or above the named tier |
+| `leaderboard_rank` | `board`, `rank` | User's rank on the named Board is at or above the target |
 | `custom` | `class` | Your own class implementing `ChallengeCondition` |
+
+### Leaderboard Rank Conditions
+
+The `leaderboard_rank` condition is "finish top N on a named Board" — it is met when the user's rank on the Board, as recorded by the latest snapshot run, is at or above the target (`rank <= N`):
+
+```php
+Challenge::create([
+    'name' => 'Podium Finish',
+    'description' => 'Crack the top 3 on the weekly XP board.',
+    'conditions' => [
+        ['type' => 'leaderboard_rank', 'board' => 'weekly-xp', 'rank' => 3],
+    ],
+    'rewards' => [
+        ['type' => 'points', 'amount' => 500],
+    ],
+    'auto_enroll' => true,
+]);
+```
+
+> [!IMPORTANT]
+> This condition only progresses when `level-up:snapshot-boards` runs — schedule it (see [Snapshots and rank events](#snapshots-and-rank-events)). Progress is evaluated on the rank events the snapshot run dispatches, and the rank is read from the run's snapshot rows, so a board that is never snapshotted never satisfies the condition.
+
+Validation on challenge creation is strict, so a misconfigured condition fails loudly instead of silently never completing:
+
+- `board` must be a Board declared in `level-up.leaderboard.boards`.
+- `rank` must be a positive integer within the Board's tracked depth (`track_top`, default 100). A condition targeting rank 150 on a board tracking the top 100 is rejected — below the tracked depth the board is silent, so the condition could never be met. Raise the Board's `track_top` if you need deeper targets.
 
 ### Reward Types
 

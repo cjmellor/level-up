@@ -457,7 +457,7 @@ $histories = StreakHistory::where('user_id', $user->id)->get();
 
 ## Challenges
 
-Challenges are multi-condition goals that users enroll in and complete for rewards. Conditions are evaluated automatically when relevant events fire (points earned, level reached, achievement granted, streak recorded, tier changed).
+Challenges are multi-condition goals that users enroll in and complete for rewards. Conditions are evaluated automatically when relevant events fire (points earned, level reached, achievement granted, streak recorded, tier changed, leaderboard rank moved by a snapshot run).
 
 ### Create a Challenge
 
@@ -487,7 +487,10 @@ Challenge::create([
 | `achievement_earned` | `achievement_id` | User has the achievement |
 | `streak_count` | `activity`, `count` | Current streak count for activity >= value |
 | `tier_reached` | `tier` | User is at or above the named tier |
+| `leaderboard_rank` | `board`, `rank` | Latest snapshot rank on the named Board <= value |
 | `custom` | `class` | Class implementing `ChallengeCondition` interface |
+
+`leaderboard_rank` only progresses when `level-up:snapshot-boards` runs — the host must schedule it. Validation at creation rejects a `board` not declared in `level-up.leaderboard.boards` and a `rank` deeper than the Board's tracked depth (`track_top`, default 100).
 
 ### Reward Types
 

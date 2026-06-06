@@ -5,8 +5,11 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Events\AchievementAwarded;
 use LevelUp\Experience\Events\ChallengeCompleted;
+use LevelUp\Experience\Events\LeaderboardRankChanged;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\StreakIncreased;
+use LevelUp\Experience\Events\UserEnteredTrackedDepth;
+use LevelUp\Experience\Events\UserLeftTrackedDepth;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Listeners\ChallengeProgressListener;
@@ -43,6 +46,31 @@ test(description: 'ChallengeProgressListener is registered on UserLevelledUp', c
 test(description: 'ChallengeProgressListener is registered on UserTierUpdated', closure: function (): void {
     Event::fake();
     Event::assertListening(expectedEvent: UserTierUpdated::class, expectedListener: ChallengeProgressListener::class);
+});
+
+test(description: 'ChallengeProgressListener is registered on LeaderboardRankChanged', closure: function (): void {
+    Event::fake();
+    Event::assertListening(expectedEvent: LeaderboardRankChanged::class, expectedListener: ChallengeProgressListener::class);
+});
+
+test(description: 'ChallengeProgressListener is registered on UserEnteredTrackedDepth', closure: function (): void {
+    Event::fake();
+    Event::assertListening(expectedEvent: UserEnteredTrackedDepth::class, expectedListener: ChallengeProgressListener::class);
+});
+
+test(description: 'ChallengeProgressListener is NOT registered on UserLeftTrackedDepth', closure: function (): void {
+    Event::fake();
+
+    $listening = false;
+
+    try {
+        Event::assertListening(expectedEvent: UserLeftTrackedDepth::class, expectedListener: ChallengeProgressListener::class);
+        $listening = true;
+    } catch (PHPUnit\Framework\AssertionFailedError) {
+        $listening = false;
+    }
+
+    expect($listening)->toBeFalse();
 });
 
 test(description: 'ChallengeProgressListener is NOT registered on ChallengeCompleted', closure: function (): void {

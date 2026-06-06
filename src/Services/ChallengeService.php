@@ -147,6 +147,14 @@ class ChallengeService
 
         $activityModel = config(key: 'level-up.models.activity');
 
+        $boardNames = $challenges
+            ->flatMap(fn (Challenge $challenge): array => $challenge->conditions)
+            ->where('type', 'leaderboard_rank')
+            ->pluck('board')
+            ->filter()
+            ->unique()
+            ->all();
+
         return [
             'achievement_ids' => method_exists($user, 'allAchievements')
                 ? $user->allAchievements()->pluck(config('level-up.tables.achievements').'.id')->all()
@@ -154,7 +162,42 @@ class ChallengeService
             'activities' => $activityNames !== []
                 ? $activityModel::whereIn('name', $activityNames)->get()->keyBy('name')
                 : collect(),
+            'board_ranks' => $this->latestSnapshotRanks(user: $user, boardNames: $boardNames),
         ];
+    }
+
+    /**
+     * @param  array<string>  $boardNames
+     * @return array<string, int>
+     */
+    protected function latestSnapshotRanks(Model $user, array $boardNames): array
+    {
+        $snapshotModel = config(key: 'level-up.models.leaderboard_snapshot');
+        $userForeignKey = config()->string(key: 'level-up.user.foreign_key');
+
+        $ranks = [];
+
+        foreach ($boardNames as $board) {
+            $latestRunAt = $snapshotModel::query()
+                ->where(column: 'board', operator: '=', value: $board)
+                ->max(column: 'run_at');
+
+            if ($latestRunAt === null) {
+                continue;
+            }
+
+            $rank = $snapshotModel::query()
+                ->where(column: 'board', operator: '=', value: $board)
+                ->where(column: 'run_at', operator: '=', value: $latestRunAt)
+                ->where(column: $userForeignKey, operator: '=', value: $user->getKey())
+                ->value(column: 'rank');
+
+            if ($rank !== null) {
+                $ranks[$board] = (int) $rank;
+            }
+        }
+
+        return $ranks;
     }
 
     protected function evaluateChallenge(Model $user, Challenge $challenge, array $preloaded = []): void
@@ -208,6 +251,7 @@ class ChallengeService
             'achievement_earned' => $this->checkAchievementEarned(condition: $condition, preloaded: $preloaded),
             'streak_count' => $this->checkStreakCount(user: $user, condition: $condition, preloaded: $preloaded),
             'tier_reached' => $this->checkTierReached(user: $user, condition: $condition),
+            'leaderboard_rank' => $this->checkLeaderboardRank(condition: $condition, preloaded: $preloaded),
             'custom' => $this->checkCustomCondition(user: $user, condition: $condition),
             default => $this->reportAndFail("Unknown challenge condition type '{$condition['type']}'"),
         };
@@ -261,6 +305,13 @@ class ChallengeService
         }
 
         return $user->isAtOrAboveTier($condition['tier'] ?? '');
+    }
+
+    protected function checkLeaderboardRank(array $condition, array $preloaded = []): bool
+    {
+        $rank = ($preloaded['board_ranks'] ?? [])[$condition['board'] ?? ''] ?? null;
+
+        return $rank !== null && $rank <= ($condition['rank'] ?? 0);
     }
 
     protected function checkCustomCondition(Model $user, array $condition): bool

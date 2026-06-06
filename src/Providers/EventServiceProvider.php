@@ -6,9 +6,11 @@ namespace LevelUp\Experience\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use LevelUp\Experience\Events\AchievementAwarded;
+use LevelUp\Experience\Events\LeaderboardRankChanged;
 use LevelUp\Experience\Events\PointsDecreased;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\StreakIncreased;
+use LevelUp\Experience\Events\UserEnteredTrackedDepth;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Listeners\ChallengeProgressListener;
@@ -39,6 +41,12 @@ class EventServiceProvider extends ServiceProvider
             ChallengeProgressListener::class,
         ],
         StreakIncreased::class => [
+            ChallengeProgressListener::class,
+        ],
+        LeaderboardRankChanged::class => [
+            ChallengeProgressListener::class,
+        ],
+        UserEnteredTrackedDepth::class => [
             ChallengeProgressListener::class,
         ],
     ];
