@@ -612,13 +612,15 @@ An unknown key throws `MetricNotFoundException`; a metric whose underlying featu
 
 ### Built-in metrics
 
-Three metrics ship with the package:
+Five metrics ship with the package:
 
 | Key | Ranks by |
 | --- | --- |
 | `xp` | Experience points (the default) |
 | `level` | Current level |
 | `streak` | Current streak count for an Activity |
+| `achievements` | Number of achievements earned |
+| `challenges` | Number of challenges completed |
 
 `level` ranks users by their current level number — users on the same level share a rank:
 
@@ -637,6 +639,19 @@ Leaderboard::by(new StreakMetric(activity: $activity))->generate();
 Generating a streak board without an Activity — for example via the bare registry key, `by('streak')` — throws `MetricRequiresActivityException`.
 
 Both are **state metrics**: they rank by a current snapshot rather than an accumulation. Users without the relevant record are absent from the board — no level (no experience record) means no entry on the level board; no streak for the given Activity means no entry on that streak board.
+
+`achievements` and `challenges` are **flow metrics**: they rank by an accumulation over time, so they support time periods (see below) as well as all-time boards:
+
+```php
+Leaderboard::by('achievements')->generate();                    // most achievements earned, ever
+Leaderboard::by('achievements')->period(Period::Week)->generate(); // most achievements earned this week
+Leaderboard::by('challenges')->generate();                      // most challenges completed, ever
+```
+
+`achievements` counts earned achievements; on a periodic board, only achievements earned within the window count. `challenges` counts **completed** challenges — being enrolled isn't enough — and periodic boards window on when each challenge was completed, not when the user enrolled. If the challenges system is turned off (`level-up.challenges.enabled`), the `challenges` metric throws `MetricDisabledException`. As with every metric, users with a count of zero are absent from the board rather than ranked at zero.
+
+> [!NOTE]
+> The `achievements` count includes **secret** achievements. This is deliberate: a count reveals nothing about *which* achievements were earned, and excluding them would let users be punished on the leaderboard for earning a secret. Keep secrecy in what you display, not in the score.
 
 ### Time periods
 
@@ -665,9 +680,9 @@ Leaderboard::period(Period::Week)->rankOf(user: $user);
 Leaderboard::period(Period::Week)->around(user: $user, range: 2);
 ```
 
-Periodic boards require auditing (on by default since v3 — see `level-up.audit.enabled`). If you have explicitly disabled auditing, requesting a periodic board throws `MetricRequiresAuditingException` rather than returning a silently empty board. Boards without a period are unaffected: the all-time board keeps reading the cheap `experiences.experience_points` column and never scans the ledger.
+Periodic XP boards require auditing (on by default since v3 — see `level-up.audit.enabled`). If you have explicitly disabled auditing, requesting a periodic XP board throws `MetricRequiresAuditingException` rather than returning a silently empty board. Boards without a period are unaffected: the all-time board keeps reading the cheap `experiences.experience_points` column and never scans the ledger. Periodic `achievements` and `challenges` boards read their own timestamps and work with or without auditing.
 
-Only metrics that implement the `LevelUp\Experience\Contracts\Windowable` interface support periods. The built-in `xp` metric does; `level` and `streak` are state metrics — a current level or streak count isn't "earned within a window" — so selecting a period for them throws `MetricNotWindowableException`.
+Only metrics that implement the `LevelUp\Experience\Contracts\Windowable` interface support periods. The built-in flow metrics — `xp`, `achievements`, and `challenges` — all do: `xp` windows on audit rows, `achievements` on when each achievement was earned, and `challenges` on when each challenge was completed. `level` and `streak` are state metrics — a current level or streak count isn't "earned within a window" — so selecting a period for them throws `MetricNotWindowableException`.
 
 > [!NOTE]
 > `setPoints()` is an administrative override, not earned activity — it writes no audit record, so it deliberately never moves a periodic board. The all-time board sees the new total immediately.

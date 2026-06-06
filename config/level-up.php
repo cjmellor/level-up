@@ -122,6 +122,8 @@ return [
             'xp' => LevelUp\Experience\Metrics\ExperienceMetric::class,
             'level' => LevelUp\Experience\Metrics\LevelMetric::class,
             'streak' => LevelUp\Experience\Metrics\StreakMetric::class,
+            'achievements' => LevelUp\Experience\Metrics\AchievementMetric::class,
+            'challenges' => LevelUp\Experience\Metrics\ChallengeMetric::class,
         ],
         'week_starts_on' => Carbon\CarbonInterface::MONDAY,
         'timezone' => null,
