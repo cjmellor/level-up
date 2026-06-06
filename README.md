@@ -723,6 +723,37 @@ Leaderboard::restrictTo(fn ($query) => $query->whereIn('id', $friendIds))->rankO
 
 Friends boards are the headline use, but any host-defined population works the same way — users in a guild, an organisation, a tournament bracket.
 
+### Named Boards
+
+Everything above composes an **ad-hoc query**: you build it fluently, execute it, and it's forgotten. A **Board** is different — a *declared* leaderboard, registered by name in the config as a metric/period(/tier) combination:
+
+```php
+'leaderboard' => [
+    // ...
+    'boards' => [
+        'weekly-xp' => ['metric' => 'xp', 'period' => 'week'],
+        'gold-race' => ['metric' => 'xp', 'period' => 'week', 'tier' => 'Gold'],
+    ],
+],
+```
+
+Each declaration takes a required `metric` (a registry key from `level-up.leaderboard.metrics`), an optional `period` (`'day'`, `'week'`, or `'month'`), and an optional `tier` (a tier name). Resolve a Board by name with `board()` — it returns the same fluent query, pre-composed, so every refinement still works on top:
+
+```php
+Leaderboard::board('weekly-xp')->generate();
+
+Leaderboard::board('weekly-xp')->rankOf(user: $user);
+
+// This week's XP, friends only — refinements compose on top of the declaration
+Leaderboard::board('weekly-xp')
+    ->restrictTo(fn ($query) => $query->whereIn('id', $friendIds))
+    ->generate();
+```
+
+Declarations are validated loudly at resolution rather than producing a silently wrong board: an unknown board name throws `BoardNotFoundException`, a missing or unknown `metric` throws `MetricNotFoundException`, a `period` declared for a non-Windowable metric (such as `level`) throws `MetricNotWindowableException`, an invalid `period` value throws a `ValueError`, and a `tier` name with no matching tier throws a `ModelNotFoundException`.
+
+Why declare a board instead of just querying? Boards are the leaderboards the package will **track over time** — snapshots, rank-change events, and leagues (arriving in later releases) apply only to declared Boards. Ad-hoc queries stay exactly what they are: composed, executed, forgotten. Declare no boards and none of that machinery activates.
+
 ### Custom metrics
 
 Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.

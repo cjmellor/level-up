@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Contracts\RankingMetric;
 use LevelUp\Experience\Contracts\Windowable;
 use LevelUp\Experience\Enums\Period;
+use LevelUp\Experience\Exceptions\BoardNotFoundException;
 use LevelUp\Experience\Exceptions\MetricDisabledException;
 use LevelUp\Experience\Exceptions\MetricNotFoundException;
 use LevelUp\Experience\Exceptions\MetricNotWindowableException;
@@ -39,6 +40,41 @@ class LeaderboardService
     public function __construct()
     {
         $this->userModel = config(key: 'level-up.user.model');
+    }
+
+    public function board(string $name): static
+    {
+        $boards = config()->array(key: 'level-up.leaderboard.boards');
+        $declaration = $boards[$name] ?? null;
+
+        throw_unless(is_array($declaration), exception: BoardNotFoundException::forName($name));
+
+        $metric = $declaration['metric'] ?? null;
+
+        throw_unless(is_string($metric), exception: MetricNotFoundException::forBoard($name));
+
+        $resolved = $this->resolveMetric($metric);
+        $this->metric = $resolved;
+
+        $tier = $declaration['tier'] ?? null;
+
+        if (is_string($tier)) {
+            $this->forTier(tier: $tier);
+        }
+
+        $period = $declaration['period'] ?? null;
+
+        if ($period !== null) {
+            if (! $resolved instanceof Windowable) {
+                $this->resetContext();
+
+                throw MetricNotWindowableException::forBoard(name: $name, metric: $resolved);
+            }
+
+            $this->period(period: $period instanceof Period ? $period : Period::from(value: is_string($period) ? $period : ''));
+        }
+
+        return $this;
     }
 
     public function by(string|RankingMetric $metric): static
@@ -179,9 +215,14 @@ class LeaderboardService
             return;
         }
 
-        [$this->metric, $this->tier, $this->range, $this->restriction] = [null, null, null, null];
+        $this->resetContext();
 
         throw MetricNotWindowableException::forMetric($metric);
+    }
+
+    private function resetContext(): void
+    {
+        [$this->metric, $this->tier, $this->range, $this->restriction] = [null, null, null, null];
     }
 
     private function scoreExpressionFor(RankingMetric $metric, ?PeriodRange $range): BaseBuilder

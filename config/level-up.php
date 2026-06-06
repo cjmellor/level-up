@@ -115,6 +115,12 @@ return [
     | (start of day/week/month) are computed in; null uses the
     | application timezone.
     |
+    | 'boards' declares named Boards — leaderboards the package can
+    | track over time. Each entry maps a board name to a 'metric'
+    | (required registry key), an optional 'period' ('day', 'week',
+    | or 'month'), and an optional 'tier' (a tier name). For example:
+    | 'weekly-xp' => ['metric' => 'xp', 'period' => 'week'].
+    |
     */
     'leaderboard' => [
         'default_metric' => 'xp',
@@ -125,6 +131,7 @@ return [
             'achievements' => LevelUp\Experience\Metrics\AchievementMetric::class,
             'challenges' => LevelUp\Experience\Metrics\ChallengeMetric::class,
         ],
+        'boards' => [],
         'week_starts_on' => Carbon\CarbonInterface::MONDAY,
         'timezone' => null,
     ],

@@ -567,6 +567,7 @@ Leaderboard::forTier('Gold')->generate();       // Gold tier only
 Leaderboard::restrictTo(fn ($query) => $query->whereIn('id', $friendIds))->generate(); // Host-restricted population (e.g. friends board)
 Leaderboard::period(Period::Week)->generate();  // Points earned this week (also Period::Day / Period::Month)
 Leaderboard::since(start: now()->subDays(3))->generate(); // Custom range; optional until: bounds it
+Leaderboard::board('weekly-xp')->generate();    // Resolve a named Board declared in config
 Leaderboard::rankOf(user: $user);               // Exact rank (int), null if absent from the board
 Leaderboard::around(user: $user, range: 2);     // Up to 2 entries above + user + up to 2 below; empty if absent
 ```
@@ -584,6 +585,21 @@ Built-in metrics: `xp` (experience points, the default), `level` (current level)
 `setPoints()` writes no audit record, so it never moves a periodic board (administrative override, not earned activity) — the all-time board sees it immediately. Users with no qualifying audit rows in the window are absent from the board. All-time boards (no period) read `experiences.experience_points` directly and never scan the ledger.
 
 Period boundary config under `level-up.leaderboard`: `week_starts_on` (Carbon day-of-week, default `CarbonInterface::MONDAY`) and `timezone` (default `null` = app timezone) control where day/week/month boundaries fall.
+
+### Named Boards
+
+A **Board** is a *declared* leaderboard — a named metric/period(/tier) combination registered in config — as opposed to an ad-hoc fluent query (composed, executed, forgotten). Only declared Boards will be tracked over time (snapshots, rank events, leagues — later releases); declaring none means none of that machinery activates.
+
+```php
+'leaderboard' => [
+    'boards' => [
+        'weekly-xp' => ['metric' => 'xp', 'period' => 'week'],
+        'gold-race' => ['metric' => 'xp', 'period' => 'week', 'tier' => 'Gold'],
+    ],
+],
+```
+
+`metric` is required (a `level-up.leaderboard.metrics` registry key), `period` is optional (`'day'`/`'week'`/`'month'` — the `Period` enum string values), `tier` is optional (a tier name). `Leaderboard::board('weekly-xp')` resolves the declaration into the same fluent query, so all refinements (`restrictTo()`, `rankOf()`, `around()`, `limit:`, `paginate:`) compose on top. Resolution validates loudly: unknown board name → `BoardNotFoundException`; missing or unknown `metric` → `MetricNotFoundException`; `period` on a non-Windowable metric → `MetricNotWindowableException`; invalid `period` string → `ValueError`; nonexistent `tier` name → `ModelNotFoundException`.
 
 ## Auditing
 
