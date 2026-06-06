@@ -14,7 +14,7 @@ Use this skill when working with gamification features — adding experience poi
 - **Achievements** — Unlockable rewards, optionally with progress tracking, optionally gated by tier.
 - **Streaks** — Track consecutive daily activities with freeze support.
 - **Multipliers** — Database-backed point modifiers with scoping, scheduling, and configurable stacking strategies.
-- **Leaderboard** — Rank users by XP, optionally scoped to a tier.
+- **Leaderboard** — Rank users by any metric (XP by default) with competition-style rank numbers, optionally scoped to a tier.
 - **Auditing** — Automatic history of all XP changes, level-ups, and tier changes.
 
 ## Setup
@@ -558,9 +558,11 @@ Leaderboard::generate(limit: 10);              // Top 10
 Leaderboard::by('xp')->generate();              // Explicit metric key
 Leaderboard::by(MyMetric::class)->generate();   // Custom metric (class or instance)
 Leaderboard::forTier('Gold')->generate();       // Gold tier only
+Leaderboard::rankOf(user: $user);               // Exact rank (int), null if absent from the board
+Leaderboard::around(user: $user, range: 2);     // Up to 2 entries above + user + up to 2 below; empty if absent
 ```
 
-Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded) and `$entry->score` — ordered by score descending. Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
+Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
 
 ## Auditing
 

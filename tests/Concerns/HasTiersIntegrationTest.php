@@ -106,3 +106,18 @@ test(description: 'leaderboard can be filtered by tier', closure: function (): v
     expect($silverLeaderboard)->toHaveCount(count: 1)
         ->and($silverLeaderboard->first()->user->id)->toBe(expected: $this->user->id);
 });
+
+test(description: 'a user outside a tier filter is absent from rankOf and around', closure: function (): void {
+    $this->user->addPoints(amount: 550);
+
+    $bronzeUser = User::query()->create([
+        'name' => 'Other User',
+        'email' => 'other@test.com',
+        'password' => bcrypt('password'),
+    ]);
+    $bronzeUser->addPoints(amount: 100);
+
+    expect(resolve('leaderboard')->forTier('Silver')->rankOf(user: $bronzeUser))->toBeNull()
+        ->and(resolve('leaderboard')->forTier('Silver')->around(user: $bronzeUser, range: 1))->toBeEmpty()
+        ->and(resolve('leaderboard')->forTier('Silver')->rankOf(user: $this->user))->toBe(expected: 1);
+});
