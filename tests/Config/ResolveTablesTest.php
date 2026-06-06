@@ -25,6 +25,7 @@ it('returns defaults when no prefix or overrides are set', function (): void {
         'multiplier_tier' => 'multiplier_tier',
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
+        'leaderboard_snapshots' => 'leaderboard_snapshots',
     ]);
 });
 

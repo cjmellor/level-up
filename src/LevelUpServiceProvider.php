@@ -7,6 +7,7 @@ namespace LevelUp\Experience;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ForeignIdColumnDefinition;
 use InvalidArgumentException;
+use LevelUp\Experience\Commands\SnapshotBoardsCommand;
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
 use Spatie\LaravelPackageTools\Package;
@@ -31,6 +32,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
             'multiplier_tier' => 'multiplier_tier',
             'challenges' => 'challenges',
             'challenge_user' => 'challenge_user',
+            'leaderboard_snapshots' => 'leaderboard_snapshots',
         ];
 
         $resolved = [];
@@ -63,6 +65,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
         $package
             ->name(name: 'level-up')
             ->hasConfigFile()
+            ->hasCommand(commandClassName: SnapshotBoardsCommand::class)
             ->hasMigrations([
                 'create_levels_table',
                 'create_experiences_table',
@@ -86,6 +89,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'add_multipliers_column_to_experience_audits_table',
                 'create_challenges_table',
                 'create_challenge_user_table',
+                'create_leaderboard_snapshots_table',
             ]);
     }
 
@@ -95,6 +99,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
 
         $this->app->register(provider: EventServiceProvider::class);
         $this->app->singleton(abstract: 'leaderboard', concrete: fn (): LeaderboardService => new LeaderboardService());
+        $this->app->alias(abstract: 'leaderboard', alias: LeaderboardService::class);
     }
 
     protected function registerEntityKeyMacros(): void

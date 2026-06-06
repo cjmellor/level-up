@@ -19,6 +19,7 @@ return [
         'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
     ],
 
     /*
@@ -98,6 +99,7 @@ return [
         'multiplier_tier' => 'multiplier_tier',
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
+        'leaderboard_snapshots' => 'leaderboard_snapshots',
     ],
 
     /*
@@ -118,8 +120,13 @@ return [
     | 'boards' declares named Boards — leaderboards the package can
     | track over time. Each entry maps a board name to a 'metric'
     | (required registry key), an optional 'period' ('day', 'week',
-    | or 'month'), and an optional 'tier' (a tier name). For example:
+    | or 'month'), an optional 'tier' (a tier name), and an optional
+    | 'track_top' (the tracked depth — how many top entries the
+    | snapshot run stores and events, default 100). For example:
     | 'weekly-xp' => ['metric' => 'xp', 'period' => 'week'].
+    |
+    | 'snapshots.retention_days' controls how long snapshot runs are
+    | kept; the level-up:snapshot-boards command prunes older runs.
     |
     */
     'leaderboard' => [
@@ -132,6 +139,9 @@ return [
             'challenges' => LevelUp\Experience\Metrics\ChallengeMetric::class,
         ],
         'boards' => [],
+        'snapshots' => [
+            'retention_days' => 30,
+        ],
         'week_starts_on' => Carbon\CarbonInterface::MONDAY,
         'timezone' => null,
     ],
