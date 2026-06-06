@@ -610,6 +610,34 @@ Leaderboard::by(new MyCustomMetric())->generate();
 
 An unknown key throws `MetricNotFoundException`; a metric whose underlying feature is disabled throws `MetricDisabledException` rather than returning an empty board.
 
+### Built-in metrics
+
+Three metrics ship with the package:
+
+| Key | Ranks by |
+| --- | --- |
+| `xp` | Experience points (the default) |
+| `level` | Current level |
+| `streak` | Current streak count for an Activity |
+
+`level` ranks users by their current level number — users on the same level share a rank:
+
+```php
+Leaderboard::by('level')->generate();
+```
+
+`streak` ranks users by their current streak count for one Activity, so it needs to know which one. Construct the metric with the Activity and pass the instance:
+
+```php
+use LevelUp\Experience\Metrics\StreakMetric;
+
+Leaderboard::by(new StreakMetric(activity: $activity))->generate();
+```
+
+Generating a streak board without an Activity — for example via the bare registry key, `by('streak')` — throws `MetricRequiresActivityException`.
+
+Both are **state metrics**: they rank by a current snapshot rather than an accumulation. Users without the relevant record are absent from the board — no level (no experience record) means no entry on the level board; no streak for the given Activity means no entry on that streak board.
+
 ### Custom metrics
 
 Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.

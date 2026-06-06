@@ -551,11 +551,14 @@ Reference it in the condition: `['type' => 'custom', 'class' => HasVerifiedEmail
 
 ```php
 use LevelUp\Experience\Facades\Leaderboard;
+use LevelUp\Experience\Metrics\StreakMetric;
 
 Leaderboard::generate();                        // Default metric (XP), score descending
 Leaderboard::generate(paginate: true);          // Paginated
 Leaderboard::generate(limit: 10);              // Top 10
 Leaderboard::by('xp')->generate();              // Explicit metric key
+Leaderboard::by('level')->generate();           // Rank by current level
+Leaderboard::by(new StreakMetric(activity: $activity))->generate(); // Rank by current streak count for an Activity
 Leaderboard::by(MyMetric::class)->generate();   // Custom metric (class or instance)
 Leaderboard::forTier('Gold')->generate();       // Gold tier only
 Leaderboard::rankOf(user: $user);               // Exact rank (int), null if absent from the board
@@ -563,6 +566,8 @@ Leaderboard::around(user: $user, range: 2);     // Up to 2 entries above + user 
 ```
 
 Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
+
+Built-in metrics: `xp` (experience points, the default), `level` (current level), and `streak` (current streak count for an Activity). `level` and `streak` are state metrics — they rank by a current snapshot, and users without the relevant record are absent from the board. The streak metric requires an Activity: construct the instance (`new StreakMetric(activity: $activity)`); using the bare `streak` registry key without one throws `MetricRequiresActivityException`.
 
 ## Auditing
 

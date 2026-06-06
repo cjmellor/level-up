@@ -114,6 +114,8 @@ return [
         'default_metric' => 'xp',
         'metrics' => [
             'xp' => LevelUp\Experience\Metrics\ExperienceMetric::class,
+            'level' => LevelUp\Experience\Metrics\LevelMetric::class,
+            'streak' => LevelUp\Experience\Metrics\StreakMetric::class,
         ],
     ],
 
