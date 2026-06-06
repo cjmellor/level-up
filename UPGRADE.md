@@ -86,6 +86,16 @@ Internal trait helpers like `experienceRelation()`, `challengesRelation()`, `str
 - Rename your method to avoid the collision (e.g. `userChallenges()`), or
 - Move the level-up traits onto a separate `UserProfile` / `Gamification` model and compose it onto User (same pattern Spatie's permission package uses).
 
+### Auditing is now enabled by default
+
+**Likelihood Of Impact: Medium** (every install that never published the config or never set `AUDIT_POINTS`).
+
+`level-up.audit.enabled` now defaults to `true` (was `false`). v3's time-windowed leaderboards (`Leaderboard::period(...)` / `since(...)`) compute scores from the `experience_audits` ledger, so auditing is on out of the box — every `addPoints()` / `deductPoints()` call writes one `experience_audits` row.
+
+- If you have a **published config** with an explicit `'enabled' => env('AUDIT_POINTS', false)`, nothing changes until you update it — but periodic leaderboards will throw `MetricRequiresAuditingException` until you enable auditing.
+- If you relied on the old default to keep the audit table empty, set `AUDIT_POINTS=false` in your `.env`.
+- Audit rows only accrue from the moment auditing is on. A windowed board only sees activity recorded in the ledger, so "this week" boards are accurate one week after enabling.
+
 ### `setPoints()` now recalculates level and tier
 
 **Likelihood Of Impact: Medium** (silent behavior change for anyone using `setPoints`).

@@ -109,6 +109,12 @@ return [
     | RankingMetric classes — register custom metrics by adding entries.
     | 'default_metric' is used when no metric is specified.
     |
+    | 'week_starts_on' sets the boundary of Period::Week as a Carbon
+    | day-of-week number: 0 (Sunday) through 6 (Saturday). Defaults to
+    | Monday. 'timezone' controls which timezone period boundaries
+    | (start of day/week/month) are computed in; null uses the
+    | application timezone.
+    |
     */
     'leaderboard' => [
         'default_metric' => 'xp',
@@ -117,6 +123,8 @@ return [
             'level' => LevelUp\Experience\Metrics\LevelMetric::class,
             'streak' => LevelUp\Experience\Metrics\StreakMetric::class,
         ],
+        'week_starts_on' => Carbon\CarbonInterface::MONDAY,
+        'timezone' => null,
     ],
 
     /*
@@ -165,11 +173,13 @@ return [
     | Audit
     | -------------------------------------------------------------------------
     |
-    | Set the audit configuration.
+    | Set the audit configuration. Auditing records every point transaction
+    | in the experience_audits ledger and is required for time-windowed
+    | (periodic) leaderboards. Enabled by default since v3.
     |
     */
     'audit' => [
-        'enabled' => env(key: 'AUDIT_POINTS', default: false),
+        'enabled' => env(key: 'AUDIT_POINTS', default: true),
     ],
 
     /*
