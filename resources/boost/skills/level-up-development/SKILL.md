@@ -629,7 +629,7 @@ A **League** is a competitive cycle on one periodic Board: users are grouped int
 ],
 ```
 
-`promote`/`relegate` counts are stored for the period rollover (a later release). Validation is loud, on first enrollment: undeclared board → `BoardNotFoundException`; board without a `period` → `LeagueBoardNotPeriodicException`; empty `divisions` → `LeagueDivisionsNotDeclaredException`.
+`promote`/`relegate` counts are consumed by the period rollover (below). Validation is loud, on first enrollment: undeclared board → `BoardNotFoundException`; board without a `period` → `LeagueBoardNotPeriodicException`; empty `divisions` → `LeagueDivisionsNotDeclaredException`.
 
 **A Division is NOT a Tier.** Tier = pure function of current XP (status). Division = path-dependent competition history (held via cohort placement). A user holds a Tier and competes in a Division simultaneously and independently — `HasTiers`, `experiences.tier_id`, and tier events are untouched by leagues. Never conflate the two ladders.
 
@@ -642,6 +642,8 @@ $user->cohortStandings();   // Collection<LeaderboardEntry> ranked within the us
 ```
 
 `cohortStandings()` runs the league Board restricted to the cohort's members — rank 1 is first in the cohort, not globally. Empty collection when not cohorted or no league configured. Requires the `HasLeagues` trait.
+
+**Rollover** (`level-up:league-rollover`): host-scheduled just after the period boundary (e.g. `Schedule::command('level-up:league-rollover')->weeklyOn(1, '00:05')` for a Monday-start weekly league) — never auto-registered. For each cohort of the closed period it computes final standings live (not from snapshots) and moves users: top `promote` finishers up one Division, bottom `relegate` down one, rest stay. Semantics: the top Division never promotes and the bottom never relegates regardless of config; promoted = min(`promote`, cohort size) so a tiny cohort promotes everyone; promotion wins when promote and relegate slices overlap; ties straddling a boundary split by standings order (score, then user key) — not by rank number; ghosts (never cohorted that period) keep their Division, no event. Idempotent via the `cohorts.rolled_over_at` stamp — re-runs are no-ops. Movement is recorded as `cohort_user.next_division_id` and lands at the user's next-period enrollment (rollover enrolls nobody); `currentDivision()` reflects it immediately. Each movement fires one `UserDivisionChanged` (direction enum `DivisionDirection::Promoted`/`Relegated`, mirroring the tier event grammar — no separate promoted/relegated event classes).
 
 ## Auditing
 
@@ -695,6 +697,7 @@ AuditType::TierDown; // 'tier_down'
 | `LeaderboardRankChanged` | `Model $user`, `string $board`, `int $from`, `int $to` | Snapshot run found rank movement within a Board's tracked depth |
 | `UserEnteredTrackedDepth` | `Model $user`, `string $board`, `int $rank` | Snapshot run found a user broke into a Board's tracked depth |
 | `UserLeftTrackedDepth` | `Model $user`, `string $board`, `int $previousRank` | Snapshot run found a user dropped out of a Board's tracked depth |
+| `UserDivisionChanged` | `Model $user`, `string $board`, `Division $previousDivision`, `Division $newDivision`, `DivisionDirection $direction` | League rollover promoted or relegated the user |
 
 ## Common Patterns
 

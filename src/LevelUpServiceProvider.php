@@ -7,6 +7,7 @@ namespace LevelUp\Experience;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ForeignIdColumnDefinition;
 use InvalidArgumentException;
+use LevelUp\Experience\Commands\LeagueRolloverCommand;
 use LevelUp\Experience\Commands\SnapshotBoardsCommand;
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
@@ -69,6 +70,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
             ->name(name: 'level-up')
             ->hasConfigFile()
             ->hasCommand(commandClassName: SnapshotBoardsCommand::class)
+            ->hasCommand(commandClassName: LeagueRolloverCommand::class)
             ->hasMigrations([
                 'create_levels_table',
                 'create_experiences_table',

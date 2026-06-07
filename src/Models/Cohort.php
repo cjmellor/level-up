@@ -15,6 +15,7 @@ use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
  * @property int|string $division_id
  * @property \Illuminate\Support\Carbon $period_start
  * @property \Illuminate\Support\Carbon $period_end
+ * @property \Illuminate\Support\Carbon|null $rolled_over_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Division $division
@@ -28,6 +29,7 @@ class Cohort extends Model
     protected $casts = [
         'period_start' => 'datetime',
         'period_end' => 'datetime',
+        'rolled_over_at' => 'datetime',
     ];
 
     /**
