@@ -14,6 +14,7 @@ use LevelUp\Experience\Events\UserEnteredTrackedDepth;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Listeners\ChallengeProgressListener;
+use LevelUp\Experience\Listeners\LeagueEnrollmentListener;
 use LevelUp\Experience\Listeners\PointsDecreasedListener;
 use LevelUp\Experience\Listeners\PointsIncreasedListener;
 use LevelUp\Experience\Listeners\UserLevelledUpListener;
@@ -28,6 +29,7 @@ class EventServiceProvider extends ServiceProvider
         PointsIncreased::class => [
             PointsIncreasedListener::class,
             ChallengeProgressListener::class,
+            LeagueEnrollmentListener::class,
         ],
         UserLevelledUp::class => [
             UserLevelledUpListener::class,

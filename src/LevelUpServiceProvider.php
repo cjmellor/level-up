@@ -33,6 +33,9 @@ class LevelUpServiceProvider extends PackageServiceProvider
             'challenges' => 'challenges',
             'challenge_user' => 'challenge_user',
             'leaderboard_snapshots' => 'leaderboard_snapshots',
+            'divisions' => 'divisions',
+            'cohorts' => 'cohorts',
+            'cohort_user' => 'cohort_user',
         ];
 
         $resolved = [];
@@ -90,6 +93,9 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_challenges_table',
                 'create_challenge_user_table',
                 'create_leaderboard_snapshots_table',
+                'create_divisions_table',
+                'create_cohorts_table',
+                'create_cohort_user_table',
             ]);
     }
 

@@ -26,6 +26,9 @@ it('returns defaults when no prefix or overrides are set', function (): void {
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
         'leaderboard_snapshots' => 'leaderboard_snapshots',
+        'divisions' => 'divisions',
+        'cohorts' => 'cohorts',
+        'cohort_user' => 'cohort_user',
     ]);
 });
 

@@ -810,6 +810,59 @@ Rank by anything you can express as a SQL score: implement `LevelUp\Experience\C
 
 To support time periods too, also implement `LevelUp\Experience\Contracts\Windowable` — a `windowedScoreExpression($start, $end)` subquery yielding one numeric score per user for activity between the two timestamps (`$end` may be `null` for an open-ended `since()` range).
 
+### Leagues
+
+A **League** is a competitive cycle built on one periodic Board: each period, active users are grouped into small **Cohorts** within a **Division**, and ranked against their cohort-mates only. Declare it in config by binding a Board and a ladder of Divisions, ordered bottom to top:
+
+```php
+'leaderboard' => [
+    // ...
+    'league' => [
+        'board' => 'weekly-xp', // must be declared under 'boards' with a 'period'
+        'cohort_size' => 30,
+        'divisions' => [
+            'Bronze' => ['promote' => 10, 'relegate' => 0],
+            'Silver' => ['promote' => 7, 'relegate' => 5],
+            'Gold' => ['promote' => 0, 'relegate' => 5],
+        ],
+    ],
+],
+```
+
+Leave `board` as `null` (the default) and the league machinery stays dormant. The configuration is validated loudly: binding a Board that isn't declared throws `BoardNotFoundException`, binding a Board without a `period` throws `LeagueBoardNotPeriodicException` (a league is a cycle — an all-time board cannot host one), and declaring a league with no divisions throws `LeagueDivisionsNotDeclaredException`. Each division's `promote` and `relegate` counts are stored now and consumed by the period rollover (promotion/relegation arrives in a later release).
+
+#### A Division is not a Tier
+
+The two ladders look similar but answer different questions. A **Tier** is *status*: a pure function of your current XP, recalculated whenever your points change. A **Division** is *competition history*: you hold it because of where you placed in last period's cohort, regardless of what your XP is today. A user holds a Tier and competes in a Division simultaneously and independently — adding leagues changes nothing about `HasTiers`, tier columns, or tier events. It's perfectly normal (Duolingo-style) for an app to show a permanent Gold *tier* badge while the user grinds through the Silver *division* this week.
+
+#### Lazy enrollment
+
+Nobody is pre-assigned. A user joins the current period's league on their **first score-earning action** of the period (the `PointsIncreased` event path) — they're placed into the open cohort of their Division, cohorts fill in arrival order, and a new cohort opens when one reaches `cohort_size`. That means:
+
+- **Ghosts are never cohorted.** A user with no qualifying activity in the period appears in no cohort — their Division simply carries over. Relegation (when it arrives) punishes losing, not absence.
+- **New users enter the bottom Division** on their first earn; returning users re-enter the Division they held.
+- **Cohort sizes vary** — the last cohort of a period may be small. Accepted behavior; no skill matching, no backfilling.
+
+The division ladder rows are seeded automatically from config the first time they're needed.
+
+#### User API
+
+Add the `HasLeagues` trait to your user model:
+
+```php
+use LevelUp\Experience\Concerns\HasLeagues;
+```
+
+```php
+$user->currentDivision();   // ?Division — the rung they hold (null until first-ever earn)
+$user->currentCohort();     // ?Cohort — this period's cohort (null if not yet enrolled this period)
+$user->cohortStandings();   // Collection<LeaderboardEntry> — ranked entries within the user's cohort only
+```
+
+`cohortStandings()` runs the league's Board restricted to the user's cohort-mates, so scores and ranks use the Board's own metric and period — rank 1 means first *in the cohort*, not globally. It returns an empty collection for users not in a cohort (and when no league is configured).
+
+The `divisions`, `cohorts`, and `cohort_user` tables ship as package migrations — re-publish migrations and migrate when upgrading.
+
 ## 🔍 Auditing
 
 Auditing keeps track each time a User gains points, levels up and what level to. It is **enabled by default** (since v3) because periodic leaderboards source their scores from the audit ledger — set `AUDIT_POINTS=false` (or `level-up.audit.enabled`) to turn it off if you don't need point history or time-windowed boards.

@@ -1,11 +1,11 @@
 ---
 name: level-up-development
-description: Build and work with cjmellor/level-up features, including XP, levels, tiers, achievements, streaks, multipliers, leaderboards, and auditing.
+description: Build and work with cjmellor/level-up features, including XP, levels, tiers, achievements, streaks, multipliers, leaderboards, leagues, and auditing.
 ---
 
 ## When to use this skill
 
-Use this skill when working with gamification features — adding experience points, levels, tiers, achievements, streaks, multipliers, leaderboards, or auditing — using cjmellor/level-up.
+Use this skill when working with gamification features — adding experience points, levels, tiers, achievements, streaks, multipliers, leaderboards, leagues, or auditing — using cjmellor/level-up.
 
 ## Core Concepts
 
@@ -15,6 +15,7 @@ Use this skill when working with gamification features — adding experience poi
 - **Streaks** — Track consecutive daily activities with freeze support.
 - **Multipliers** — Database-backed point modifiers with scoping, scheduling, and configurable stacking strategies.
 - **Leaderboard** — Rank users by any metric (XP by default) with competition-style rank numbers, optionally scoped to a tier or a time period (day/week/month/custom).
+- **Leagues** — A competitive cycle on one periodic Board: active users are grouped into small Cohorts within a Division each period and ranked within their Cohort. A Division is competition history, NOT a Tier (which is XP status) — a user holds both independently.
 - **Auditing** — Automatic history of all XP changes, level-ups, and tier changes.
 
 ## Setup
@@ -36,6 +37,7 @@ Add only the traits you need:
 use LevelUp\Experience\Concerns\GiveExperience;
 use LevelUp\Experience\Concerns\HasAchievements;
 use LevelUp\Experience\Concerns\HasChallenges;
+use LevelUp\Experience\Concerns\HasLeagues;
 use LevelUp\Experience\Concerns\HasStreaks;
 use LevelUp\Experience\Concerns\HasTiers;
 
@@ -46,6 +48,7 @@ class User extends Authenticatable
     use HasStreaks;          // Optional — streaks
     use HasTiers;           // Optional — tiers
     use HasChallenges;      // Optional — challenges
+    use HasLeagues;         // Optional — leagues (divisions/cohorts)
 }
 ```
 
@@ -591,7 +594,7 @@ Period boundary config under `level-up.leaderboard`: `week_starts_on` (Carbon da
 
 ### Named Boards
 
-A **Board** is a *declared* leaderboard — a named metric/period(/tier) combination registered in config — as opposed to an ad-hoc fluent query (composed, executed, forgotten). Only declared Boards are tracked over time (snapshots, rank events; leagues — later releases); declaring none means none of that machinery activates.
+A **Board** is a *declared* leaderboard — a named metric/period(/tier) combination registered in config — as opposed to an ad-hoc fluent query (composed, executed, forgotten). Only declared Boards are tracked over time (snapshots, rank events, leagues); declaring none means none of that machinery activates.
 
 ```php
 'leaderboard' => [
@@ -609,6 +612,36 @@ A **Board** is a *declared* leaderboard — a named metric/period(/tier) combina
 A **Snapshot** persists a Board's top `track_top` entries at a point in time (the `leaderboard_snapshots` table, `LeaderboardSnapshot` model: `board`, `user_id`, `rank`, `score`, `run_at`). The `level-up:snapshot-boards` command snapshots every declared Board, diffs against that Board's previous run, dispatches rank events, and prunes runs older than `level-up.leaderboard.snapshots.retention_days` (default 30). The host schedules it (e.g. `Schedule::command('level-up:snapshot-boards')->hourly()` in `routes/console.php`) — the package never auto-registers scheduler entries.
 
 Diff semantics: rank movement within the tracked depth → `LeaderboardRankChanged`; crossing the boundary → `UserEnteredTrackedDepth` / `UserLeftTrackedDepth`; below the tracked depth a Board is **silent by design** (no rows, no events — don't "fix" this). The first run of a Board is silent (no previous run, no delta). A re-run within the same instant replaces that run's rows (a run is identified by `run_at` to the second) and recomputes the same diff. Snapshots are *not* a cache — `rankOf()`/`around()` always compute fresh at any depth.
+
+### Leagues
+
+A **League** is a competitive cycle on one periodic Board: users are grouped into small **Cohorts** within a **Division** each Period, ranked within their Cohort. Declared under `level-up.leaderboard.league`:
+
+```php
+'league' => [
+    'board' => 'weekly-xp', // must be a declared Board with a 'period'; null (default) = dormant
+    'cohort_size' => 30,
+    'divisions' => [        // the ladder, ordered bottom to top
+        'Bronze' => ['promote' => 10, 'relegate' => 0],
+        'Silver' => ['promote' => 7, 'relegate' => 5],
+        'Gold' => ['promote' => 0, 'relegate' => 5],
+    ],
+],
+```
+
+`promote`/`relegate` counts are stored for the period rollover (a later release). Validation is loud, on first enrollment: undeclared board → `BoardNotFoundException`; board without a `period` → `LeagueBoardNotPeriodicException`; empty `divisions` → `LeagueDivisionsNotDeclaredException`.
+
+**A Division is NOT a Tier.** Tier = pure function of current XP (status). Division = path-dependent competition history (held via cohort placement). A user holds a Tier and competes in a Division simultaneously and independently — `HasTiers`, `experiences.tier_id`, and tier events are untouched by leagues. Never conflate the two ladders.
+
+**Lazy enrollment** (do not "fix" this): a user joins the current period's league on their first score-earning action (`PointsIncreased` listener), entering the open cohort of their Division; cohorts fill in arrival order and a new one opens at `cohort_size`. Ghosts (no qualifying activity in the period) are never cohorted and their Division carries over. New users enter the bottom Division; returning users re-enter the Division they held. Cohort sizes vary — the last cohort of a period may be small. No skill matching. Division rows (`divisions` table) are seeded from config on first need; cohorts live in `cohorts` + `cohort_user`.
+
+```php
+$user->currentDivision();   // ?Division — held rung; null until first-ever earn
+$user->currentCohort();     // ?Cohort — this period's cohort; null until enrolled this period
+$user->cohortStandings();   // Collection<LeaderboardEntry> ranked within the user's cohort only
+```
+
+`cohortStandings()` runs the league Board restricted to the cohort's members — rank 1 is first in the cohort, not globally. Empty collection when not cohorted or no league configured. Requires the `HasLeagues` trait.
 
 ## Auditing
 
