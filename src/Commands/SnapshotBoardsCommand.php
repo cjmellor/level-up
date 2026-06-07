@@ -15,10 +15,12 @@ use LevelUp\Experience\Models\LeaderboardSnapshot;
 use LevelUp\Experience\Services\LeaderboardService;
 use LevelUp\Experience\Support\LeaderboardEntry;
 
-#[\Illuminate\Console\Attributes\Description('Snapshot the top entries of every declared leaderboard Board, dispatch rank events, and prune old runs.')]
-#[\Illuminate\Console\Attributes\Signature('level-up:snapshot-boards')]
 class SnapshotBoardsCommand extends Command
 {
+    protected $signature = 'level-up:snapshot-boards';
+
+    protected $description = 'Snapshot the top entries of every declared leaderboard Board, dispatch rank events, and prune old runs.';
+
     public function handle(LeaderboardService $leaderboard): int
     {
         $boards = config()->array(key: 'level-up.leaderboard.boards');
