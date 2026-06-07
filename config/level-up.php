@@ -22,6 +22,7 @@ return [
         'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
         'division' => LevelUp\Experience\Models\Division::class,
         'cohort' => LevelUp\Experience\Models\Cohort::class,
+        'cohort_user' => LevelUp\Experience\Models\Pivots\CohortUser::class,
     ],
 
     /*
