@@ -44,14 +44,18 @@ class Cohort extends Model
     }
 
     /**
-     * @return BelongsToMany<Model, $this>
+     * @return BelongsToMany<Model, $this, Pivots\CohortUser, 'pivot'>
      */
     public function users(): BelongsToMany
     {
         /** @var class-string<Model> $userClass */
         $userClass = config(key: 'level-up.user.model');
 
+        /** @var class-string<Pivots\CohortUser> $pivotClass */
+        $pivotClass = config(key: 'level-up.models.cohort_user');
+
         return $this->belongsToMany(related: $userClass, table: config('level-up.tables.cohort_user'))
+            ->using($pivotClass)
             ->withTimestamps();
     }
 

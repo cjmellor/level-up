@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Date;
 use LevelUp\Experience\Events\LeaderboardRankChanged;
 use LevelUp\Experience\Models\Challenge;
 use LevelUp\Experience\Models\Experience;
+use LevelUp\Experience\Models\Level;
 use LevelUp\Experience\Tests\Fixtures\User;
 
 uses()->group('challenges', 'leaderboard');
@@ -120,8 +121,8 @@ test(description: 'rank events from another board do not satisfy a condition key
     $this->travelTo(Date::parse(time: '2026-06-01 06:00:00'));
 
     $rival = User::newFactory()->create();
-    Experience::query()->create(attributes: ['user_id' => $rival->id, 'level_id' => 2, 'experience_points' => 150]);
-    Experience::query()->create(attributes: ['user_id' => $this->user->id, 'level_id' => 1, 'experience_points' => 100]);
+    Experience::query()->create(attributes: ['user_id' => $rival->id, 'level_id' => Level::query()->where(column: 'level', operator: '=', value: 2)->value(column: 'id'), 'experience_points' => 150]);
+    Experience::query()->create(attributes: ['user_id' => $this->user->id, 'level_id' => Level::query()->where(column: 'level', operator: '=', value: 1)->value(column: 'id'), 'experience_points' => 100]);
     $this->user->enrollInChallenge(challenge: $challenge);
 
     $this->artisan(command: 'level-up:snapshot-boards')->assertSuccessful();
