@@ -14,7 +14,11 @@ use function Pest\Laravel\travel;
 
 uses()->group('streaks');
 
-beforeEach(closure: fn () => $this->activity = Activity::factory()->create());
+beforeEach(closure: function (): void {
+    $this->freezeTime();
+
+    $this->activity = Activity::factory()->create();
+});
 
 test(description: 'record a streak if one does not exist for the activity', closure: function (): void {
     Event::fake();
