@@ -11,7 +11,13 @@ If the user is on v1.x, run the `level-up-upgrade-v2` skill first, then come bac
 
 ## What's in v3
 
-A maintenance/cleanup release that:
+The headline is a metric-driven leaderboard: rank by any metric (`xp`, `level`, `streak`, `achievements`, `challenges`, or a custom `RankingMetric`), time Periods, `rankOf()`/`around()`, `restrictTo()` for friends boards, named Boards declared in config, Snapshots with rank-change events, a `leaderboard_rank` challenge condition, and Leagues (a Division ladder with Cohorts, promotion, and relegation). Three leaderboard breaking changes ride along:
+
+- `Leaderboard::generate()` returns `LeaderboardEntry` objects (`$entry->user`, `$entry->score`, `$entry->rank`) instead of a bare collection of `User` models.
+- `level-up.audit.enabled` defaults to `true` (was `false`) — periodic leaderboards source their scores from the `experience_audits` ledger.
+- Leaderboard ranks are computed with SQL window functions, requiring SQLite 3.25+ or MySQL 8+ (MariaDB 10.2+ and PostgreSQL support them natively).
+
+Plus cleanup:
 
 - Replaces the polymorphic `multiplier_scopes` table with two typed pivots — `multiplier_user` and `multiplier_tier`. Eliminates the need for v2.1's Postgres-specific morph-cast workaround.
 - Replaces `Multiplier::scopeTo($model)` with `scopeToUser($user)` / `scopeToTier($tier)` (plus `unscopeFromUser`, `unscopeFromTier`, `isGlobal`).
@@ -30,8 +36,9 @@ PHP and Laravel version requirements are unchanged (PHP 8.3+, Laravel 12 or 13).
 
 1. Confirm the user has backed up their database. The `multiplier_scopes` table will be transformed by a backfill migration — if anything goes wrong, they need a restore path.
 2. Confirm the user is on v2.x and not v1.x. If `composer show cjmellor/level-up | grep versions` shows v1.x, redirect to `level-up-upgrade-v2` first.
-3. Run `php artisan migrate:status` to ensure no pending migrations.
-4. Run `php artisan test` to ensure the test suite passes before starting.
+3. Check the database version if the app uses the leaderboard: ranks need window functions — SQLite 3.25+ or MySQL 8+ (MariaDB 10.2+ and PostgreSQL are fine). MySQL 5.7 cannot run v3 leaderboard queries.
+4. Run `php artisan migrate:status` to ensure no pending migrations.
+5. Run `php artisan test` to ensure the test suite passes before starting.
 
 ## Step 2: Update the composer constraint
 
@@ -134,13 +141,43 @@ If the host's User model defines any of `challenges()`, `streaks()`, `experience
 - Rename their User method (e.g. `userChallenges()`).
 - Move the level-up traits onto a separate `UserProfile` / `Gamification` model and compose it.
 
-## Step 11: Run migrations
+## Step 11: Update leaderboard consumers
+
+Search for `Leaderboard::`. Every terminal call (`generate()`, `around()`) now returns `LeaderboardEntry` objects instead of `User` models — update code that iterated users directly:
+
+```php
+// Before (v2.x)
+foreach (Leaderboard::generate() as $user) {
+    $user->name;
+    $user->experience->experience_points;
+}
+
+// After (v3.0)
+foreach (Leaderboard::generate() as $entry) {
+    $entry->user->name;  // the User model (experience still eager-loaded)
+    $entry->score;       // the user's score on the board's metric
+    $entry->rank;        // competition rank — tied scores share a rank (1, 1, 3)
+}
+```
+
+Blade templates, API resources, and tests that consumed the old shape need the same treatment.
+
+## Step 12: Decide on the audit default
+
+`level-up.audit.enabled` now defaults to `true`. Ask the user:
+
+- If they want time-windowed leaderboards (`period()` / `since()` on XP), auditing must stay on — and note that windowed boards only see activity recorded after auditing was enabled.
+- If they relied on the old default to keep `experience_audits` empty, set `AUDIT_POINTS=false` in `.env` — but periodic XP boards will then throw `MetricRequiresAuditingException`.
+- If their published config pins `'enabled' => env('AUDIT_POINTS', false)`, nothing changes until they update it.
+
+## Step 13: Publish and run migrations
 
 ```bash
+php artisan vendor:publish --tag="level-up-migrations"
 php artisan migrate
 ```
 
-The `migrate_multiplier_scopes_to_typed_pivots` migration runs automatically. If the user has existing `multiplier_scopes` data, it'll print a summary like:
+Publishing picks up the new leaderboard tables: `leaderboard_snapshots`, `divisions`, `cohorts`, and `cohort_user`. The `migrate_multiplier_scopes_to_typed_pivots` migration runs automatically. If the user has existing `multiplier_scopes` data, it'll print a summary like:
 
 ```
   level-up: migrated 47 multiplier scope rows (32 user, 15 tier) into typed pivot tables; dropped multiplier_scopes.
@@ -148,7 +185,7 @@ The `migrate_multiplier_scopes_to_typed_pivots` migration runs automatically. If
 
 If the migration encounters rows with a `scopeable_type` it doesn't recognise (not the configured user model and not the configured Tier class), it logs a warning and skips them — those rows are lost. Surface this to the user if it happens.
 
-## Step 12: Run tests
+## Step 14: Run tests
 
 ```bash
 php artisan test
@@ -156,7 +193,7 @@ php artisan test
 
 If anything fails, walk back through the steps above — most v3 breakage is straightforward find-and-replace.
 
-## Step 13: Verify
+## Step 15: Verify
 
 Spot-check that scoped multipliers still apply correctly:
 

@@ -33,6 +33,27 @@ This is the contents of the published config file:
 
 ```php
 return [
+
+    'models' => [
+        'achievement' => LevelUp\Experience\Models\Achievement::class,
+        'activity' => LevelUp\Experience\Models\Activity::class,
+        'experience' => LevelUp\Experience\Models\Experience::class,
+        'experience_audit' => LevelUp\Experience\Models\ExperienceAudit::class,
+        'level' => LevelUp\Experience\Models\Level::class,
+        'streak' => LevelUp\Experience\Models\Streak::class,
+        'streak_history' => LevelUp\Experience\Models\StreakHistory::class,
+        'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
+        'tier' => LevelUp\Experience\Models\Tier::class,
+        'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_user' => LevelUp\Experience\Models\Pivots\MultiplierUser::class,
+        'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
+        'challenge' => LevelUp\Experience\Models\Challenge::class,
+        'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
+        'division' => LevelUp\Experience\Models\Division::class,
+        'cohort' => LevelUp\Experience\Models\Cohort::class,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | User Foreign Key
@@ -40,10 +61,18 @@ return [
     |
     | This value is the foreign key that will be used to relate the Experience model to the User model.
     |
+    | 'foreign_key_type' controls the DB column type used for the user FK on
+    | every package table. Set to 'uuid' or 'ulid' if your host User model
+    | uses HasUuids / HasUlids. Leave as 'bigint' for standard auto-increment
+    | user IDs. This only affects fresh migrations; existing installs keep
+    | whichever column type they originally migrated with.
+    |
      */
     'user' => [
         'foreign_key' => 'user_id',
+        'foreign_key_type' => 'bigint',
         'model' => App\Models\User::class,
+        'users_table' => 'users',
     ],
 
     /*
@@ -51,12 +80,129 @@ return [
     | Package Entities
     |--------------------------------------------------------------------------
     |
-    | Set 'id_type' to 'uuid' or 'ulid' if you want package IDs to be opaque.
-    | Only affects fresh installs — see "Customizing Identifiers" below.
+    | 'id_type' controls the primary key column type used for the package's
+    | own tables (experiences, levels, achievements, etc.) and every internal
+    | foreign key between them. Set to 'uuid' or 'ulid' if you want package
+    | IDs to be opaque (e.g., for safe exposure on a public API surface).
+    | Leave as 'bigint' for standard auto-increment IDs. Only affects fresh
+    | migrations; existing installs keep whichever column type they already
+    | migrated with. See the README "Customizing Identifiers" section for
+    | guidance on switching an existing install.
     |
     */
     'entities' => [
         'id_type' => 'bigint',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Table Prefix
+    |--------------------------------------------------------------------------
+    |
+    | Prepended to every default package table name. Leave empty for no prefix.
+    | Per-table overrides in 'tables' below are taken verbatim and are NOT
+    | prefixed.
+    |
+    */
+    'table_prefix' => env('LEVEL_UP_TABLE_PREFIX', ''),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tables
+    |--------------------------------------------------------------------------
+    |
+    | The table name used for each of the package's models. Leave a value
+    | equal to the default to apply table_prefix above; set it to any other
+    | string to override that table's name exactly (no prefix applied).
+    |
+    */
+    'tables' => [
+        'experiences' => 'experiences',
+        'experience_audits' => 'experience_audits',
+        'levels' => 'levels',
+        'achievements' => 'achievements',
+        'achievement_user' => 'achievement_user',
+        'streaks' => 'streaks',
+        'streak_histories' => 'streak_histories',
+        'streak_activities' => 'streak_activities',
+        'tiers' => 'tiers',
+        'multipliers' => 'multipliers',
+        'multiplier_user' => 'multiplier_user',
+        'multiplier_tier' => 'multiplier_tier',
+        'challenges' => 'challenges',
+        'challenge_user' => 'challenge_user',
+        'leaderboard_snapshots' => 'leaderboard_snapshots',
+        'divisions' => 'divisions',
+        'cohorts' => 'cohorts',
+        'cohort_user' => 'cohort_user',
+    ],
+
+    /*
+    |-----------------------------------------------------------------------
+    | Leaderboard
+    |-----------------------------------------------------------------------
+    |
+    | Configure the leaderboard. 'metrics' maps registry keys to
+    | RankingMetric classes — register custom metrics by adding entries.
+    | 'default_metric' is used when no metric is specified.
+    |
+    | 'week_starts_on' sets the boundary of Period::Week as a Carbon
+    | day-of-week number: 0 (Sunday) through 6 (Saturday). Defaults to
+    | Monday. 'timezone' controls which timezone period boundaries
+    | (start of day/week/month) are computed in; null uses the
+    | application timezone.
+    |
+    | 'boards' declares named Boards — leaderboards the package can
+    | track over time. Each entry maps a board name to a 'metric'
+    | (required registry key), an optional 'period' ('day', 'week',
+    | or 'month'), an optional 'tier' (a tier name), and an optional
+    | 'track_top' (the tracked depth — how many top entries the
+    | snapshot run stores and events, default 100). For example:
+    | 'weekly-xp' => ['metric' => 'xp', 'period' => 'week'].
+    |
+    | 'snapshots.retention_days' controls how long snapshot runs are
+    | kept; the level-up:snapshot-boards command prunes older runs.
+    |
+    | 'league' declares the League — a competitive cycle built on one
+    | periodic Board. 'board' names the Board users compete on (it must
+    | be declared under 'boards' and have a 'period'); leave it null and
+    | the league machinery stays dormant. 'cohort_size' caps how many
+    | users share a Cohort (default 30). 'divisions' is the ladder,
+    | ordered bottom to top; each entry maps a Division name to its
+    | 'promote' and 'relegate' counts, which are read by the
+    | level-up:league-rollover command at period close. For example:
+    |
+    | 'league' => [
+    |     'board' => 'weekly-xp',
+    |     'cohort_size' => 30,
+    |     'divisions' => [
+    |         'Bronze' => ['promote' => 10, 'relegate' => 0],
+    |         'Silver' => ['promote' => 7, 'relegate' => 5],
+    |         'Gold' => ['promote' => 0, 'relegate' => 5],
+    |     ],
+    | ],
+    |
+    */
+    'leaderboard' => [
+        'default_metric' => 'xp',
+        'metrics' => [
+            'xp' => LevelUp\Experience\Metrics\ExperienceMetric::class,
+            'level' => LevelUp\Experience\Metrics\LevelMetric::class,
+            'streak' => LevelUp\Experience\Metrics\StreakMetric::class,
+            'achievements' => LevelUp\Experience\Metrics\AchievementMetric::class,
+            'challenges' => LevelUp\Experience\Metrics\ChallengeMetric::class,
+        ],
+        'boards' => [],
+        'snapshots' => [
+            'retention_days' => 30,
+        ],
+        'league' => [
+            'board' => null,
+            'cohort_size' => 30,
+            'divisions' => [],
+        ],
+        'week_starts_on' => Carbon\CarbonInterface::MONDAY,
+        'timezone' => null,
     ],
 
     /*
@@ -81,6 +227,9 @@ return [
     'multiplier' => [
         'enabled' => env(key: 'MULTIPLIER_ENABLED', default: true),
         'stack_strategy' => env(key: 'MULTIPLIER_STACK', default: 'compound'),
+        // 'compound'  — multipliers multiply each other: 2 × 5 = 10x
+        // 'additive'  — multipliers sum:              2 + 5 = 7x
+        // 'highest'   — only the largest applies:  max(2, 5) = 5x
     ],
 
     /*
@@ -102,11 +251,13 @@ return [
     | Audit
     | -------------------------------------------------------------------------
     |
-    | Set the audit configuration.
+    | Set the audit configuration. Auditing records every point transaction
+    | in the experience_audits ledger and is required for time-windowed
+    | (periodic) leaderboards. Enabled by default since v3.
     |
     */
     'audit' => [
-        'enabled' => env(key: 'AUDIT_POINTS', default: false),
+        'enabled' => env(key: 'AUDIT_POINTS', default: true),
     ],
 
     /*
@@ -131,12 +282,38 @@ return [
      */
     'freeze_duration' => env(key: 'STREAK_FREEZE_DURATION', default: 1),
 
+    /*
+    | -------------------------------------------------------------------------
+    | Tiers
+    | -------------------------------------------------------------------------
+    |
+    | Configure the tier system. Tiers provide named status brackets
+    | (e.g. Bronze, Silver, Gold) based on experience points.
+    |
+    */
     'tiers' => [
         'enabled' => env(key: 'TIERS_ENABLED', default: true),
         'demotion' => env(key: 'TIER_DEMOTION', default: false),
+
+        /*
+        | Tier-based streak freeze duration (in days). Map tier names
+        | to the number of days a streak can be frozen.
+        | Falls back to the global 'freeze_duration' if not set.
+        |
+        | Example: ['Bronze' => 1, 'Silver' => 2, 'Gold' => 3]
+        */
         'streak_freeze_days' => [],
     ],
 
+    /*
+    | -------------------------------------------------------------------------
+    | Challenges
+    | -------------------------------------------------------------------------
+    |
+    | Configure the challenges system. Challenges are multi-condition goals
+    | that users can enroll in and complete for rewards.
+    |
+    */
     'challenges' => [
         'enabled' => env(key: 'CHALLENGES_ENABLED', default: true),
     ],
@@ -752,7 +929,7 @@ Leaderboard::board('weekly-xp')
 
 Declarations are validated loudly at resolution rather than producing a silently wrong board: an unknown board name throws `BoardNotFoundException`, a missing or unknown `metric` throws `MetricNotFoundException`, a `period` declared for a non-Windowable metric (such as `level`) throws `MetricNotWindowableException`, an invalid `period` value throws a `ValueError`, and a `tier` name with no matching tier throws a `ModelNotFoundException`.
 
-Why declare a board instead of just querying? Boards are the leaderboards the package will **track over time** — snapshots, rank-change events, and leagues (arriving in later releases) apply only to declared Boards. Ad-hoc queries stay exactly what they are: composed, executed, forgotten. Declare no boards and none of that machinery activates.
+Why declare a board instead of just querying? Boards are the leaderboards the package **tracks over time** — snapshots, rank-change events, and leagues apply only to declared Boards. Ad-hoc queries stay exactly what they are: composed, executed, forgotten. Declare no boards and none of that machinery activates.
 
 ### Snapshots and rank events
 
@@ -888,7 +1065,7 @@ The semantics in detail:
 - **Ties split by standings order.** Cohort standings order by score, then by user key, so a tie straddling the promote or relegate boundary is resolved by that order — competition rank numbers (1, 1, 3) don't change how many users cross the line.
 - **Ghosts don't move.** A user who was never cohorted in the closed period keeps their Division and gets no event — relegation punishes losing, not absence.
 - **Idempotent.** Each rolled cohort is stamped with `rolled_over_at`; re-running the command for an already-rolled period is a no-op, so a scheduler double-fire is harmless.
-- **Movement lands next period.** The rollover records each mover's new Division but enrolls nobody — lazy enrollment places the user into a cohort of their new Division on their first earn of the new period. `currentDivision()` reflects the move immediately.
+- **Movement lands next period.** The rollover records each mover's new Division (as `next_division_id` on their cohort membership) but enrolls nobody — lazy enrollment places the user into a cohort of their new Division on their first earn of the new period. `currentDivision()` reflects the move immediately.
 
 Each movement dispatches a single event — mirroring the tier event grammar, with a direction enum instead of separate promoted/relegated classes:
 
@@ -899,6 +1076,44 @@ Each movement dispatches a single event — mirroring the tier event grammar, wi
 Non-movers and ghosts dispatch nothing.
 
 The `divisions`, `cohorts`, and `cohort_user` tables ship as package migrations — re-publish migrations and migrate when upgrading.
+
+### Recipes: what the package doesn't build
+
+The package owns the **ranking logic** — scores, ranks, ties, periods, snapshots, leagues. Display and app-specific queries belong to your application, and some "leaderboard" needs don't need leaderboard machinery at all. A few patterns:
+
+**Users ordered by raw XP.** If you just want users sorted by points — no rank numbers, no tie semantics, no time windows — one `orderByDesc` on the experiences table does it:
+
+```php
+use LevelUp\Experience\Models\Experience;
+
+$users = Experience::query()
+    ->with('user')
+    ->orderByDesc('experience_points')
+    ->limit(10)
+    ->get()
+    ->map(fn (Experience $experience) => $experience->user);
+```
+
+**Top-N boards are one-liners.** When you do want ranks and ties, compose metrics and periods instead of writing queries:
+
+```php
+Leaderboard::generate(limit: 10);                                 // top 10 by XP, all-time
+Leaderboard::by('xp')->period(Period::Week)->generate(limit: 10); // top 10 earners this week
+Leaderboard::by('achievements')->period(Period::Month)->generate(limit: 3); // this month's achievements podium
+```
+
+**Percentile / "top 10%" display.** Derive it from a rank and a total count — the package supplies the rank; your app defines the population:
+
+```php
+$rank = Leaderboard::rankOf(user: $user);
+$total = User::query()->whereHas('experience')->count();
+
+$topPercent = $rank === null ? null : (int) ceil($rank / $total * 100); // 4 → "top 4%"
+```
+
+**A friends board.** Your app owns the social graph; pass it through [`restrictTo()`](#friends-boards-and-custom-populations) and ranks are computed within the friend set — not filtered down from the global board.
+
+The package ships **no UI** — Blade views, Livewire components, and API resources for displaying any of this are deliberately your job.
 
 ## 🔍 Auditing
 

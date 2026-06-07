@@ -2,7 +2,7 @@
 
 ## v2.x -> v3.0
 
-v3.0 is a breaking-change release. Most users only need to run `composer require cjmellor/level-up:^3.0` then `php artisan migrate` — the multiplier schema reshape is backfilled automatically. Application code touching `Multiplier::scopeTo()` needs updating; the legacy `'table'` config key and the `UserForeignKey::on()` migration helper are gone.
+v3.0 is a breaking-change release, headlined by a metric-driven leaderboard: rank by any metric, time Periods, named Boards, Snapshots with rank events, and Leagues with Divisions and Cohorts. Most users only need to run `composer require cjmellor/level-up:^3.0`, re-publish migrations, then `php artisan migrate` — the multiplier schema reshape is backfilled automatically and the new leaderboard tables are created. Application code touching `Multiplier::scopeTo()` or consuming `Leaderboard::generate()` needs updating; the legacy `'table'` config key and the `UserForeignKey::on()` migration helper are gone.
 
 The boost skill `level-up-upgrade-v3` walks an LLM through this upgrade interactively if you're using boost.
 
@@ -86,6 +86,39 @@ Internal trait helpers like `experienceRelation()`, `challengesRelation()`, `str
 - Rename your method to avoid the collision (e.g. `userChallenges()`), or
 - Move the level-up traits onto a separate `UserProfile` / `Gamification` model and compose it onto User (same pattern Spatie's permission package uses).
 
+### `Leaderboard::generate()` returns `LeaderboardEntry` objects
+
+**Likelihood Of Impact: High** (if you use the leaderboard anywhere); **None** (if you don't).
+
+In v2.x, `Leaderboard::generate()` returned a collection of `User` models (with `experience` eager-loaded), ordered by points. In v3 every leaderboard query returns `LeaderboardEntry` objects — the user together with their score and rank. Score and rank live on the entry, never on the User model:
+
+```php
+// Before (v2.x)
+$users = Leaderboard::generate();
+
+foreach ($users as $user) {
+    $user->name;
+    $user->experience->experience_points;
+}
+
+// After (v3.0)
+$entries = Leaderboard::generate();
+
+foreach ($entries as $entry) {
+    $entry->user;  // the User model (experience still eager-loaded)
+    $entry->score; // the user's score on the board's metric
+    $entry->rank;  // competition rank — tied scores share a rank (1, 1, 3)
+}
+```
+
+`generate(paginate: true)` paginates entries the same way, and ranks are board-wide even when limiting or paginating. See the [Leaderboard section in the README](README.md#-leaderboard) for everything the query can now do — metrics, periods, `rankOf()` / `around()`, `restrictTo()`, Boards, Snapshots, and Leagues.
+
+### Leaderboard ranks require a window-function-capable database
+
+**Likelihood Of Impact: Low** (only outdated database versions are affected).
+
+v3 computes leaderboard ranks in the database with SQL window functions (`RANK() OVER`), so the leaderboard requires **SQLite 3.25+** or **MySQL 8+**; MariaDB 10.2+ and PostgreSQL support window functions natively. MySQL 5.7 (EOL) is not supported. Features that never run a leaderboard query are unaffected.
+
 ### Auditing is now enabled by default
 
 **Likelihood Of Impact: Medium** (every install that never published the config or never set `AUDIT_POINTS`).
@@ -147,8 +180,20 @@ The migration's `down()` previously generated invalid Postgres syntax (`ALTER CO
 ### Database compatibility
 
 - **PostgreSQL:** fully supported across all features, natively. The `MorphToManyWithTextCast` workaround from v2.1 is gone — schema is now Postgres-native.
-- **MySQL:** no behaviour change vs v2.1.
-- **SQLite:** ensure foreign-key enforcement is enabled (`PRAGMA foreign_keys = ON`) — Laravel's default does this, but verify if you've customised your `database.php` connection config.
+- **MySQL:** version 8+ is required for leaderboard rank queries (window functions — see above); MariaDB 10.2+ also works. No other behaviour change vs v2.1.
+- **SQLite:** version 3.25+ is required for leaderboard rank queries. Ensure foreign-key enforcement is enabled (`PRAGMA foreign_keys = ON`) — Laravel's default does this, but verify if you've customised your `database.php` connection config.
+
+### New: Leaderboards, Boards, Snapshots, and Leagues
+
+v3 ships the full leaderboard feature set: rank by any metric (`xp`, `level`, `streak`, `achievements`, `challenges`, or a custom `RankingMetric`), time Periods sourced from the audit ledger, `rankOf()` / `around()`, `restrictTo()` for friends boards and custom populations, named Boards declared in config, Snapshots with rank-change events, a `leaderboard_rank` challenge condition, and Leagues — a Division ladder with Cohorts, promotion, and relegation. See the [Leaderboard section in the README](README.md#-leaderboard).
+
+**New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
+
+- `create_leaderboard_snapshots_table` — Snapshot storage for declared Boards
+- `create_divisions_table` — the league's Division ladder
+- `create_cohorts_table` and `create_cohort_user_table` — Cohort membership per Period
+
+All of it is opt-in: declare no Boards and no league, and only the live query API is active. Snapshots and league rollovers run via two independent commands — `level-up:snapshot-boards` and `level-up:league-rollover` — which you schedule from your application; the package never auto-registers scheduler entries.
 
 ## v1.x -> v2.0
 

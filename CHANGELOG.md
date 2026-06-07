@@ -13,11 +13,24 @@ All notable changes to `level-up` will be documented in this file.
 - **`LevelUp\Experience\Support\UserForeignKey` helper class removed.** Replaced by a `$table->userForeignId()` Blueprint macro that reads the same config and routes to `foreignId()` / `foreignUuid()` / `foreignUlid()`.
 - **Trait method aliasing helpers removed** (cherry-picked from v2.1's revert of PR #123). Host User models with colliding `challenges()` / `streaks()` / `experience()` / `experienceHistory()` methods need to rename or compose into a wrapper model.
 - **`setPoints()` recalculates level and tier.** Previously a raw column write with no side effects; now fires `UserLevelledUp` / `UserTierUpdated` events when the new point total implies a different placement.
-- **`level-up.audit.enabled` now defaults to `true`** (was `false`). Time-windowed leaderboards source their scores from the `experience_audits` ledger, so auditing is on out of the box. Set `AUDIT_POINTS=false` to opt out. See UPGRADE.md.
+- **`level-up.audit.enabled` now defaults to `true`** (was `false`). Time-windowed leaderboards source their scores from the `experience_audits` ledger, so auditing is on out of the box. Set `AUDIT_POINTS=false` to opt out — but periodic XP boards then throw `MetricRequiresAuditingException`. See UPGRADE.md. (#163)
+- **`Leaderboard::generate()` returns `LeaderboardEntry` objects** — `$entry->user`, `$entry->score`, `$entry->rank` — instead of a bare collection of `User` models. Score and rank live on the entry, never on the User model. See UPGRADE.md. (#160)
+- **Leaderboard ranks require a window-function-capable database** — SQLite 3.25+ or MySQL 8+; MariaDB 10.2+ and PostgreSQL support window functions natively. MySQL 5.7 (EOL) is not supported. (#161)
 - **Excess points cap at the top level instead of throwing.** `addPoints($amount)` where `$amount` exceeds the highest defined level's threshold no longer throws — the user is capped at the highest level.
 
 ### Added
 
+- **Metric-driven leaderboard** — rank by any metric via the `RankingMetric` contract and `Leaderboard::by()`; built-in metrics are registered in `level-up.leaderboard.metrics`, with `MetricNotFoundException` / `MetricDisabledException` on bad input. (#160)
+- **Rank numbers and ties** — competition semantics (1, 1, 3) computed with SQL window functions, deterministic tiebreak ordering, plus `rankOf()` and `around()`. (#161)
+- **`level` and `streak` state metrics** — rank by current level, or by streak count for an Activity via `new StreakMetric(activity: $activity)`. (#162)
+- **Time Periods** — `period(Period::Day|Week|Month)` and `since(start:, until:)` window a board to activity inside the range; XP windows are sourced from the `experience_audits` ledger; `week_starts_on` / `timezone` config controls boundaries. (#163)
+- **`achievements` and `challenges` flow metrics** — rank by achievements earned (secret ones count) or challenges completed, all-time or per Period. (#164)
+- **`restrictTo()`** — host-defined populations (friends boards, guilds, tournament brackets); ranks are computed within the restricted set. (#165)
+- **Named Boards** — declare metric/period(/tier) combinations under `level-up.leaderboard.boards` and resolve them with `Leaderboard::board()`; only declared Boards are tracked over time. (#166)
+- **Snapshots and rank events** — the `level-up:snapshot-boards` command persists each Board's top entries down to its Tracked Depth (`track_top`, default 100), diffs consecutive runs, dispatches `LeaderboardRankChanged` / `UserEnteredTrackedDepth` / `UserLeftTrackedDepth`, and prunes runs per `snapshots.retention_days`. (#167)
+- **`leaderboard_rank` challenge condition** — "finish top N on a named Board", progressed by snapshot runs and validated against the Board's Tracked Depth at creation. (#168)
+- **Leagues** — a Division ladder with lazy Cohort enrollment on one periodic Board; `HasLeagues` trait with `currentDivision()`, `currentCohort()`, and `cohortStandings()`. (#169)
+- **League rollover** — the `level-up:league-rollover` command computes each Cohort's final standings live, promotes and relegates per the Division's configured counts, and dispatches `UserDivisionChanged`. (#170)
 - `Multiplier::scopeToUser`, `scopeToTier`, `unscopeFromUser`, `unscopeFromTier`, `isGlobal` methods.
 - `$table->userForeignId()` Blueprint macro alongside `entityId()` / `entityForeignId()`.
 - `migrate_multiplier_scopes_to_typed_pivots` migration — backfills v2.x data into the v3 schema, no-op on fresh installs.

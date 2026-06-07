@@ -115,7 +115,7 @@ $user->addPoints(50, multiplier: 2);
 $user->addPoints(50, type: AuditType::Add->value, reason: 'Bonus');
 ```
 
-Creates an experience record if none exists, otherwise increments. Automatically levels up if the threshold is crossed. Throws if the amount exceeds the highest level's `next_level_experience`.
+Creates an experience record if none exists, otherwise increments. Automatically levels up if the threshold is crossed. Points past the highest level's `next_level_experience` cap the user at the top level (no exception).
 
 ### Deduct Points
 
@@ -132,7 +132,7 @@ Throws `Exception` if the user has no experience record.
 $user->setPoints(500);
 ```
 
-Directly overwrites the XP total. Throws `Exception` if the user has no experience record.
+Directly overwrites the XP total, then recalculates level and tier from the new total (firing `UserLevelledUp` / `UserTierUpdated` as needed). Throws `Exception` if the user has no experience record. Writes no audit record — it is an administrative override, invisible to periodic leaderboards.
 
 ### Get Points
 
@@ -578,7 +578,7 @@ Leaderboard::rankOf(user: $user);               // Exact rank (int), null if abs
 Leaderboard::around(user: $user, range: 2);     // Up to 2 entries above + user + up to 2 below; empty if absent
 ```
 
-Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`, `period()`, `since()`, and `restrictTo()`. `restrictTo(Closure)` is the seam for host-defined populations the package can't know about (friends boards, guilds, tournament brackets): the closure narrows the base user query (`fn ($query) => $query->whereIn('id', $friendIds)`), and ranks are computed *within* the restricted set — rank 1 among friends, not the global rank filtered down. Like the other fluent state it is consumed by the terminal call, so the next board is global again. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
+Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`, `period()`, `since()`, and `restrictTo()`. `restrictTo(Closure)` is the seam for host-defined populations the package can't know about (friends boards, guilds, tournament brackets): the closure narrows the base user query (`fn ($query) => $query->whereIn('id', $friendIds)`), and ranks are computed *within* the restricted set — rank 1 among friends, not the global rank filtered down. Like the other fluent state it is consumed by the terminal call, so the next board is global again. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+ / MariaDB 10.2+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
 
 Built-in metrics: `xp` (experience points, the default), `level` (current level), `streak` (current streak count for an Activity), `achievements` (achievements earned), and `challenges` (challenges completed). `level` and `streak` are state metrics — they rank by a current snapshot, and users without the relevant record are absent from the board. The streak metric requires an Activity: construct the instance (`new StreakMetric(activity: $activity)`); using the bare `streak` registry key without one throws `MetricRequiresActivityException`.
 
@@ -775,11 +775,35 @@ return [
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
+        'division' => LevelUp\Experience\Models\Division::class,
+        'cohort' => LevelUp\Experience\Models\Cohort::class,
     ],
     'user' => [
         'foreign_key' => 'user_id',
         'model' => App\Models\User::class,
         'users_table' => 'users',
+    ],
+    'leaderboard' => [
+        'default_metric' => 'xp',
+        'metrics' => [
+            'xp' => LevelUp\Experience\Metrics\ExperienceMetric::class,
+            'level' => LevelUp\Experience\Metrics\LevelMetric::class,
+            'streak' => LevelUp\Experience\Metrics\StreakMetric::class,
+            'achievements' => LevelUp\Experience\Metrics\AchievementMetric::class,
+            'challenges' => LevelUp\Experience\Metrics\ChallengeMetric::class,
+        ],
+        'boards' => [],
+        'snapshots' => [
+            'retention_days' => 30,
+        ],
+        'league' => [
+            'board' => null,
+            'cohort_size' => 30,
+            'divisions' => [],
+        ],
+        'week_starts_on' => Carbon\CarbonInterface::MONDAY,
+        'timezone' => null,
     ],
     'starting_level' => 1,
     'multiplier' => [
@@ -792,7 +816,7 @@ return [
         'points_continue' => env('LEVEL_CAP_POINTS_CONTINUE', true),
     ],
     'audit' => [
-        'enabled' => env('AUDIT_POINTS', false),
+        'enabled' => env('AUDIT_POINTS', true),
     ],
     'archive_streak_history' => [
         'enabled' => env('ARCHIVE_STREAK_HISTORY_ENABLED', true),

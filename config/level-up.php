@@ -139,8 +139,8 @@ return [
     | the league machinery stays dormant. 'cohort_size' caps how many
     | users share a Cohort (default 30). 'divisions' is the ladder,
     | ordered bottom to top; each entry maps a Division name to its
-    | 'promote' and 'relegate' counts, which are read by the rollover
-    | (arriving in a later release). For example:
+    | 'promote' and 'relegate' counts, which are read by the
+    | level-up:league-rollover command at period close. For example:
     |
     | 'league' => [
     |     'board' => 'weekly-xp',
