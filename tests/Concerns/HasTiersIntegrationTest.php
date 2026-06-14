@@ -104,5 +104,5 @@ test(description: 'leaderboard can be filtered by tier', closure: function (): v
     $silverLeaderboard = resolve('leaderboard')->forTier('Silver')->generate();
 
     expect($silverLeaderboard)->toHaveCount(count: 1)
-        ->and($silverLeaderboard->first()->id)->toBe(expected: $this->user->id);
+        ->and($silverLeaderboard->first()->user->id)->toBe(expected: $this->user->id);
 });

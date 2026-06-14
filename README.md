@@ -561,18 +561,34 @@ public int $amount,
 
 ## 📈 Leaderboard
 
-The package also includes a leaderboard feature to track and display user rankings based on their experience points.
-
-The Leaderboard comes as a Service.
+The package includes a metric-driven leaderboard. A leaderboard ranks users by a **metric** — experience points by default — and returns `LeaderboardEntry` objects exposing the `user` and their `score`.
 
 ```php
-Leaderboard::generate();
+$entries = Leaderboard::generate();
+
+foreach ($entries as $entry) {
+    $entry->user;  // the User model (with Experience eager-loaded)
+    $entry->score; // the user's score on this metric
+}
 ```
 
-This generates a User model along with its Experience and Level data and ordered by the Users’ experience points.
+Pass `paginate: true` for a paginator of entries, or `limit:` to cap the result count.
 
-> The Leaderboard is very basic and has room for improvement
->
+### Choosing a metric
+
+Metrics are registered in the config under `level-up.leaderboard.metrics`, and the default lives at `level-up.leaderboard.default_metric`. Select one explicitly with `by()` — it accepts a registry key, a class-string, or a metric instance:
+
+```php
+Leaderboard::by('xp')->generate();
+Leaderboard::by(MyCustomMetric::class)->generate();
+Leaderboard::by(new MyCustomMetric())->generate();
+```
+
+An unknown key throws `MetricNotFoundException`; a metric whose underlying feature is disabled throws `MetricDisabledException` rather than returning an empty board.
+
+### Custom metrics
+
+Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.
 
 ## 🔍 Auditing
 
