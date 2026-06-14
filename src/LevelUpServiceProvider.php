@@ -7,6 +7,7 @@ namespace LevelUp\Experience;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Schema\ForeignIdColumnDefinition;
 use InvalidArgumentException;
+use LevelUp\Experience\Commands\LeagueRolloverCommand;
 use LevelUp\Experience\Commands\SnapshotBoardsCommand;
 use LevelUp\Experience\Providers\EventServiceProvider;
 use LevelUp\Experience\Services\LeaderboardService;
@@ -33,6 +34,9 @@ class LevelUpServiceProvider extends PackageServiceProvider
             'challenges' => 'challenges',
             'challenge_user' => 'challenge_user',
             'leaderboard_snapshots' => 'leaderboard_snapshots',
+            'divisions' => 'divisions',
+            'cohorts' => 'cohorts',
+            'cohort_user' => 'cohort_user',
         ];
 
         $resolved = [];
@@ -66,6 +70,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
             ->name(name: 'level-up')
             ->hasConfigFile()
             ->hasCommand(commandClassName: SnapshotBoardsCommand::class)
+            ->hasCommand(commandClassName: LeagueRolloverCommand::class)
             ->hasMigrations([
                 'create_levels_table',
                 'create_experiences_table',
@@ -90,6 +95,9 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_challenges_table',
                 'create_challenge_user_table',
                 'create_leaderboard_snapshots_table',
+                'create_divisions_table',
+                'create_cohorts_table',
+                'create_cohort_user_table',
             ]);
     }
 

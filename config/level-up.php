@@ -20,6 +20,9 @@ return [
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
         'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
+        'division' => LevelUp\Experience\Models\Division::class,
+        'cohort' => LevelUp\Experience\Models\Cohort::class,
+        'cohort_user' => LevelUp\Experience\Models\Pivots\CohortUser::class,
     ],
 
     /*
@@ -100,6 +103,9 @@ return [
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
         'leaderboard_snapshots' => 'leaderboard_snapshots',
+        'divisions' => 'divisions',
+        'cohorts' => 'cohorts',
+        'cohort_user' => 'cohort_user',
     ],
 
     /*
@@ -128,6 +134,25 @@ return [
     | 'snapshots.retention_days' controls how long snapshot runs are
     | kept; the level-up:snapshot-boards command prunes older runs.
     |
+    | 'league' declares the League — a competitive cycle built on one
+    | periodic Board. 'board' names the Board users compete on (it must
+    | be declared under 'boards' and have a 'period'); leave it null and
+    | the league machinery stays dormant. 'cohort_size' caps how many
+    | users share a Cohort (default 30). 'divisions' is the ladder,
+    | ordered bottom to top; each entry maps a Division name to its
+    | 'promote' and 'relegate' counts, which are read by the rollover
+    | (arriving in a later release). For example:
+    |
+    | 'league' => [
+    |     'board' => 'weekly-xp',
+    |     'cohort_size' => 30,
+    |     'divisions' => [
+    |         'Bronze' => ['promote' => 10, 'relegate' => 0],
+    |         'Silver' => ['promote' => 7, 'relegate' => 5],
+    |         'Gold' => ['promote' => 0, 'relegate' => 5],
+    |     ],
+    | ],
+    |
     */
     'leaderboard' => [
         'default_metric' => 'xp',
@@ -141,6 +166,11 @@ return [
         'boards' => [],
         'snapshots' => [
             'retention_days' => 30,
+        ],
+        'league' => [
+            'board' => null,
+            'cohort_size' => 30,
+            'divisions' => [],
         ],
         'week_starts_on' => Carbon\CarbonInterface::MONDAY,
         'timezone' => null,

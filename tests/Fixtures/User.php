@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use LevelUp\Experience\Concerns\GiveExperience;
 use LevelUp\Experience\Concerns\HasAchievements;
 use LevelUp\Experience\Concerns\HasChallenges;
+use LevelUp\Experience\Concerns\HasLeagues;
 use LevelUp\Experience\Concerns\HasStreaks;
 use LevelUp\Experience\Concerns\HasTiers;
 use LevelUp\Experience\Tests\Fixtures\Factories\UserFactory;
@@ -20,6 +21,7 @@ class User extends Model
     use HasAchievements;
     use HasChallenges;
     use HasFactory;
+    use HasLeagues;
     use HasStreaks;
     use HasTiers;
 

@@ -1,0 +1,25 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create(config('level-up.tables.cohort_user'), function (Blueprint $table) {
+            $table->entityId();
+            $table->userForeignId()->constrained(config('level-up.user.users_table'));
+            $table->entityForeignId(column: 'cohort_id')->constrained(table: config('level-up.tables.cohorts'));
+            $table->entityForeignId(column: 'next_division_id')->nullable()->constrained(table: config('level-up.tables.divisions'));
+            $table->timestamps();
+
+            $table->unique([config('level-up.user.foreign_key'), 'cohort_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('level-up.tables.cohort_user'));
+    }
+};

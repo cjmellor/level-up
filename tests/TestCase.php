@@ -75,6 +75,9 @@ class TestCase extends Orchestra
             'create_challenges_table',
             'create_challenge_user_table',
             'create_leaderboard_snapshots_table',
+            'create_divisions_table',
+            'create_cohorts_table',
+            'create_cohort_user_table',
         ];
 
         foreach ($migrations as $migrationFile) {

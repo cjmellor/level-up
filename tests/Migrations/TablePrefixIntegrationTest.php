@@ -32,6 +32,9 @@ class TablePrefixIntegrationTest extends TestCase
         $this->assertTrue(Schema::hasTable('pfx_challenges'));
         $this->assertTrue(Schema::hasTable('pfx_challenge_user'));
         $this->assertTrue(Schema::hasTable('pfx_leaderboard_snapshots'));
+        $this->assertTrue(Schema::hasTable('pfx_divisions'));
+        $this->assertTrue(Schema::hasTable('pfx_cohorts'));
+        $this->assertTrue(Schema::hasTable('pfx_cohort_user'));
     }
 
     public function test_explicit_override_escapes_the_prefix(): void
