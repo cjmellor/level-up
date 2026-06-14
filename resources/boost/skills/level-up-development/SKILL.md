@@ -457,7 +457,7 @@ $histories = StreakHistory::where('user_id', $user->id)->get();
 
 ## Challenges
 
-Challenges are multi-condition goals that users enroll in and complete for rewards. Conditions are evaluated automatically when relevant events fire (points earned, level reached, achievement granted, streak recorded, tier changed).
+Challenges are multi-condition goals that users enroll in and complete for rewards. Conditions are evaluated automatically when relevant events fire (points earned, level reached, achievement granted, streak recorded, tier changed, leaderboard rank moved by a snapshot run).
 
 ### Create a Challenge
 
@@ -487,7 +487,10 @@ Challenge::create([
 | `achievement_earned` | `achievement_id` | User has the achievement |
 | `streak_count` | `activity`, `count` | Current streak count for activity >= value |
 | `tier_reached` | `tier` | User is at or above the named tier |
+| `leaderboard_rank` | `board`, `rank` | Latest snapshot rank on the named Board <= value |
 | `custom` | `class` | Class implementing `ChallengeCondition` interface |
+
+`leaderboard_rank` only progresses when `level-up:snapshot-boards` runs — the host must schedule it. Validation at creation rejects a `board` not declared in `level-up.leaderboard.boards` and a `rank` deeper than the Board's tracked depth (`track_top`, default 100).
 
 ### Reward Types
 
@@ -588,18 +591,24 @@ Period boundary config under `level-up.leaderboard`: `week_starts_on` (Carbon da
 
 ### Named Boards
 
-A **Board** is a *declared* leaderboard — a named metric/period(/tier) combination registered in config — as opposed to an ad-hoc fluent query (composed, executed, forgotten). Only declared Boards will be tracked over time (snapshots, rank events, leagues — later releases); declaring none means none of that machinery activates.
+A **Board** is a *declared* leaderboard — a named metric/period(/tier) combination registered in config — as opposed to an ad-hoc fluent query (composed, executed, forgotten). Only declared Boards are tracked over time (snapshots, rank events; leagues — later releases); declaring none means none of that machinery activates.
 
 ```php
 'leaderboard' => [
     'boards' => [
         'weekly-xp' => ['metric' => 'xp', 'period' => 'week'],
-        'gold-race' => ['metric' => 'xp', 'period' => 'week', 'tier' => 'Gold'],
+        'gold-race' => ['metric' => 'xp', 'period' => 'week', 'tier' => 'Gold', 'track_top' => 50],
     ],
 ],
 ```
 
-`metric` is required (a `level-up.leaderboard.metrics` registry key), `period` is optional (`'day'`/`'week'`/`'month'` — the `Period` enum string values), `tier` is optional (a tier name). `Leaderboard::board('weekly-xp')` resolves the declaration into the same fluent query, so all refinements (`restrictTo()`, `rankOf()`, `around()`, `limit:`, `paginate:`) compose on top. Resolution validates loudly: unknown board name → `BoardNotFoundException`; missing or unknown `metric` → `MetricNotFoundException`; `period` on a non-Windowable metric → `MetricNotWindowableException`; invalid `period` string → `ValueError`; nonexistent `tier` name → `ModelNotFoundException`.
+`metric` is required (a `level-up.leaderboard.metrics` registry key), `period` is optional (`'day'`/`'week'`/`'month'` — the `Period` enum string values), `tier` is optional (a tier name), `track_top` is optional (the tracked depth — how many top entries are snapshotted and evented, default 100). `Leaderboard::board('weekly-xp')` resolves the declaration into the same fluent query, so all refinements (`restrictTo()`, `rankOf()`, `around()`, `limit:`, `paginate:`) compose on top. Resolution validates loudly: unknown board name → `BoardNotFoundException`; missing or unknown `metric` → `MetricNotFoundException`; `period` on a non-Windowable metric → `MetricNotWindowableException`; invalid `period` string → `ValueError`; nonexistent `tier` name → `ModelNotFoundException`.
+
+### Snapshots and rank events
+
+A **Snapshot** persists a Board's top `track_top` entries at a point in time (the `leaderboard_snapshots` table, `LeaderboardSnapshot` model: `board`, `user_id`, `rank`, `score`, `run_at`). The `level-up:snapshot-boards` command snapshots every declared Board, diffs against that Board's previous run, dispatches rank events, and prunes runs older than `level-up.leaderboard.snapshots.retention_days` (default 30). The host schedules it (e.g. `Schedule::command('level-up:snapshot-boards')->hourly()` in `routes/console.php`) — the package never auto-registers scheduler entries.
+
+Diff semantics: rank movement within the tracked depth → `LeaderboardRankChanged`; crossing the boundary → `UserEnteredTrackedDepth` / `UserLeftTrackedDepth`; below the tracked depth a Board is **silent by design** (no rows, no events — don't "fix" this). The first run of a Board is silent (no previous run, no delta). A re-run within the same instant replaces that run's rows (a run is identified by `run_at` to the second) and recomputes the same diff. Snapshots are *not* a cache — `rankOf()`/`around()` always compute fresh at any depth.
 
 ## Auditing
 
@@ -650,6 +659,9 @@ AuditType::TierDown; // 'tier_down'
 | `ChallengeCompleted` | `Challenge $challenge`, `Model $user` | Challenge conditions met, rewards dispatched |
 | `ChallengeEnrolled` | `Challenge $challenge`, `Model $user` | User enrolled in challenge |
 | `ChallengeUnenrolled` | `Challenge $challenge`, `Model $user` | User unenrolled from challenge |
+| `LeaderboardRankChanged` | `Model $user`, `string $board`, `int $from`, `int $to` | Snapshot run found rank movement within a Board's tracked depth |
+| `UserEnteredTrackedDepth` | `Model $user`, `string $board`, `int $rank` | Snapshot run found a user broke into a Board's tracked depth |
+| `UserLeftTrackedDepth` | `Model $user`, `string $board`, `int $previousRank` | Snapshot run found a user dropped out of a Board's tracked depth |
 
 ## Common Patterns
 

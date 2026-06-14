@@ -51,6 +51,7 @@ class Challenge extends Model
         'achievement_earned' => ['achievement_id'],
         'streak_count' => ['activity', 'count'],
         'tier_reached' => ['tier'],
+        'leaderboard_rank' => ['board', 'rank'],
         'custom' => ['class'],
     ];
 
@@ -151,6 +152,33 @@ class Challenge extends Model
                 $class = $entry['class'];
                 throw_if(! class_exists($class) || ! is_subclass_of($class, ChallengeCondition::class), InvalidArgumentException::class, "{$label} at index {$index}: class '{$class}' must exist and implement ChallengeCondition.");
             }
+
+            if ($type === 'leaderboard_rank') {
+                $this->validateLeaderboardRankEntry(entry: $entry, index: $index, label: $label);
+            }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     */
+    private function validateLeaderboardRankEntry(array $entry, int $index, string $label): void
+    {
+        $board = $entry['board'];
+
+        throw_unless(is_string($board) && $board !== '', InvalidArgumentException::class, "{$label} at index {$index}: 'board' must be a board name string.");
+
+        $boards = config()->array(key: 'level-up.leaderboard.boards');
+
+        throw_unless(array_key_exists($board, $boards), InvalidArgumentException::class, "{$label} at index {$index}: board '{$board}' is not declared in level-up.leaderboard.boards.");
+
+        $rank = $entry['rank'];
+
+        throw_unless(is_int($rank) && $rank >= 1, InvalidArgumentException::class, "{$label} at index {$index}: 'rank' must be a positive integer.");
+
+        $declaration = $boards[$board];
+        $trackTop = is_array($declaration) && is_int($declaration['track_top'] ?? null) ? $declaration['track_top'] : 100;
+
+        throw_if($rank > $trackTop, InvalidArgumentException::class, "{$label} at index {$index}: rank {$rank} is deeper than board '{$board}' tracked depth ({$trackTop}). Raise the board's track_top or target a shallower rank.");
     }
 }

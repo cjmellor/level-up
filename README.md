@@ -754,6 +754,56 @@ Declarations are validated loudly at resolution rather than producing a silently
 
 Why declare a board instead of just querying? Boards are the leaderboards the package will **track over time** — snapshots, rank-change events, and leagues (arriving in later releases) apply only to declared Boards. Ad-hoc queries stay exactly what they are: composed, executed, forgotten. Declare no boards and none of that machinery activates.
 
+### Snapshots and rank events
+
+A **Snapshot** is the leaderboard's memory: a persisted record of a Board's top entries at a point in time. Diffing consecutive snapshots produces rank *deltas* — "you climbed from #5 to #2" — which a stateless query can never compute. The `level-up:snapshot-boards` command writes one snapshot run per declared Board, diffs it against the previous run, dispatches rank events, and prunes old runs.
+
+Schedule the command from your application — the package never auto-registers scheduler entries:
+
+```php
+// routes/console.php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('level-up:snapshot-boards')->hourly();
+```
+
+Each run stores the top **tracked depth** entries per Board — `track_top` in the board declaration, default 100:
+
+```php
+'boards' => [
+    'weekly-xp' => ['metric' => 'xp', 'period' => 'week', 'track_top' => 50],
+],
+```
+
+Diffing two runs dispatches three events, each carrying the board name:
+
+| Event | Properties | When |
+|-------|-----------|------|
+| `LeaderboardRankChanged` | `Model $user`, `string $board`, `int $from`, `int $to` | A user moved rank within the tracked depth |
+| `UserEnteredTrackedDepth` | `Model $user`, `string $board`, `int $rank` | A user broke into the tracked depth |
+| `UserLeftTrackedDepth` | `Model $user`, `string $board`, `int $previousRank` | A user dropped out of the tracked depth |
+
+Below the tracked depth a Board is **silent by design**: no snapshot rows, no events. "You dropped from #6,389 to #6,412" is not a thing the package emits — raise `track_top` if you want deeper tracking and are happy to own the cost. Ties use the same competition semantics as live queries, so a tie breaking only events the users whose rank number actually changed.
+
+Two semantics worth knowing:
+
+- **The first run of a Board is silent.** Events are deltas between runs; with no previous run there is no delta — the first run just writes the baseline snapshot.
+- **Re-running within the same instant replaces that run.** A run is identified by its timestamp (to the second), so an immediate re-run overwrites the same run's rows instead of duplicating them, and recomputes the same diff against the run before it.
+
+Old runs are pruned by the same command per `level-up.leaderboard.snapshots.retention_days` (default 30):
+
+```php
+'leaderboard' => [
+    // ...
+    'snapshots' => [
+        'retention_days' => 30,
+    ],
+],
+```
+
+> [!NOTE]
+> Snapshots are **not a cache** for live queries — `rankOf()` and `around()` always compute fresh, for any user at any depth. Snapshots exist solely to remember past runs so rank deltas can be evented.
+
 ### Custom metrics
 
 Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.
@@ -1095,7 +1145,34 @@ Challenge::create([
 | `achievement_earned` | `achievement_id` | User has the achievement |
 | `streak_count` | `activity`, `count` | Current streak count for the activity |
 | `tier_reached` | `tier` | User is at or above the named tier |
+| `leaderboard_rank` | `board`, `rank` | User's rank on the named Board is at or above the target |
 | `custom` | `class` | Your own class implementing `ChallengeCondition` |
+
+### Leaderboard Rank Conditions
+
+The `leaderboard_rank` condition is "finish top N on a named Board" — it is met when the user's rank on the Board, as recorded by the latest snapshot run, is at or above the target (`rank <= N`):
+
+```php
+Challenge::create([
+    'name' => 'Podium Finish',
+    'description' => 'Crack the top 3 on the weekly XP board.',
+    'conditions' => [
+        ['type' => 'leaderboard_rank', 'board' => 'weekly-xp', 'rank' => 3],
+    ],
+    'rewards' => [
+        ['type' => 'points', 'amount' => 500],
+    ],
+    'auto_enroll' => true,
+]);
+```
+
+> [!IMPORTANT]
+> This condition only progresses when `level-up:snapshot-boards` runs — schedule it (see [Snapshots and rank events](#snapshots-and-rank-events)). Progress is evaluated on the rank events the snapshot run dispatches, and the rank is read from the run's snapshot rows, so a board that is never snapshotted never satisfies the condition.
+
+Validation on challenge creation is strict, so a misconfigured condition fails loudly instead of silently never completing:
+
+- `board` must be a Board declared in `level-up.leaderboard.boards`.
+- `rank` must be a positive integer within the Board's tracked depth (`track_top`, default 100). A condition targeting rank 150 on a board tracking the top 100 is rejected — below the tracked depth the board is silent, so the condition could never be met. Raise the Board's `track_top` if you need deeper targets.
 
 ### Reward Types
 

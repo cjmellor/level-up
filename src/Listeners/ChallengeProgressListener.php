@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace LevelUp\Experience\Listeners;
 
 use LevelUp\Experience\Events\AchievementAwarded;
+use LevelUp\Experience\Events\LeaderboardRankChanged;
 use LevelUp\Experience\Events\PointsIncreased;
 use LevelUp\Experience\Events\StreakIncreased;
+use LevelUp\Experience\Events\UserEnteredTrackedDepth;
 use LevelUp\Experience\Events\UserLevelledUp;
 use LevelUp\Experience\Events\UserTierUpdated;
 use LevelUp\Experience\Services\ChallengeService;
@@ -14,7 +16,7 @@ use Throwable;
 
 class ChallengeProgressListener
 {
-    public function __invoke(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated $event): void
+    public function __invoke(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated|LeaderboardRankChanged|UserEnteredTrackedDepth $event): void
     {
         if (! config()->boolean(key: 'level-up.challenges.enabled')) {
             return;
@@ -30,7 +32,7 @@ class ChallengeProgressListener
         }
     }
 
-    protected function mapEventToConditionTypes(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated $event): array
+    protected function mapEventToConditionTypes(PointsIncreased|AchievementAwarded|StreakIncreased|UserLevelledUp|UserTierUpdated|LeaderboardRankChanged|UserEnteredTrackedDepth $event): array
     {
         $types = match (true) {
             $event instanceof PointsIncreased => ['points_earned'],
@@ -38,6 +40,7 @@ class ChallengeProgressListener
             $event instanceof AchievementAwarded => ['achievement_earned'],
             $event instanceof StreakIncreased => ['streak_count'],
             $event instanceof UserTierUpdated => ['tier_reached'],
+            $event instanceof LeaderboardRankChanged, $event instanceof UserEnteredTrackedDepth => ['leaderboard_rank'],
         };
 
         $types[] = 'custom';
