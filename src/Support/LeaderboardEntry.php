@@ -11,5 +11,6 @@ final readonly class LeaderboardEntry
     public function __construct(
         public Model $user,
         public int|float $score,
+        public int $rank,
     ) {}
 }

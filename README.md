@@ -561,7 +561,7 @@ public int $amount,
 
 ## 📈 Leaderboard
 
-The package includes a metric-driven leaderboard. A leaderboard ranks users by a **metric** — experience points by default — and returns `LeaderboardEntry` objects exposing the `user` and their `score`.
+The package includes a metric-driven leaderboard. A leaderboard ranks users by a **metric** — experience points by default — and returns `LeaderboardEntry` objects exposing the `user`, their `score`, and their `rank`.
 
 ```php
 $entries = Leaderboard::generate();
@@ -569,10 +569,34 @@ $entries = Leaderboard::generate();
 foreach ($entries as $entry) {
     $entry->user;  // the User model (with Experience eager-loaded)
     $entry->score; // the user's score on this metric
+    $entry->rank;  // the user's position on the board (1 is first)
 }
 ```
 
-Pass `paginate: true` for a paginator of entries, or `limit:` to cap the result count.
+Pass `paginate: true` for a paginator of entries, or `limit:` to cap the result count. Ranks are always board-wide — entry 16 on page 2 still carries rank 16.
+
+### Ranks and ties
+
+Ranks use competition semantics: users with equal scores share a rank, and the next rank is skipped — two users tied for first are both rank 1, and the next user is rank 3. Tied rows are ordered deterministically (score descending, then user key ascending) so pagination boundaries stay stable between requests.
+
+Ranks are computed in the database with SQL window functions, so the leaderboard requires a database that supports them: SQLite 3.25+, MySQL 8+ / MariaDB 10.2+, or PostgreSQL.
+
+### A user's rank
+
+Ask for a single user's exact rank with `rankOf()`, or fetch the slice of the board around them with `around()`:
+
+```php
+Leaderboard::rankOf(user: $user); // 4 — or null if the user isn't on the board
+
+Leaderboard::around(user: $user, range: 2); // up to 2 entries above + the user + up to 2 below
+```
+
+`rankOf()` returns `null` — and `around()` returns an empty collection — when the user is absent from the board (no experience record, or excluded by the metric's constraints). `around()` clamps at the edges: for the leader it returns the user plus the `range` entries below, and each entry keeps its board-wide rank. Both compose with `by()`:
+
+```php
+Leaderboard::by('xp')->rankOf(user: $user);
+Leaderboard::by(MyCustomMetric::class)->around(user: $user, range: 3);
+```
 
 ### Choosing a metric
 
@@ -585,6 +609,34 @@ Leaderboard::by(new MyCustomMetric())->generate();
 ```
 
 An unknown key throws `MetricNotFoundException`; a metric whose underlying feature is disabled throws `MetricDisabledException` rather than returning an empty board.
+
+### Built-in metrics
+
+Three metrics ship with the package:
+
+| Key | Ranks by |
+| --- | --- |
+| `xp` | Experience points (the default) |
+| `level` | Current level |
+| `streak` | Current streak count for an Activity |
+
+`level` ranks users by their current level number — users on the same level share a rank:
+
+```php
+Leaderboard::by('level')->generate();
+```
+
+`streak` ranks users by their current streak count for one Activity, so it needs to know which one. Construct the metric with the Activity and pass the instance:
+
+```php
+use LevelUp\Experience\Metrics\StreakMetric;
+
+Leaderboard::by(new StreakMetric(activity: $activity))->generate();
+```
+
+Generating a streak board without an Activity — for example via the bare registry key, `by('streak')` — throws `MetricRequiresActivityException`.
+
+Both are **state metrics**: they rank by a current snapshot rather than an accumulation. Users without the relevant record are absent from the board — no level (no experience record) means no entry on the level board; no streak for the given Activity means no entry on that streak board.
 
 ### Custom metrics
 
