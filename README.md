@@ -612,13 +612,15 @@ An unknown key throws `MetricNotFoundException`; a metric whose underlying featu
 
 ### Built-in metrics
 
-Three metrics ship with the package:
+Five metrics ship with the package:
 
 | Key | Ranks by |
 | --- | --- |
 | `xp` | Experience points (the default) |
 | `level` | Current level |
 | `streak` | Current streak count for an Activity |
+| `achievements` | Number of achievements earned |
+| `challenges` | Number of challenges completed |
 
 `level` ranks users by their current level number — users on the same level share a rank:
 
@@ -638,13 +640,74 @@ Generating a streak board without an Activity — for example via the bare regis
 
 Both are **state metrics**: they rank by a current snapshot rather than an accumulation. Users without the relevant record are absent from the board — no level (no experience record) means no entry on the level board; no streak for the given Activity means no entry on that streak board.
 
+`achievements` and `challenges` are **flow metrics**: they rank by an accumulation over time, so they support time periods (see below) as well as all-time boards:
+
+```php
+Leaderboard::by('achievements')->generate();                    // most achievements earned, ever
+Leaderboard::by('achievements')->period(Period::Week)->generate(); // most achievements earned this week
+Leaderboard::by('challenges')->generate();                      // most challenges completed, ever
+```
+
+`achievements` counts earned achievements; on a periodic board, only achievements earned within the window count. `challenges` counts **completed** challenges — being enrolled isn't enough — and periodic boards window on when each challenge was completed, not when the user enrolled. If the challenges system is turned off (`level-up.challenges.enabled`), the `challenges` metric throws `MetricDisabledException`. As with every metric, users with a count of zero are absent from the board rather than ranked at zero.
+
+> [!NOTE]
+> The `achievements` count includes **secret** achievements. This is deliberate: a count reveals nothing about *which* achievements were earned, and excluding them would let users be punished on the leaderboard for earning a secret. Keep secrecy in what you display, not in the score.
+
+### Time periods
+
+Scope a board to a bounded time window with `period()` — "top earners this week" instead of "highest totals ever":
+
+```php
+use LevelUp\Experience\Enums\Period;
+
+Leaderboard::period(Period::Day)->generate();   // points earned today
+Leaderboard::period(Period::Week)->generate();  // points earned this week
+Leaderboard::period(Period::Month)->generate(); // points earned this month
+```
+
+Or pick a custom range with `since()` — an open-ended start, or a bounded `[start, until)` window:
+
+```php
+Leaderboard::since(start: now()->subDays(3))->generate();
+
+Leaderboard::since(start: $seasonStart, until: $seasonEnd)->generate();
+```
+
+Periodic boards rank by activity *within* the window, sourced from the `experience_audits` ledger: the windowed score is the sum of points **added minus points removed** in the window. State-change audit rows (`reset`, `level_up`, `tier_up`, `tier_down`) never count. Users with no qualifying audit rows in the window are absent from the board. Everything composes as usual — `rankOf()`, `around()`, ties, `limit:`, `paginate:` all work on a periodic board:
+
+```php
+Leaderboard::period(Period::Week)->rankOf(user: $user);
+Leaderboard::period(Period::Week)->around(user: $user, range: 2);
+```
+
+Periodic XP boards require auditing (on by default since v3 — see `level-up.audit.enabled`). If you have explicitly disabled auditing, requesting a periodic XP board throws `MetricRequiresAuditingException` rather than returning a silently empty board. Boards without a period are unaffected: the all-time board keeps reading the cheap `experiences.experience_points` column and never scans the ledger. Periodic `achievements` and `challenges` boards read their own timestamps and work with or without auditing.
+
+Only metrics that implement the `LevelUp\Experience\Contracts\Windowable` interface support periods. The built-in flow metrics — `xp`, `achievements`, and `challenges` — all do: `xp` windows on audit rows, `achievements` on when each achievement was earned, and `challenges` on when each challenge was completed. `level` and `streak` are state metrics — a current level or streak count isn't "earned within a window" — so selecting a period for them throws `MetricNotWindowableException`.
+
+> [!NOTE]
+> `setPoints()` is an administrative override, not earned activity — it writes no audit record, so it deliberately never moves a periodic board. The all-time board sees the new total immediately.
+
+Week boundaries and timezones are configurable under `level-up.leaderboard`:
+
+```php
+'leaderboard' => [
+    // ...
+    'week_starts_on' => Carbon\CarbonInterface::MONDAY, // 0 (Sunday) – 6 (Saturday)
+    'timezone' => null, // null = the application timezone
+],
+```
+
+`week_starts_on` sets which day `Period::Week` starts on. `timezone` controls the timezone period boundaries (start of day/week/month) are computed in — useful when your app stores UTC but your users' "today" starts at midnight local time.
+
 ### Custom metrics
 
 Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.
 
+To support time periods too, also implement `LevelUp\Experience\Contracts\Windowable` — a `windowedScoreExpression($start, $end)` subquery yielding one numeric score per user for activity between the two timestamps (`$end` may be `null` for an open-ended `since()` range).
+
 ## 🔍 Auditing
 
-You can enable an Auditing feature in the config, which keeps a track each time a User gains points, levels up and what level to.
+Auditing keeps track each time a User gains points, levels up and what level to. It is **enabled by default** (since v3) because periodic leaderboards source their scores from the audit ledger — set `AUDIT_POINTS=false` (or `level-up.audit.enabled`) to turn it off if you don't need point history or time-windowed boards.
 
 The `type` and `reason` fields will be populated automatically based on the action taken, but you can overwrite these when adding points to a User
 

@@ -14,7 +14,7 @@ Use this skill when working with gamification features — adding experience poi
 - **Achievements** — Unlockable rewards, optionally with progress tracking, optionally gated by tier.
 - **Streaks** — Track consecutive daily activities with freeze support.
 - **Multipliers** — Database-backed point modifiers with scoping, scheduling, and configurable stacking strategies.
-- **Leaderboard** — Rank users by any metric (XP by default) with competition-style rank numbers, optionally scoped to a tier.
+- **Leaderboard** — Rank users by any metric (XP by default) with competition-style rank numbers, optionally scoped to a tier or a time period (day/week/month/custom).
 - **Auditing** — Automatic history of all XP changes, level-ups, and tier changes.
 
 ## Setup
@@ -550,6 +550,7 @@ Reference it in the condition: `['type' => 'custom', 'class' => HasVerifiedEmail
 ## Leaderboard
 
 ```php
+use LevelUp\Experience\Enums\Period;
 use LevelUp\Experience\Facades\Leaderboard;
 use LevelUp\Experience\Metrics\StreakMetric;
 
@@ -559,27 +560,41 @@ Leaderboard::generate(limit: 10);              // Top 10
 Leaderboard::by('xp')->generate();              // Explicit metric key
 Leaderboard::by('level')->generate();           // Rank by current level
 Leaderboard::by(new StreakMetric(activity: $activity))->generate(); // Rank by current streak count for an Activity
+Leaderboard::by('achievements')->generate();    // Rank by achievements earned (secret ones count)
+Leaderboard::by('challenges')->period(Period::Week)->generate(); // Challenges completed this week
 Leaderboard::by(MyMetric::class)->generate();   // Custom metric (class or instance)
 Leaderboard::forTier('Gold')->generate();       // Gold tier only
+Leaderboard::period(Period::Week)->generate();  // Points earned this week (also Period::Day / Period::Month)
+Leaderboard::since(start: now()->subDays(3))->generate(); // Custom range; optional until: bounds it
 Leaderboard::rankOf(user: $user);               // Exact rank (int), null if absent from the board
 Leaderboard::around(user: $user, range: 2);     // Up to 2 entries above + user + up to 2 below; empty if absent
 ```
 
-Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
+Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-loaded), `$entry->score`, and `$entry->rank` — ordered by score descending, then user key ascending. Ranks use competition semantics (tied scores share a rank; the next rank is skipped: 1, 1, 3) and are board-wide even when limiting or paginating. `rankOf()` and `around()` compose with `by()`, `period()`, and `since()`. Ranks are computed with SQL window functions (requires SQLite 3.25+, MySQL 8+, or PostgreSQL). Metrics are registered in `level-up.leaderboard.metrics` (custom ones implement `LevelUp\Experience\Contracts\RankingMetric`); unknown keys throw `MetricNotFoundException`, disabled-feature metrics throw `MetricDisabledException`.
 
-Built-in metrics: `xp` (experience points, the default), `level` (current level), and `streak` (current streak count for an Activity). `level` and `streak` are state metrics — they rank by a current snapshot, and users without the relevant record are absent from the board. The streak metric requires an Activity: construct the instance (`new StreakMetric(activity: $activity)`); using the bare `streak` registry key without one throws `MetricRequiresActivityException`.
+Built-in metrics: `xp` (experience points, the default), `level` (current level), `streak` (current streak count for an Activity), `achievements` (achievements earned), and `challenges` (challenges completed). `level` and `streak` are state metrics — they rank by a current snapshot, and users without the relevant record are absent from the board. The streak metric requires an Activity: construct the instance (`new StreakMetric(activity: $activity)`); using the bare `streak` registry key without one throws `MetricRequiresActivityException`.
+
+`achievements` and `challenges` are flow metrics (Windowable). `achievements` counts all earned achievements **including secret ones** — a count reveals nothing about which were earned; windowed boards count achievements earned within the period (pivot `created_at`). `challenges` counts completed challenges only (enrollment isn't enough); windowed boards window on the pivot `completed_at`. The `challenges` metric throws `MetricDisabledException` when `level-up.challenges.enabled` is off. For every metric, zero-count users are absent from the board, never ranked at 0.
+
+### Time Periods
+
+`period(Period::Day|Week|Month)` and `since(start:, until:)` window a board to activity inside the range. For `xp` the windowed score is computed from the `experience_audits` ledger as `add` rows minus `remove` rows (state-change rows — `reset`, `level_up`, `tier_up`, `tier_down` — never count); this requires auditing (the v3 default), and with auditing explicitly disabled a periodic XP board throws `MetricRequiresAuditingException`. `achievements` and `challenges` window on their own pivot timestamps and don't need auditing. Only `Windowable` metrics support periods — `xp`, `achievements`, and `challenges` do; `level` and `streak` throw `MetricNotWindowableException`. Custom metrics opt in by implementing `LevelUp\Experience\Contracts\Windowable` (`windowedScoreExpression($start, $end)`; `$end` is `null` for an open-ended `since()`).
+
+`setPoints()` writes no audit record, so it never moves a periodic board (administrative override, not earned activity) — the all-time board sees it immediately. Users with no qualifying audit rows in the window are absent from the board. All-time boards (no period) read `experiences.experience_points` directly and never scan the ledger.
+
+Period boundary config under `level-up.leaderboard`: `week_starts_on` (Carbon day-of-week, default `CarbonInterface::MONDAY`) and `timezone` (default `null` = app timezone) control where day/week/month boundaries fall.
 
 ## Auditing
 
-Enable in config:
+Enabled by default since v3 (periodic leaderboards source scores from the ledger):
 
 ```php
 'audit' => [
-    'enabled' => env('AUDIT_POINTS', false),
+    'enabled' => env('AUDIT_POINTS', true),
 ],
 ```
 
-When enabled, every `addPoints()`, `deductPoints()`, `levelUp()`, and tier change creates an `experience_audits` record.
+When enabled, every `addPoints()`, `deductPoints()`, `levelUp()`, and tier change creates an `experience_audits` record. `setPoints()` writes no audit record.
 
 ```php
 $user->experienceHistory;   // HasMany to ExperienceAudit

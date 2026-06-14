@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Services;
 
+use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Contracts\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Contracts\RankingMetric;
+use LevelUp\Experience\Contracts\Windowable;
+use LevelUp\Experience\Enums\Period;
 use LevelUp\Experience\Exceptions\MetricDisabledException;
 use LevelUp\Experience\Exceptions\MetricNotFoundException;
+use LevelUp\Experience\Exceptions\MetricNotWindowableException;
 use LevelUp\Experience\Models\Tier;
 use LevelUp\Experience\Support\LeaderboardEntry;
+use LevelUp\Experience\Support\PeriodRange;
 
 class LeaderboardService
 {
@@ -22,6 +29,8 @@ class LeaderboardService
     private ?Tier $tier = null;
 
     private ?RankingMetric $metric = null;
+
+    private ?PeriodRange $range = null;
 
     public function __construct()
     {
@@ -33,6 +42,21 @@ class LeaderboardService
         $this->metric = $this->resolveMetric($metric);
 
         return $this;
+    }
+
+    public function period(Period $period): static
+    {
+        return $this->scopeToRange(range: $period->range());
+    }
+
+    public function since(CarbonInterface $start, ?CarbonInterface $until = null): static
+    {
+        $appTimezone = config()->string(key: 'app.timezone');
+
+        return $this->scopeToRange(range: new PeriodRange(
+            start: CarbonImmutable::instance(date: $start)->setTimezone(timeZone: $appTimezone),
+            end: $until instanceof CarbonInterface ? CarbonImmutable::instance(date: $until)->setTimezone(timeZone: $appTimezone) : null,
+        ));
     }
 
     public function forTier(string|Tier $tier): static
@@ -49,9 +73,9 @@ class LeaderboardService
 
     public function generate(bool $paginate = false, ?int $limit = null): Collection|LengthAwarePaginator
     {
-        [$metric, $tier] = $this->consumeContext();
+        [$metric, $tier, $range] = $this->consumeContext();
 
-        $query = $this->rankedQuery(metric: $metric, tier: $tier)->take(value: $limit);
+        $query = $this->rankedQuery(metric: $metric, tier: $tier, range: $range)->take(value: $limit);
 
         return $paginate
             ? $query->paginate()->through(callback: fn (Model $user): LeaderboardEntry => $this->toEntry($user))
@@ -60,10 +84,10 @@ class LeaderboardService
 
     public function rankOf(Model $user): ?int
     {
-        [$metric, $tier] = $this->consumeContext();
+        [$metric, $tier, $range] = $this->consumeContext();
 
         $rank = DB::query()
-            ->fromSub(query: $this->rankedQuery(metric: $metric, tier: $tier), as: 'ranked')
+            ->fromSub(query: $this->rankedQuery(metric: $metric, tier: $tier, range: $range), as: 'ranked')
             ->where(column: $user->getKeyName(), operator: '=', value: $user->getKey())
             ->value(column: 'rank');
 
@@ -72,9 +96,9 @@ class LeaderboardService
 
     public function around(Model $user, int $range): Collection
     {
-        [$metric, $tier] = $this->consumeContext();
+        [$metric, $tier, $periodRange] = $this->consumeContext();
 
-        $ranked = $this->rankedQuery(metric: $metric, tier: $tier);
+        $ranked = $this->rankedQuery(metric: $metric, tier: $tier, range: $periodRange);
         $grammar = $ranked->getQuery()->getGrammar();
 
         $positioned = (clone $ranked)->selectRaw(expression: sprintf(
@@ -104,23 +128,59 @@ class LeaderboardService
     }
 
     /**
-     * @return array{0: RankingMetric, 1: ?Tier}
+     * @return array{0: RankingMetric, 1: ?Tier, 2: ?PeriodRange}
      */
     private function consumeContext(): array
     {
         [$tier, $this->tier] = [$this->tier, null];
+        [$range, $this->range] = [$this->range, null];
         [$metric, $this->metric] = [$this->metric ?? $this->defaultMetric(), null];
 
         throw_unless($metric->enabled(), exception: MetricDisabledException::forMetric($metric));
 
-        return [$metric, $tier];
+        if ($range instanceof PeriodRange) {
+            $this->guardWindowable(metric: $metric);
+        }
+
+        return [$metric, $tier, $range];
     }
 
-    private function rankedQuery(RankingMetric $metric, ?Tier $tier): Builder
+    private function scopeToRange(PeriodRange $range): static
+    {
+        $metric = $this->metric;
+
+        if ($metric instanceof RankingMetric) {
+            $this->guardWindowable(metric: $metric);
+        }
+
+        $this->range = $range;
+
+        return $this;
+    }
+
+    private function guardWindowable(RankingMetric $metric): void
+    {
+        if ($metric instanceof Windowable) {
+            return;
+        }
+
+        [$this->metric, $this->tier, $this->range] = [null, null, null];
+
+        throw MetricNotWindowableException::forMetric($metric);
+    }
+
+    private function scoreExpressionFor(RankingMetric $metric, ?PeriodRange $range): BaseBuilder
+    {
+        return $range instanceof PeriodRange && $metric instanceof Windowable
+            ? $metric->windowedScoreExpression(start: $range->start, end: $range->end)
+            : $metric->scoreExpression();
+    }
+
+    private function rankedQuery(RankingMetric $metric, ?Tier $tier, ?PeriodRange $range): Builder
     {
         $scored = $this->userModel::query()
             ->select(columns: config(key: 'level-up.user.users_table').'.*')
-            ->selectSub(query: $metric->scoreExpression(), as: 'score')
+            ->selectSub(query: $this->scoreExpressionFor(metric: $metric, range: $range), as: 'score')
             ->tap(callback: fn (Builder $query): Builder => $metric->constrain($query))
             ->when($tier instanceof Tier, fn (Builder $query): Builder => $query->whereHas(
                 'experience',
@@ -130,7 +190,7 @@ class LeaderboardService
         $grammar = $scored->getQuery()->getGrammar();
         $keyName = $scored->getModel()->getKeyName();
 
-        return $this->userModel::query()
+        $ranked = $this->userModel::query()
             ->fromSub(query: $scored, as: 'board')
             ->select(columns: 'board.*')
             ->selectRaw(expression: sprintf(
@@ -141,6 +201,12 @@ class LeaderboardService
             ->with(relations: ['experience'])
             ->orderByDesc(column: 'score')
             ->orderBy(column: $keyName);
+
+        if ($range instanceof PeriodRange) {
+            $ranked->whereNotNull(columns: 'score');
+        }
+
+        return $ranked;
     }
 
     private function toEntry(Model $user): LeaderboardEntry

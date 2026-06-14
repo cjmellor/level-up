@@ -13,6 +13,7 @@ All notable changes to `level-up` will be documented in this file.
 - **`LevelUp\Experience\Support\UserForeignKey` helper class removed.** Replaced by a `$table->userForeignId()` Blueprint macro that reads the same config and routes to `foreignId()` / `foreignUuid()` / `foreignUlid()`.
 - **Trait method aliasing helpers removed** (cherry-picked from v2.1's revert of PR #123). Host User models with colliding `challenges()` / `streaks()` / `experience()` / `experienceHistory()` methods need to rename or compose into a wrapper model.
 - **`setPoints()` recalculates level and tier.** Previously a raw column write with no side effects; now fires `UserLevelledUp` / `UserTierUpdated` events when the new point total implies a different placement.
+- **`level-up.audit.enabled` now defaults to `true`** (was `false`). Time-windowed leaderboards source their scores from the `experience_audits` ledger, so auditing is on out of the box. Set `AUDIT_POINTS=false` to opt out. See UPGRADE.md.
 - **Excess points cap at the top level instead of throwing.** `addPoints($amount)` where `$amount` exceeds the highest defined level's threshold no longer throws — the user is capped at the highest level.
 
 ### Added
