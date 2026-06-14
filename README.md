@@ -699,6 +699,61 @@ Week boundaries and timezones are configurable under `level-up.leaderboard`:
 
 `week_starts_on` sets which day `Period::Week` starts on. `timezone` controls the timezone period boundaries (start of day/week/month) are computed in — useful when your app stores UTC but your users' "today" starts at midnight local time.
 
+### Friends boards and custom populations
+
+The package never owns your social graph — you supply *who*, it supplies the ranking. `restrictTo()` takes a closure that narrows the board's base user query to any population you can express as a query constraint:
+
+```php
+$friendIds = $user->friends()->pluck('id')->push($user->id); // include yourself
+
+Leaderboard::restrictTo(fn ($query) => $query->whereIn('id', $friendIds))->generate();
+```
+
+Ranks are computed **within** the restricted set, not filtered down from the global board: a user who is rank 40 globally but ahead of all their friends is rank 1 on their friends board. The restriction composes with everything else — `by()`, `period()`/`since()`, `forTier()`, `rankOf()`, and `around()` — in any order:
+
+```php
+// This week's XP, friends only
+Leaderboard::restrictTo(fn ($query) => $query->whereIn('id', $friendIds))
+    ->period(Period::Week)
+    ->generate();
+
+// Your rank among your friends — null if you're outside the restriction
+Leaderboard::restrictTo(fn ($query) => $query->whereIn('id', $friendIds))->rankOf(user: $user);
+```
+
+Friends boards are the headline use, but any host-defined population works the same way — users in a guild, an organisation, a tournament bracket.
+
+### Named Boards
+
+Everything above composes an **ad-hoc query**: you build it fluently, execute it, and it's forgotten. A **Board** is different — a *declared* leaderboard, registered by name in the config as a metric/period(/tier) combination:
+
+```php
+'leaderboard' => [
+    // ...
+    'boards' => [
+        'weekly-xp' => ['metric' => 'xp', 'period' => 'week'],
+        'gold-race' => ['metric' => 'xp', 'period' => 'week', 'tier' => 'Gold'],
+    ],
+],
+```
+
+Each declaration takes a required `metric` (a registry key from `level-up.leaderboard.metrics`), an optional `period` (`'day'`, `'week'`, or `'month'`), and an optional `tier` (a tier name). Resolve a Board by name with `board()` — it returns the same fluent query, pre-composed, so every refinement still works on top:
+
+```php
+Leaderboard::board('weekly-xp')->generate();
+
+Leaderboard::board('weekly-xp')->rankOf(user: $user);
+
+// This week's XP, friends only — refinements compose on top of the declaration
+Leaderboard::board('weekly-xp')
+    ->restrictTo(fn ($query) => $query->whereIn('id', $friendIds))
+    ->generate();
+```
+
+Declarations are validated loudly at resolution rather than producing a silently wrong board: an unknown board name throws `BoardNotFoundException`, a missing or unknown `metric` throws `MetricNotFoundException`, a `period` declared for a non-Windowable metric (such as `level`) throws `MetricNotWindowableException`, an invalid `period` value throws a `ValueError`, and a `tier` name with no matching tier throws a `ModelNotFoundException`.
+
+Why declare a board instead of just querying? Boards are the leaderboards the package will **track over time** — snapshots, rank-change events, and leagues (arriving in later releases) apply only to declared Boards. Ad-hoc queries stay exactly what they are: composed, executed, forgotten. Declare no boards and none of that machinery activates.
+
 ### Custom metrics
 
 Rank by anything you can express as a SQL score: implement `LevelUp\Experience\Contracts\RankingMetric` — a stable `key()`, a `label()`, an `enabled()` check, a `constrain()` that scopes the user query to eligible users, and a `scoreExpression()` subquery yielding one numeric score per user — then register the class in `level-up.leaderboard.metrics`.
