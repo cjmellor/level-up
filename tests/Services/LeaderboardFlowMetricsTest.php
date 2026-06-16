@@ -11,8 +11,18 @@ use LevelUp\Experience\Metrics\AchievementMetric;
 use LevelUp\Experience\Metrics\ChallengeMetric;
 use LevelUp\Experience\Models\Achievement;
 use LevelUp\Experience\Models\Challenge;
+use LevelUp\Experience\Models\ChallengeCompletion;
 use LevelUp\Experience\Support\LeaderboardEntry;
 use LevelUp\Experience\Tests\Fixtures\User;
+
+function recordCompletion(User $user, Challenge $challenge, ?string $at = null): ChallengeCompletion
+{
+    return ChallengeCompletion::query()->create([
+        'user_id' => $user->id,
+        'challenge_id' => $challenge->id,
+        'completed_at' => $at !== null ? Illuminate\Support\Facades\Date::parse(time: $at) : now(),
+    ]);
+}
 
 beforeEach(function (): void {
     config(['level-up.user.model' => User::class]);
@@ -80,11 +90,11 @@ it(description: 'windows the achievements board to achievements earned within th
 it(description: 'ranks users by the number of challenges they have completed', closure: function (): void {
     $finisher = User::newFactory()->create();
     Challenge::factory()->count(count: 2)->create()->each(
-        callback: fn (Challenge $challenge) => $challenge->users()->attach($finisher->id, ['completed_at' => now()]),
+        callback: fn (Challenge $challenge): ChallengeCompletion => recordCompletion(user: $finisher, challenge: $challenge),
     );
 
     $runnerUp = User::newFactory()->create();
-    Challenge::factory()->create()->users()->attach($runnerUp->id, ['completed_at' => now()]);
+    recordCompletion(user: $runnerUp, challenge: Challenge::factory()->create());
 
     $entries = Leaderboard::by(metric: 'challenges')->generate();
 
@@ -93,9 +103,24 @@ it(description: 'ranks users by the number of challenges they have completed', c
         ->and($entries->last()->user->id)->toEqual($runnerUp->id);
 });
 
+it(description: 'counts every completion of a repeatable challenge towards the score, including repeats', closure: function (): void {
+    $grinder = User::newFactory()->create();
+    $repeatable = Challenge::factory()->repeatable()->create();
+    recordCompletion(user: $grinder, challenge: $repeatable);
+    recordCompletion(user: $grinder, challenge: $repeatable);
+
+    $oneTimer = User::newFactory()->create();
+    recordCompletion(user: $oneTimer, challenge: Challenge::factory()->create());
+
+    $entries = Leaderboard::by(metric: 'challenges')->generate();
+
+    expect($entries->map(fn (LeaderboardEntry $entry): int => $entry->score)->toArray())->toBe([2, 1])
+        ->and($entries->first()->user->id)->toEqual($grinder->id);
+});
+
 it(description: 'ignores enrolled-but-incomplete challenges and omits users with no completions', closure: function (): void {
     $finisher = User::newFactory()->create();
-    Challenge::factory()->create()->users()->attach($finisher->id, ['completed_at' => now()]);
+    recordCompletion(user: $finisher, challenge: Challenge::factory()->create());
     Challenge::factory()->create()->users()->attach($finisher->id);
 
     $enrolledOnly = User::newFactory()->create();
@@ -115,20 +140,14 @@ it(description: 'throws when generating a challenges board while the challenges 
     Leaderboard::by(metric: 'challenges')->generate();
 })->throws(exception: MetricDisabledException::class, exceptionMessage: 'challenges');
 
-it(description: 'windows the challenges board on when each challenge was completed, not when it was started', closure: function (): void {
+it(description: 'windows the challenges board on when each challenge was completed', closure: function (): void {
     $this->travelTo(Illuminate\Support\Facades\Date::parse(time: '2026-06-05 12:00:00'));
 
     $pastFinisher = User::newFactory()->create();
-    Challenge::factory()->create()->users()->attach($pastFinisher->id, [
-        'completed_at' => Illuminate\Support\Facades\Date::parse(time: '2026-06-04 23:59:59'),
-    ]);
+    recordCompletion(user: $pastFinisher, challenge: Challenge::factory()->create(), at: '2026-06-04 23:59:59');
 
     $lateBloomer = User::newFactory()->create();
-    Challenge::factory()->startsAt(date: Illuminate\Support\Facades\Date::parse(time: '2026-06-01 00:00:00'))->create()
-        ->users()->attach($lateBloomer->id, [
-            'created_at' => Illuminate\Support\Facades\Date::parse(time: '2026-06-01 09:00:00'),
-            'completed_at' => Illuminate\Support\Facades\Date::parse(time: '2026-06-05 09:00:00'),
-        ]);
+    recordCompletion(user: $lateBloomer, challenge: Challenge::factory()->create(), at: '2026-06-05 09:00:00');
 
     $entries = Leaderboard::by(metric: 'challenges')->period(period: Period::Day)->generate();
 

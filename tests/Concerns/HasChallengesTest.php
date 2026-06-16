@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Support\Facades\Event;
 use LevelUp\Experience\Models\Challenge;
+use LevelUp\Experience\Models\ChallengeCompletion;
 
 uses()->group('challenges');
 
@@ -49,13 +50,18 @@ test(description: 'a User can re-enroll in a completed repeatable challenge', cl
     $challenge->users()->updateExistingPivot($this->user->id, [
         'completed_at' => now(),
     ]);
+    ChallengeCompletion::query()->create([
+        'user_id' => $this->user->id,
+        'challenge_id' => $challenge->id,
+        'completed_at' => now(),
+    ]);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
 
     $this->user->enrollInChallenge(challenge: $challenge);
 
     expect($this->user->fresh()->activeChallenges)->toHaveCount(count: 1);
-    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 0);
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
 });
 
 test(description: 'a User cannot re-enroll in a completed non-repeatable challenge', closure: function (): void {
@@ -78,13 +84,24 @@ test(description: 'active challenges returns only incomplete', closure: function
 
 test(description: 'completed challenges returns only completed', closure: function (): void {
     $this->user->enrollInChallenge(challenge: $this->challenge);
-
-    $this->challenge->users()->updateExistingPivot($this->user->id, attributes: [
-        'completed_at' => now(),
-    ]);
+    $this->user->addPoints(amount: 100);
 
     expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1);
     expect($this->user->fresh()->activeChallenges)->toHaveCount(count: 0);
+});
+
+test(description: 'completed challenges lists a repeatable once while the ledger keeps every completion', closure: function (): void {
+    $challenge = Challenge::factory()->repeatable()->create([
+        'conditions' => [['type' => 'points_earned', 'amount' => 50]],
+        'rewards' => [],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+    $this->user->addPoints(amount: 50);
+    $this->user->addPoints(amount: 50);
+
+    expect($this->user->fresh()->completedChallenges)->toHaveCount(count: 1)
+        ->and($this->user->challengeCompletions()->count())->toBe(expected: 2);
 });
 
 test(description: 'getChallengeProgress returns progress array', closure: function (): void {

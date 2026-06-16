@@ -189,6 +189,34 @@ test(description: 'repeatable challenge re-captures baseline on reset', closure:
     expect($progress[0]['baseline'])->toBe(expected: 20);
 });
 
+test(description: 'completing a challenge records a row in the completions ledger', closure: function (): void {
+    $challenge = Challenge::factory()->create([
+        'conditions' => [
+            ['type' => 'points_earned', 'amount' => 50],
+        ],
+        'rewards' => [],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+    $this->user->addPoints(amount: 50);
+
+    expect($this->user->challengeCompletions()->count())->toBe(expected: 1);
+});
+
+test(description: 'each completion of a repeatable challenge records its own ledger row', closure: function (): void {
+    $challenge = Challenge::factory()->repeatable()->create([
+        'conditions' => [
+            ['type' => 'points_earned', 'amount' => 50],
+        ],
+        'rewards' => [],
+    ]);
+
+    $this->user->enrollInChallenge(challenge: $challenge);
+    $this->user->addPoints(amount: 50);
+    $this->user->addPoints(amount: 50);
+    expect($this->user->challengeCompletions()->count())->toBe(expected: 2);
+});
+
 test(description: 'expired challenge is not evaluated', closure: function (): void {
     $challenge = Challenge::factory()->autoEnroll()->expiresAt(now()->subDay())->create([
         'conditions' => [
