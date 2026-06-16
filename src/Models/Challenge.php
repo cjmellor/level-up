@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use InvalidArgumentException;
 use LevelUp\Experience\Concerns\HasConfigurableIds;
 use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
@@ -72,6 +73,17 @@ class Challenge extends Model
             ->using($pivotClass)
             ->withPivot(columns: ['progress', 'completed_at'])
             ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<ChallengeCompletion, $this>
+     */
+    public function completions(): HasMany
+    {
+        /** @var class-string<ChallengeCompletion> $completionModel */
+        $completionModel = config(key: 'level-up.models.challenge_completion');
+
+        return $this->hasMany(related: $completionModel, foreignKey: 'challenge_id');
     }
 
     protected static function booted(): void

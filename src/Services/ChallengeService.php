@@ -7,6 +7,7 @@ namespace LevelUp\Experience\Services;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Contracts\ChallengeCondition;
@@ -331,15 +332,19 @@ class ChallengeService
 
     protected function completeChallenge(Model $user, Challenge $challenge): void
     {
+        $completedAt = now();
+
         $affected = DB::table(config('level-up.tables.challenge_user'))
             ->where(config(key: 'level-up.user.foreign_key'), $user->getKey())
             ->where('challenge_id', $challenge->id)
             ->whereNull('completed_at')
-            ->update(['completed_at' => now()]);
+            ->update(['completed_at' => $completedAt]);
 
         if ($affected === 0) {
             return;
         }
+
+        $this->recordCompletion(user: $user, challenge: $challenge, completedAt: $completedAt);
 
         $this->dispatchRewards(user: $user, challenge: $challenge);
 
@@ -402,6 +407,18 @@ class ChallengeService
         }
 
         $user->grantAchievement($achievement);
+    }
+
+    protected function recordCompletion(Model $user, Challenge $challenge, Carbon $completedAt): void
+    {
+        /** @var class-string<\LevelUp\Experience\Models\ChallengeCompletion> $completionModel */
+        $completionModel = config(key: 'level-up.models.challenge_completion');
+
+        $completionModel::query()->create([
+            config(key: 'level-up.user.foreign_key') => $user->getKey(),
+            'challenge_id' => $challenge->id,
+            'completed_at' => $completedAt,
+        ]);
     }
 
     protected function resetChallenge(Model $user, Challenge $challenge): void

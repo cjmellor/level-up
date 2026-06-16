@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace LevelUp\Experience\Concerns;
 
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\UniqueConstraintViolationException;
 use LevelUp\Experience\Events\ChallengeEnrolled;
 use LevelUp\Experience\Events\ChallengeUnenrolled;
 use LevelUp\Experience\Models\Challenge;
+use LevelUp\Experience\Models\ChallengeCompletion;
 use LevelUp\Experience\Services\ChallengeService;
 
 trait HasChallenges
@@ -112,7 +115,25 @@ trait HasChallenges
     public function completedChallenges(): BelongsToMany
     {
         return $this->challenges()
-            ->whereNotNull(columns: config('level-up.tables.challenge_user').'.completed_at');
+            ->whereHas(
+                relation: 'completions',
+                callback: fn (Builder $query): Builder => $query->where(
+                    column: config(key: 'level-up.user.foreign_key'),
+                    operator: '=',
+                    value: $this->getKey(),
+                ),
+            );
+    }
+
+    /**
+     * @return HasMany<ChallengeCompletion, $this>
+     */
+    public function challengeCompletions(): HasMany
+    {
+        /** @var class-string<ChallengeCompletion> $completionModel */
+        $completionModel = config(key: 'level-up.models.challenge_completion');
+
+        return $this->hasMany(related: $completionModel, foreignKey: config('level-up.user.foreign_key'));
     }
 
     public function getChallengeProgress(Challenge $challenge): ?array

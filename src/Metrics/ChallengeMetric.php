@@ -29,22 +29,16 @@ class ChallengeMetric implements RankingMetric, Windowable
 
     public function constrain(EloquentBuilder $query): EloquentBuilder
     {
-        return $query->whereHas(
-            relation: 'challenges',
-            callback: fn (EloquentBuilder $query): EloquentBuilder => $query->whereNotNull(
-                columns: config(key: 'level-up.tables.challenge_user').'.completed_at',
-            ),
-        );
+        return $query->whereHas(relation: 'challengeCompletions');
     }
 
     public function scoreExpression(): Builder
     {
-        $pivotModel = config(key: 'level-up.models.challenge_user');
+        $completionModel = config(key: 'level-up.models.challenge_completion');
 
-        return $pivotModel::query()
+        return $completionModel::query()
             ->toBase()
             ->selectRaw(expression: 'COUNT(*)')
-            ->whereNotNull(columns: 'completed_at')
             ->whereColumn(
                 first: config(key: 'level-up.user.foreign_key'),
                 operator: '=',
@@ -54,9 +48,9 @@ class ChallengeMetric implements RankingMetric, Windowable
 
     public function windowedScoreExpression(CarbonInterface $start, ?CarbonInterface $end = null): Builder
     {
-        $pivotModel = config(key: 'level-up.models.challenge_user');
+        $completionModel = config(key: 'level-up.models.challenge_completion');
 
-        $query = $pivotModel::query()
+        $query = $completionModel::query()
             ->toBase()
             ->selectRaw(expression: 'SUM(1)')
             ->whereColumn(
