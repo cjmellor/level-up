@@ -15,7 +15,9 @@ return new class extends Migration {
             $table->timestamp(column: 'completed_at');
             $table->timestamps();
 
-            $table->index('completed_at');
+            // Serves the leaderboard metric's correlated subqueries, which filter by
+            // user first (all-time COUNT(*)) and by user + completed_at range (windowed).
+            $table->index([config('level-up.user.foreign_key'), 'completed_at']);
         });
 
         $this->backfillFromCompletedPivots();

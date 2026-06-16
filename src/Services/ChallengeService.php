@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Services;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use LevelUp\Experience\Contracts\ChallengeCondition;
@@ -409,7 +409,7 @@ class ChallengeService
         $user->grantAchievement($achievement);
     }
 
-    protected function recordCompletion(Model $user, Challenge $challenge, Carbon $completedAt): void
+    protected function recordCompletion(Model $user, Challenge $challenge, CarbonInterface $completedAt): void
     {
         /** @var class-string<\LevelUp\Experience\Models\ChallengeCompletion> $completionModel */
         $completionModel = config(key: 'level-up.models.challenge_completion');
