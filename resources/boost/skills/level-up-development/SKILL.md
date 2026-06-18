@@ -1,6 +1,6 @@
 ---
 name: level-up-development
-description: Build and work with cjmellor/level-up features, including XP, levels, tiers, achievements, streaks, multipliers, leaderboards, leagues, and auditing.
+description: Build and work with cjmellor/level-up features, including XP, levels, tiers, achievements, streaks, multipliers, challenges, leaderboards, leagues, and auditing.
 ---
 
 ## When to use this skill
@@ -519,8 +519,13 @@ Auto-enroll challenges (`auto_enroll: true`) automatically enroll users when a r
 $user->getChallengeProgress($challenge);              // Array of condition statuses
 $user->getChallengeCompletionPercentage($challenge);  // 0.0 - 100.0
 $user->activeChallenges;                              // Enrolled, not completed
-$user->completedChallenges;                           // Completed
+$user->completedChallenges;                           // Completed at least once (distinct; repeatable-safe)
+$user->challengeCompletions;                          // Every completion event (challenge_completions ledger)
 ```
+
+### Completion Ledger
+
+Every completion — repeatable or not — writes a row to the `challenge_completions` table (model `models.challenge_completion`), recorded by `ChallengeService::completeChallenge()`. This ledger is the source of truth for the `challenges` leaderboard metric, so a repeatable challenge completed N times counts N. `$user->challengeCompletions` is the raw feed (one row per completion); `$user->completedChallenges` stays distinct via `whereHas('completions')`, so a challenge appears there once no matter how many times it's repeated. The migration backfills one row per already-completed challenge on upgrade.
 
 ### Temporal Constraints
 
@@ -582,11 +587,11 @@ Returns `LeaderboardEntry` objects — `$entry->user` (with `experience` eager-l
 
 Built-in metrics: `xp` (experience points, the default), `level` (current level), `streak` (current streak count for an Activity), `achievements` (achievements earned), and `challenges` (challenges completed). `level` and `streak` are state metrics — they rank by a current snapshot, and users without the relevant record are absent from the board. The streak metric requires an Activity: construct the instance (`new StreakMetric(activity: $activity)`); using the bare `streak` registry key without one throws `MetricRequiresActivityException`.
 
-`achievements` and `challenges` are flow metrics (Windowable). `achievements` counts all earned achievements **including secret ones** — a count reveals nothing about which were earned; windowed boards count achievements earned within the period (pivot `created_at`). `challenges` counts completed challenges only (enrollment isn't enough); windowed boards window on the pivot `completed_at`. The `challenges` metric throws `MetricDisabledException` when `level-up.challenges.enabled` is off. For every metric, zero-count users are absent from the board, never ranked at 0.
+`achievements` and `challenges` are flow metrics (Windowable). `achievements` counts all earned achievements **including secret ones** — a count reveals nothing about which were earned; windowed boards count achievements earned within the period (pivot `created_at`). `challenges` counts completion rows in the `challenge_completions` ledger (one row per completion, so a repeatable challenge counts each time it's completed, not just once); windowed boards window on the ledger's `completed_at`. The `challenges` metric throws `MetricDisabledException` when `level-up.challenges.enabled` is off. For every metric, zero-count users are absent from the board, never ranked at 0.
 
 ### Time Periods
 
-`period(Period::Day|Week|Month)` and `since(start:, until:)` window a board to activity inside the range. For `xp` the windowed score is computed from the `experience_audits` ledger as `add` rows minus `remove` rows (state-change rows — `reset`, `level_up`, `tier_up`, `tier_down` — never count); this requires auditing (the v3 default), and with auditing explicitly disabled a periodic XP board throws `MetricRequiresAuditingException`. `achievements` and `challenges` window on their own pivot timestamps and don't need auditing. Only `Windowable` metrics support periods — `xp`, `achievements`, and `challenges` do; `level` and `streak` throw `MetricNotWindowableException`. Custom metrics opt in by implementing `LevelUp\Experience\Contracts\Windowable` (`windowedScoreExpression($start, $end)`; `$end` is `null` for an open-ended `since()`).
+`period(Period::Day|Week|Month)` and `since(start:, until:)` window a board to activity inside the range. For `xp` the windowed score is computed from the `experience_audits` ledger as `add` rows minus `remove` rows (state-change rows — `reset`, `level_up`, `tier_up`, `tier_down` — never count); this requires auditing (the v3 default), and with auditing explicitly disabled a periodic XP board throws `MetricRequiresAuditingException`. `achievements` and `challenges` window on their own timestamps (the achievement pivot's `created_at` and the `challenge_completions` ledger's `completed_at`) and don't need auditing. Only `Windowable` metrics support periods — `xp`, `achievements`, and `challenges` do; `level` and `streak` throw `MetricNotWindowableException`. Custom metrics opt in by implementing `LevelUp\Experience\Contracts\Windowable` (`windowedScoreExpression($start, $end)`; `$end` is `null` for an open-ended `since()`).
 
 `setPoints()` writes no audit record, so it never moves a periodic board (administrative override, not earned activity) — the all-time board sees it immediately. Users with no qualifying audit rows in the window are absent from the board. All-time boards (no period) read `experiences.experience_points` directly and never scan the ledger.
 
@@ -773,11 +778,15 @@ return [
         'achievement_user' => LevelUp\Experience\Models\Pivots\AchievementUser::class,
         'tier' => LevelUp\Experience\Models\Tier::class,
         'multiplier' => LevelUp\Experience\Models\Multiplier::class,
+        'multiplier_user' => LevelUp\Experience\Models\Pivots\MultiplierUser::class,
+        'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'challenge_completion' => LevelUp\Experience\Models\ChallengeCompletion::class,
         'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
         'division' => LevelUp\Experience\Models\Division::class,
         'cohort' => LevelUp\Experience\Models\Cohort::class,
+        'cohort_user' => LevelUp\Experience\Models\Pivots\CohortUser::class,
     ],
     'user' => [
         'foreign_key' => 'user_id',

@@ -2,7 +2,7 @@
 
 ## v2.x -> v3.0
 
-v3.0 is a breaking-change release, headlined by a metric-driven leaderboard: rank by any metric, time Periods, named Boards, Snapshots with rank events, and Leagues with Divisions and Cohorts. Most users only need to run `composer require cjmellor/level-up:^3.0`, re-publish migrations, then `php artisan migrate` — the multiplier schema reshape is backfilled automatically and the new leaderboard tables are created. Application code touching `Multiplier::scopeTo()` or consuming `Leaderboard::generate()` needs updating; the legacy `'table'` config key and the `UserForeignKey::on()` migration helper are gone.
+v3.0 is a breaking-change release, headlined by a metric-driven leaderboard: rank by any metric, time Periods, named Boards, Snapshots with rank events, and Leagues with Divisions and Cohorts. Most users only need to run `composer require cjmellor/level-up:^3.0`, re-publish migrations **and (if you previously published it) the config**, then `php artisan migrate` — the multiplier schema reshape and the new challenge-completion ledger are backfilled automatically, and the new leaderboard tables are created. If you use the new Boards or Leagues, declare them in config and schedule the two new commands. Application code touching `Multiplier::scopeTo()` or consuming `Leaderboard::generate()` needs updating; the legacy `'table'` config key and the `UserForeignKey::on()` migration helper are gone.
 
 The boost skill `level-up-upgrade-v3` walks an LLM through this upgrade interactively if you're using boost.
 
@@ -187,13 +187,35 @@ The migration's `down()` previously generated invalid Postgres syntax (`ALTER CO
 
 v3 ships the full leaderboard feature set: rank by any metric (`xp`, `level`, `streak`, `achievements`, `challenges`, or a custom `RankingMetric`), time Periods sourced from the audit ledger, `rankOf()` / `around()`, `restrictTo()` for friends boards and custom populations, named Boards declared in config, Snapshots with rank-change events, a `leaderboard_rank` challenge condition, and Leagues — a Division ladder with Cohorts, promotion, and relegation. See the [Leaderboard section in the README](README.md#-leaderboard).
 
+**Re-publish or merge the config — especially the `models` map.** Laravel merges a published config *shallowly*: any top-level array you already publish overrides the package default wholesale (it is not deep-merged). Installs that never published `config/level-up.php` pick up every new v3 default automatically and can skip this step.
+
+If you published the config in v1/v2, your `models` array overrides the package's, and model classes are resolved straight from `level-up.models.*` with no fallback — so the new bindings resolve to `null` and leagues, snapshots, and the challenge-completion ledger throw until you add them. Re-publish with `--force` (back up customisations first) or add these `models` keys by hand:
+
+```bash
+php artisan vendor:publish --tag="level-up-config" --force
+```
+
+- `multiplier_user` and `multiplier_tier` — the typed pivots that replace the removed `multiplier_scope` (you can drop that dead key).
+- `challenge_completion`, `leaderboard_snapshot`, `division`, `cohort`, and `cohort_user`.
+
+The new `leaderboard` settings block (`default_metric`, `metrics`, `boards`, `snapshots.retention_days`, `league`, plus top-level `week_starts_on` / `timezone`) is a brand-new top-level key, so it merges in from the package default automatically — but add it to your published file too so you can declare Boards or a league. Table names resolve through built-in defaults, so a stale `tables` array won't drop the new tables.
+
 **New migrations required** — run `php artisan vendor:publish --tag="level-up-migrations"` then `php artisan migrate`:
 
 - `create_leaderboard_snapshots_table` — Snapshot storage for declared Boards
 - `create_divisions_table` — the league's Division ladder
 - `create_cohorts_table` and `create_cohort_user_table` — Cohort membership per Period
+- `create_challenge_completions_table` — completion ledger behind the `challenges` metric; **backfilled automatically** from existing completed `challenge_user` pivots, so prior completions are counted
 
-All of it is opt-in: declare no Boards and no league, and only the live query API is active. Snapshots and league rollovers run via two independent commands — `level-up:snapshot-boards` and `level-up:league-rollover` — which you schedule from your application; the package never auto-registers scheduler entries.
+All of it is opt-in: declare no Boards and no league, and only the live query API is active. Snapshots and league rollovers run via two independent commands — `level-up:snapshot-boards` and `level-up:league-rollover` — which you schedule from your application; the package never auto-registers scheduler entries:
+
+```php
+// routes/console.php
+use Illuminate\Support\Facades\Schedule;
+
+Schedule::command('level-up:snapshot-boards')->daily();             // also prunes runs older than leaderboard.snapshots.retention_days
+Schedule::command('level-up:league-rollover')->weeklyOn(1, '00:05'); // align the cadence with your league board's Period
+```
 
 ## v1.x -> v2.0
 
