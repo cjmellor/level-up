@@ -28,6 +28,7 @@ Plus cleanup:
 - `addPoints()` past the highest level threshold now caps at the top level instead of throwing.
 - `addPoints()` is wrapped in `DB::transaction()` for atomicity.
 - `revokeAchievement()` clears the cached relation collection so subsequent reads see the detached state.
+- Adds a `challenge_completions` ledger — every completion is recorded as its own row, so the `challenges` leaderboard metric counts repeatable completions correctly; a migration backfills existing completions.
 - Fixes a Postgres rollback bug on `alter_experience_audits_type_to_string`.
 
 PHP and Laravel version requirements are unchanged (PHP 8.3+, Laravel 12 or 13).
@@ -170,14 +171,32 @@ Blade templates, API resources, and tests that consumed the old shape need the s
 - If they relied on the old default to keep `experience_audits` empty, set `AUDIT_POINTS=false` in `.env` — but periodic XP boards will then throw `MetricRequiresAuditingException`.
 - If their published config pins `'enabled' => env('AUDIT_POINTS', false)`, nothing changes until they update it.
 
-## Step 13: Publish and run migrations
+## Step 13: Add the new model bindings (if the config is published)
+
+The new league, snapshot, and challenge-completion features resolve their model classes straight from `level-up.models.*`, and Laravel merges a published config **shallowly** — so if the user published `config/level-up.php` in v1/v2, their `models` array overrides the package default and the new bindings are missing (they resolve to `null` and the feature throws). `tables` are safe (they fall back to built-in defaults) and the `leaderboard` settings block is a new top-level key that merges in automatically — it is specifically the `models` map that needs the additions.
+
+If `config/level-up.php` is **not** published, skip this step. If it **is**, add the new keys to the `models` array (or re-publish with `--force` after backing up customisations):
+
+```php
+'multiplier_user' => LevelUp\Experience\Models\Pivots\MultiplierUser::class,
+'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
+'challenge_completion' => LevelUp\Experience\Models\ChallengeCompletion::class,
+'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
+'division' => LevelUp\Experience\Models\Division::class,
+'cohort' => LevelUp\Experience\Models\Cohort::class,
+'cohort_user' => LevelUp\Experience\Models\Pivots\CohortUser::class,
+```
+
+The old `models.multiplier_scope` key (pointing at the removed `MultiplierScope`) is dead — drop it. To declare Boards or a league, also copy the new `leaderboard` block from the package's `config/level-up.php`.
+
+## Step 14: Publish and run migrations
 
 ```bash
 php artisan vendor:publish --tag="level-up-migrations"
 php artisan migrate
 ```
 
-Publishing picks up the new leaderboard tables: `leaderboard_snapshots`, `divisions`, `cohorts`, and `cohort_user`. The `migrate_multiplier_scopes_to_typed_pivots` migration runs automatically. If the user has existing `multiplier_scopes` data, it'll print a summary like:
+Publishing picks up the new v3 tables: `leaderboard_snapshots`, `divisions`, `cohorts`, `cohort_user`, and `challenge_completions`. The `migrate_multiplier_scopes_to_typed_pivots` migration runs automatically, and `create_challenge_completions_table` backfills the new ledger with one row per already-completed challenge (so the `challenges` metric counts prior completions). If the user has existing `multiplier_scopes` data, it'll print a summary like:
 
 ```
   level-up: migrated 47 multiplier scope rows (32 user, 15 tier) into typed pivot tables; dropped multiplier_scopes.
@@ -185,7 +204,7 @@ Publishing picks up the new leaderboard tables: `leaderboard_snapshots`, `divisi
 
 If the migration encounters rows with a `scopeable_type` it doesn't recognise (not the configured user model and not the configured Tier class), it logs a warning and skips them — those rows are lost. Surface this to the user if it happens.
 
-## Step 14: Run tests
+## Step 15: Run tests
 
 ```bash
 php artisan test
@@ -193,7 +212,7 @@ php artisan test
 
 If anything fails, walk back through the steps above — most v3 breakage is straightforward find-and-replace.
 
-## Step 15: Verify
+## Step 16: Verify
 
 Spot-check that scoped multipliers still apply correctly:
 

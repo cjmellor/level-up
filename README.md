@@ -49,9 +49,11 @@ return [
         'multiplier_tier' => LevelUp\Experience\Models\Pivots\MultiplierTier::class,
         'challenge' => LevelUp\Experience\Models\Challenge::class,
         'challenge_user' => LevelUp\Experience\Models\Pivots\ChallengeUser::class,
+        'challenge_completion' => LevelUp\Experience\Models\ChallengeCompletion::class,
         'leaderboard_snapshot' => LevelUp\Experience\Models\LeaderboardSnapshot::class,
         'division' => LevelUp\Experience\Models\Division::class,
         'cohort' => LevelUp\Experience\Models\Cohort::class,
+        'cohort_user' => LevelUp\Experience\Models\Pivots\CohortUser::class,
     ],
 
     /*
@@ -131,6 +133,7 @@ return [
         'multiplier_tier' => 'multiplier_tier',
         'challenges' => 'challenges',
         'challenge_user' => 'challenge_user',
+        'challenge_completions' => 'challenge_completions',
         'leaderboard_snapshots' => 'leaderboard_snapshots',
         'divisions' => 'divisions',
         'cohorts' => 'cohorts',
@@ -825,7 +828,7 @@ Leaderboard::by('achievements')->period(Period::Week)->generate(); // most achie
 Leaderboard::by('challenges')->generate();                      // most challenges completed, ever
 ```
 
-`achievements` counts earned achievements; on a periodic board, only achievements earned within the window count. `challenges` counts **completed** challenges — being enrolled isn't enough — and periodic boards window on when each challenge was completed, not when the user enrolled. If the challenges system is turned off (`level-up.challenges.enabled`), the `challenges` metric throws `MetricDisabledException`. As with every metric, users with a count of zero are absent from the board rather than ranked at zero.
+`achievements` counts earned achievements; on a periodic board, only achievements earned within the window count. `challenges` counts **completions** recorded in the `challenge_completions` ledger — being enrolled isn't enough — so a [repeatable challenge](#repeatable-challenges) counts once per completion, and periodic boards window on when each completion happened, not when the user enrolled. If the challenges system is turned off (`level-up.challenges.enabled`), the `challenges` metric throws `MetricDisabledException`. As with every metric, users with a count of zero are absent from the board rather than ranked at zero.
 
 > [!NOTE]
 > The `achievements` count includes **secret** achievements. This is deliberate: a count reveals nothing about *which* achievements were earned, and excluding them would let users be punished on the leaderboard for earning a secret. Keep secrecy in what you display, not in the score.
@@ -1512,7 +1515,8 @@ Throws if the user is not enrolled, or if the challenge is already completed.
 
 ```php
 $user->activeChallenges;        // Enrolled, not yet completed
-$user->completedChallenges;     // Completed challenges
+$user->completedChallenges;     // Challenges completed at least once (distinct; repeatable-safe)
+$user->challengeCompletions;    // Every completion event (one row per completion, repeatable included)
 
 $user->getChallengeProgress($challenge);
 // Returns: [['type' => 'points_earned', 'completed' => true], ['type' => 'level_reached', 'completed' => false]]
@@ -1552,6 +1556,10 @@ Challenge::create([
 ### Repeatable Challenges
 
 Set `is_repeatable` to `true`. When all conditions are met, rewards are dispatched, then the challenge resets with a fresh baseline. The user can complete it again.
+
+Every completion — repeatable or not — is recorded as a row in the `challenge_completions` ledger, exposed as the `challengeCompletions()` relation on the user. A non-repeatable challenge contributes a single row; a repeatable challenge contributes one row per completion. This ledger is the source of truth for the [`challenges` leaderboard metric](#built-in-metrics), so repeated completions correctly increase a user's score and periodic challenge boards window on each completion's `completed_at`. The `completedChallenges` relation stays distinct — a challenge the user has finished appears there once, however many times it has been repeated.
+
+The `challenge_completions` table ships as a package migration — re-publish migrations and migrate when upgrading. The migration backfills one row per already-completed challenge, so existing completions are counted from the start.
 
 ### Events
 
