@@ -34,6 +34,7 @@ All notable changes to `level-up` will be documented in this file.
 - `Multiplier::scopeToUser`, `scopeToTier`, `unscopeFromUser`, `unscopeFromTier`, `isGlobal` methods.
 - `$table->userForeignId()` Blueprint macro alongside `entityId()` / `entityForeignId()`.
 - `migrate_multiplier_scopes_to_typed_pivots` migration — backfills v2.x data into the v3 schema, no-op on fresh installs.
+- **Optional absolute count on Achievements** — track the real number behind a percentage (games played, articles read) via an open-ended `count` set with `grantAchievement()` and increased alongside progress with `incrementAchievementProgress()`; the increment is carried on the `AchievementProgressionIncreased` event. (#179)
 
 ### Fixed
 
