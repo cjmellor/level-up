@@ -11,3 +11,5 @@
 /.claude/
 /docs/
 CLAUDE.local.md
+
+tests/_pest_ide_helper.php

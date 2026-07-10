@@ -18,7 +18,7 @@ trait HasAchievements
     /**
      * @throws Exception
      */
-    public function grantAchievement(Achievement $achievement, ?int $progress = null): void
+    public function grantAchievement(Achievement $achievement, ?int $progress = null, ?int $count = null): void
     {
         throw_if($progress > 100, Exception::class, message: 'Progress cannot be greater than 100');
 
@@ -40,6 +40,7 @@ trait HasAchievements
 
         $this->achievements()->attach($achievement, [
             'progress' => $progress,
+            'count' => $count,
         ]);
 
         $this->clearAchievementRelationCache();
@@ -65,7 +66,7 @@ trait HasAchievements
             ->where('is_secret', false);
     }
 
-    public function incrementAchievementProgress(Achievement $achievement, int $amount = 1): int
+    public function incrementAchievementProgress(Achievement $achievement, int $amount = 1, ?int $count = null): int
     {
         $userAchievement = $this->achievements()->find($achievement->id);
 
@@ -73,11 +74,17 @@ trait HasAchievements
 
         $newProgress = min(100, ($userAchievement->pivot->progress ?? 0) + $amount);
 
-        $this->achievements()->updateExistingPivot($achievement->id, attributes: ['progress' => $newProgress]);
+        $attributes = ['progress' => $newProgress];
+
+        if ($count !== null) {
+            $attributes['count'] = ($userAchievement->pivot->count ?? 0) + $count;
+        }
+
+        $this->achievements()->updateExistingPivot($achievement->id, attributes: $attributes);
 
         $this->clearAchievementRelationCache();
 
-        event(new AchievementProgressionIncreased(achievement: $achievement, user: $this, amount: $amount));
+        event(new AchievementProgressionIncreased(achievement: $achievement, user: $this, amount: $amount, count: $count));
 
         return $newProgress;
     }
@@ -130,7 +137,7 @@ trait HasAchievements
         return $this->belongsToMany(
             related: $achievementClass,
             table: config('level-up.tables.achievement_user'),
-        )->using($pivotClass)->withPivot(columns: 'progress');
+        )->using($pivotClass)->withPivot(columns: ['progress', 'count']);
     }
 
     private function clearAchievementRelationCache(): void
