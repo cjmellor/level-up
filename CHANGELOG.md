@@ -2,7 +2,7 @@
 
 All notable changes to `level-up` will be documented in this file.
 
-## v3.0.0-beta1 - Unreleased
+## v3.0.0 - 2026-07-10
 
 ### Breaking changes
 
