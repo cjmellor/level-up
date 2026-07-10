@@ -79,6 +79,7 @@ class LevelUpServiceProvider extends PackageServiceProvider
                 'create_experience_audits_table',
                 'create_achievements_table',
                 'create_achievement_user_pivot_table',
+                'add_count_to_achievement_user_table',
                 'create_streak_activities_table',
                 'create_streaks_table',
                 'create_streak_histories_table',

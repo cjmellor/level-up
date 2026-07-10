@@ -663,6 +663,20 @@ $user->grantAchievement(
 > [!NOTE]
 > Achievement progress is capped to 100%
 
+### Track an absolute count
+
+Progress is a percentage, so it can't tell you the absolute number behind it — how many games were played, articles read, and so on. Pass an optional `count` alongside the progress to track that number on the same achievement:
+
+```php
+$user->grantAchievement(
+    achievement: $achievement,
+    progress: 50,
+    count: 5 // e.g. 5 games played
+);
+```
+
+Unlike progress, the count is open-ended — it isn't capped at 100.
+
 ### Check Achievement Progression
 
 Check at what progression your Achievements are at.
@@ -685,6 +699,16 @@ You can increment the progression of an Achievement up to 100.
 $user->incrementAchievementProgress(
     achievement: $achievement, 
     amount: 10
+);
+```
+
+Pass a `count` to also increment the achievement's absolute count by that amount:
+
+```php
+$user->incrementAchievementProgress(
+    achievement: $achievement,
+    amount: 10,
+    count: 1 // one more game played
 );
 ```
 
@@ -737,6 +761,7 @@ public Model $user,
 public Achievement $achievement,
 public Model $user,
 public int $amount,
+public ?int $count,
 ```
 
 ## 📈 Leaderboard

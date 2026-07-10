@@ -16,5 +16,6 @@ class AchievementProgressionIncreased
         public readonly Achievement $achievement,
         public readonly Model $user,
         public readonly int $amount,
+        public readonly ?int $count = null,
     ) {}
 }

@@ -39,6 +39,28 @@ it(description: 'throws an exception if the progress of an Achievement is greate
     ->defer(fn () => $this->user->grantAchievement($this->achievement, 101))
     ->throws(exception: Exception::class, exceptionMessage: 'Progress cannot be greater than 100');
 
+test(description: 'a User can earn an Achievement with an initial count', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, progress: 50, count: 5);
+
+    $this->assertDatabaseHas(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+        'progress' => 50,
+        'count' => 5,
+    ]);
+});
+
+test(description: 'a User earning an Achievement without a count leaves the count null', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, progress: 50);
+
+    $this->assertDatabaseHas(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+        'progress' => 50,
+        'count' => null,
+    ]);
+});
+
 test(description: 'an Event runs when an Achievement is earned', closure: function (): void {
     Event::fakeFor(callable: function (): void {
         $this->user->grantAchievement($this->achievement);
@@ -106,6 +128,71 @@ it(description: 'can increment the progress of an Achievement', closure: functio
         'achievement_id' => $this->achievement->id,
         'progress' => 51,
     ]);
+});
+
+it(description: 'can increment the count of an Achievement alongside progress', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, progress: 50, count: 10);
+
+    $this->user->incrementAchievementProgress($this->achievement, amount: 5, count: 3);
+
+    $this->assertDatabaseHas(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+        'progress' => 55,
+        'count' => 13,
+    ]);
+});
+
+it(description: 'treats a null count as zero when incrementing', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, progress: 50);
+
+    $this->user->incrementAchievementProgress($this->achievement, amount: 5, count: 7);
+
+    $this->assertDatabaseHas(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+        'progress' => 55,
+        'count' => 7,
+    ]);
+});
+
+it(description: 'leaves the count untouched when incrementing progress without one', closure: function (): void {
+    $this->user->grantAchievement($this->achievement, progress: 50, count: 10);
+
+    $this->user->incrementAchievementProgress($this->achievement, amount: 5);
+
+    $this->assertDatabaseHas(table: 'achievement_user', data: [
+        'user_id' => $this->user->id,
+        'achievement_id' => $this->achievement->id,
+        'progress' => 55,
+        'count' => 10,
+    ]);
+});
+
+test(description: 'the AchievementProgressionIncreased Event carries the count increment', closure: function (): void {
+    Event::fake();
+
+    $this->user->grantAchievement($this->achievement, progress: 50);
+
+    $this->user->incrementAchievementProgress($this->achievement, amount: 5, count: 3);
+
+    Event::assertDispatched(
+        event: AchievementProgressionIncreased::class,
+        callback: fn (AchievementProgressionIncreased $event): bool => $event->count === 3,
+    );
+});
+
+test(description: 'the AchievementProgressionIncreased Event carries a null count when none is passed', closure: function (): void {
+    Event::fake();
+
+    $this->user->grantAchievement($this->achievement, progress: 50);
+
+    $this->user->incrementAchievementProgress($this->achievement, amount: 5);
+
+    Event::assertDispatched(
+        event: AchievementProgressionIncreased::class,
+        callback: fn (AchievementProgressionIncreased $event): bool => $event->count === null,
+    );
 });
 
 test(description: 'a User cannot be granted the same Achievement twice', closure: function (): void {

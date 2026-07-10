@@ -10,6 +10,7 @@ use LevelUp\Experience\Concerns\ResolvesConfiguredTable;
 
 /**
  * @property int|null $progress
+ * @property int|null $count
  */
 class AchievementUser extends Pivot
 {
