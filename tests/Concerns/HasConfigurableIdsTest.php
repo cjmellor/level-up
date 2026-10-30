@@ -71,38 +71,13 @@ test(description: 'the entity key macros create ULID columns when configured', c
     Schema::drop('ulid_macro_test');
 });
 
-test(description: 'an entity reads the id type once, not on every attribute read', closure: function (): void {
+test(description: 'an entity keeps the id type it was created with', closure: function (): void {
     config()->set(key: 'level-up.entities.id_type', value: 'bigint');
-    $achievement = new Achievement(['name' => 'Summit']);
+    $achievement = new Achievement;
 
-    $reads = new ArrayObject(['count' => 0]);
-    config()->offsetSet('level-up.entities', new class(function () use ($reads): void {
-        $reads['count']++;
-    }) implements ArrayAccess
-    {
-        public function __construct(private Closure $count) {}
+    config()->set(key: 'level-up.entities.id_type', value: 'uuid');
 
-        public function offsetExists(mixed $offset): bool
-        {
-            return $offset === 'id_type';
-        }
-
-        public function offsetGet(mixed $offset): mixed
-        {
-            ($this->count)();
-
-            return 'bigint';
-        }
-
-        public function offsetSet(mixed $offset, mixed $value): void {}
-
-        public function offsetUnset(mixed $offset): void {}
-    });
-
-    foreach (range(1, 10) as $read) {
-        $achievement->getAttribute('name');
-        $achievement->getKeyType();
-    }
-
-    expect($reads['count'])->toBe(expected: 0);
+    expect($achievement->getKeyType())->toBe(expected: 'int')
+        ->and($achievement->getIncrementing())->toBeTrue()
+        ->and((new Achievement)->getKeyType())->toBe(expected: 'string');
 });
