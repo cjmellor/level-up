@@ -12,8 +12,11 @@ trait HasConfigurableIds
 {
     use HasUniqueIds;
 
+    private ?string $configuredIdType = null;
+
     public function initializeHasConfigurableIds(): void
     {
+        $this->configuredIdType = config('level-up.entities.id_type', 'bigint');
         $this->usesUniqueIds = in_array($this->packageIdType(), ['uuid', 'ulid'], true);
     }
 
@@ -49,6 +52,6 @@ trait HasConfigurableIds
 
     protected function packageIdType(): string
     {
-        return config('level-up.entities.id_type', 'bigint');
+        return $this->configuredIdType ??= config('level-up.entities.id_type', 'bigint');
     }
 }
