@@ -2,6 +2,12 @@
 
 All notable changes to `level-up` will be documented in this file.
 
+## v3.0.1 - Unreleased
+
+### Fixed
+
+- **Duplicate email verification emails.** The package's event service provider no longer registers Laravel's `SendEmailVerificationNotification` listener a second time, so apps using `MustVerifyEmail` send one verification email per sign-up instead of two. (#189)
+
 ## v3.0.0 - 2026-07-10
 
 ### Breaking changes
