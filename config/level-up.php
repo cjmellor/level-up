@@ -257,6 +257,23 @@ return [
 
     /*
     | -------------------------------------------------------------------------
+    | Streak Period
+    | -------------------------------------------------------------------------
+    |
+    | How long one streak period lasts: 'day' (the default) or 'week'. An
+    | activity in the next period increases the streak; a period without
+    | activity breaks it. Periods are counted in 'timezone' (null = the
+    | application timezone); weeks start on 'week_starts_on'.
+    |
+    */
+    'streaks' => [
+        'period' => env(key: 'STREAK_PERIOD', default: 'day'),
+        'week_starts_on' => Carbon\CarbonInterface::MONDAY,
+        'timezone' => null,
+    ],
+
+    /*
+    | -------------------------------------------------------------------------
     | Tiers
     | -------------------------------------------------------------------------
     |

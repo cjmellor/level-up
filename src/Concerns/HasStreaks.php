@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace LevelUp\Experience\Concerns;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use LevelUp\Experience\Events\StreakBroken;
@@ -26,17 +27,17 @@ trait HasStreaks
 
         $lastActivity = $this->getStreakLastActivity($activity);
 
-        $diffInDays = (int) ($lastActivity->activity_at->startOfDay()->diffInDays(today()));
+        $periodsSince = $this->streakPeriodsBetween($lastActivity->activity_at, now());
 
         if ($lastActivity->frozen_until && now()->lessThan($lastActivity->frozen_until)) {
             return;
         }
 
-        if ($diffInDays === 0) {
+        if ($periodsSince === 0) {
             return;
         }
 
-        if ($diffInDays > 1) {
+        if ($periodsSince > 1) {
             $this->resetStreak($activity);
 
             event(new StreakBroken($this, $activity, $this->streaks()->whereBelongsTo(related: $activity)->first()));
@@ -185,8 +186,30 @@ trait HasStreaks
             config(key: 'level-up.user.foreign_key', default: 'user_id') => $this->id,
             'activity_id' => $activity->id,
             'count' => $latestStreak->count,
-            'started_at' => $latestStreak->activity_at->subDays($latestStreak->count - 1),
+            'started_at' => $this->streakPeriod() === 'week'
+                ? $latestStreak->activity_at->subWeeks($latestStreak->count - 1)
+                : $latestStreak->activity_at->subDays($latestStreak->count - 1),
             'ended_at' => $latestStreak->activity_at,
         ]);
+    }
+
+    protected function streakPeriod(): string
+    {
+        return config(key: 'level-up.streaks.period', default: 'day') === 'week' ? 'week' : 'day';
+    }
+
+    protected function streakPeriodsBetween(CarbonInterface $from, CarbonInterface $to): int
+    {
+        $timezone = config(key: 'level-up.streaks.timezone') ?? config(key: 'app.timezone');
+        $from = $from->copy()->setTimezone($timezone);
+        $to = $to->copy()->setTimezone($timezone);
+
+        if ($this->streakPeriod() === 'week') {
+            $weekStartsOn = (int) config(key: 'level-up.streaks.week_starts_on', default: CarbonInterface::MONDAY);
+
+            return (int) $from->startOfWeek($weekStartsOn)->diffInWeeks($to->startOfWeek($weekStartsOn));
+        }
+
+        return (int) $from->startOfDay()->diffInDays($to->startOfDay());
     }
 }

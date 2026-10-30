@@ -1184,6 +1184,18 @@ class User extends Model
 }
 ```
 
+### Weekly streaks
+
+Streaks count days by default. To count weeks instead (an activity any time in the week keeps it; a week without one breaks it), set the period in the published config:
+
+```php
+'streaks' => [
+    'period' => 'week',
+    'week_starts_on' => Carbon\CarbonInterface::MONDAY,
+    'timezone' => 'Asia/Manila', // null = the application timezone
+],
+```
+
 ### Activities
 
 Use the `Activies` model to add new activities that you want to track. Here’s some examples:
