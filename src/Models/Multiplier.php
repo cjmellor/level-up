@@ -29,13 +29,6 @@ class Multiplier extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'multiplier' => 'decimal:2',
-        'is_active' => 'boolean',
-        'starts_at' => 'datetime',
-        'expires_at' => 'datetime',
-    ];
-
     /**
      * @return BelongsToMany<Model, $this, Pivots\MultiplierUser, 'pivot'>
      */
@@ -185,5 +178,15 @@ class Multiplier extends Model
     protected function configuredTableKey(): string
     {
         return 'multipliers';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'multiplier' => 'decimal:2',
+            'is_active' => 'boolean',
+            'starts_at' => 'datetime',
+            'expires_at' => 'datetime',
+        ];
     }
 }

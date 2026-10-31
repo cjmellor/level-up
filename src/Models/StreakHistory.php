@@ -24,13 +24,16 @@ class StreakHistory extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'started_at' => 'datetime',
-        'ended_at' => 'datetime',
-    ];
-
     protected function configuredTableKey(): string
     {
         return 'streak_histories';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'started_at' => 'datetime',
+            'ended_at' => 'datetime',
+        ];
     }
 }
