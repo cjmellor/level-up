@@ -22,10 +22,6 @@ class Division extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'position' => 'integer',
-    ];
-
     /**
      * @return HasMany<Cohort, $this>
      */
@@ -40,5 +36,12 @@ class Division extends Model
     protected function configuredTableKey(): string
     {
         return 'divisions';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'position' => 'integer',
+        ];
     }
 }

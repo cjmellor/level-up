@@ -6,6 +6,7 @@ use Rector\Config\RectorConfig;
 use Rector\Php83\Rector\ClassMethod\AddOverrideAttributeToOverriddenMethodsRector;
 use RectorLaravel\Rector\Class_\AddHasFactoryToModelsRector;
 use RectorLaravel\Rector\Class_\DescriptionPropertyToDescriptionAttributeRector;
+use RectorLaravel\Rector\Class_\EmptyGuardedPropertyToUnguardedAttributeRector;
 use RectorLaravel\Rector\Class_\SignaturePropertyToSignatureAttributeRector;
 use RectorLaravel\Rector\Class_\TablePropertyToTableAttributeRector;
 use RectorLaravel\Rector\ClassMethod\MakeModelAttributesAndScopesProtectedRector;
@@ -27,6 +28,7 @@ return RectorConfig::configure()
         TablePropertyToTableAttributeRector::class,
         DescriptionPropertyToDescriptionAttributeRector::class,
         SignaturePropertyToSignatureAttributeRector::class,
+        EmptyGuardedPropertyToUnguardedAttributeRector::class,
     ])
     ->withPreparedSets(
         deadCode: true,

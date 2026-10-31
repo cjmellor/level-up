@@ -25,12 +25,6 @@ class LeaderboardSnapshot extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'rank' => 'integer',
-        'score' => 'float',
-        'run_at' => 'datetime',
-    ];
-
     /**
      * @return BelongsTo<Model, $this>
      */
@@ -42,5 +36,14 @@ class LeaderboardSnapshot extends Model
     protected function configuredTableKey(): string
     {
         return 'leaderboard_snapshots';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'rank' => 'integer',
+            'score' => 'float',
+            'run_at' => 'datetime',
+        ];
     }
 }

@@ -26,11 +26,6 @@ class Tier extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'experience' => 'integer',
-        'metadata' => 'array',
-    ];
-
     /**
      * @param  array{name: string, experience: int, metadata?: array}  ...$tiers
      *
@@ -59,6 +54,14 @@ class Tier extends Model
     protected function configuredTableKey(): string
     {
         return 'tiers';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'experience' => 'integer',
+            'metadata' => 'array',
+        ];
     }
 
     private static function createTier(array $tier): static
