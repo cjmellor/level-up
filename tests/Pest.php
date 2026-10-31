@@ -76,11 +76,9 @@ uses(UlidUserTestCase::class, RefreshDatabase::class)
     ->in(__DIR__.'/Ulid');
 
 expect()->extend(name: 'toBeCarbon', extend: function (string $expected, ?string $format = null): object {
-    if ($format === null) {
-        $format = str_contains($expected, ':')
-            ? 'Y-m-d H:i:s'
-            : 'Y-m-d';
-    }
+    $format ??= str_contains($expected, ':')
+        ? 'Y-m-d H:i:s'
+        : 'Y-m-d';
 
     expect($this->value?->format($format))->toBe($expected);
 

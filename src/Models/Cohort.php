@@ -26,12 +26,6 @@ class Cohort extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'period_start' => 'datetime',
-        'period_end' => 'datetime',
-        'rolled_over_at' => 'datetime',
-    ];
-
     /**
      * @return BelongsTo<Division, $this>
      */
@@ -62,5 +56,14 @@ class Cohort extends Model
     protected function configuredTableKey(): string
     {
         return 'cohorts';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'period_start' => 'datetime',
+            'period_end' => 'datetime',
+            'rolled_over_at' => 'datetime',
+        ];
     }
 }

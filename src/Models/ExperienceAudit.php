@@ -28,11 +28,6 @@ class ExperienceAudit extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'type' => AuditType::class,
-        'multipliers' => 'array',
-    ];
-
     /**
      * @return BelongsTo<Model, $this>
      */
@@ -44,5 +39,13 @@ class ExperienceAudit extends Model
     protected function configuredTableKey(): string
     {
         return 'experience_audits';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'type' => AuditType::class,
+            'multipliers' => 'array',
+        ];
     }
 }
