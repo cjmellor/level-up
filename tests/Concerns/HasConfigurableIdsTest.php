@@ -70,3 +70,14 @@ test(description: 'the entity key macros create ULID columns when configured', c
 
     Schema::drop('ulid_macro_test');
 });
+
+test(description: 'an entity keeps the id type it was created with', closure: function (): void {
+    config()->set(key: 'level-up.entities.id_type', value: 'bigint');
+    $achievement = new Achievement;
+
+    config()->set(key: 'level-up.entities.id_type', value: 'uuid');
+
+    expect($achievement->getKeyType())->toBe(expected: 'int')
+        ->and($achievement->getIncrementing())->toBeTrue()
+        ->and((new Achievement)->getKeyType())->toBe(expected: 'string');
+});
