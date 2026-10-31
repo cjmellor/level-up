@@ -26,11 +26,6 @@ class Streak extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'activity_at' => 'datetime',
-        'frozen_until' => 'datetime',
-    ];
-
     /**
      * @return BelongsTo<Model, $this>
      */
@@ -53,5 +48,13 @@ class Streak extends Model
     protected function configuredTableKey(): string
     {
         return 'streaks';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'activity_at' => 'datetime',
+            'frozen_until' => 'datetime',
+        ];
     }
 }

@@ -36,16 +36,6 @@ class Challenge extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'conditions' => 'array',
-        'rewards' => 'array',
-        'auto_enroll' => 'boolean',
-        'is_repeatable' => 'boolean',
-        'starts_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'metadata' => 'array',
-    ];
-
     protected static array $conditionRules = [
         'points_earned' => ['amount'],
         'level_reached' => ['level'],
@@ -135,6 +125,19 @@ class Challenge extends Model
     protected function configuredTableKey(): string
     {
         return 'challenges';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'conditions' => 'array',
+            'rewards' => 'array',
+            'auto_enroll' => 'boolean',
+            'is_repeatable' => 'boolean',
+            'starts_at' => 'datetime',
+            'expires_at' => 'datetime',
+            'metadata' => 'array',
+        ];
     }
 
     /**

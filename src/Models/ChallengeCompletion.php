@@ -22,12 +22,15 @@ class ChallengeCompletion extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'completed_at' => 'datetime',
-    ];
-
     protected function configuredTableKey(): string
     {
         return 'challenge_completions';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'completed_at' => 'datetime',
+        ];
     }
 }

@@ -16,13 +16,16 @@ class ChallengeUser extends Pivot
 {
     use HasConfigurableIds, ResolvesConfiguredTable;
 
-    protected $casts = [
-        'completed_at' => 'datetime',
-        'progress' => 'array',
-    ];
-
     protected function configuredTableKey(): string
     {
         return 'challenge_user';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'completed_at' => 'datetime',
+            'progress' => 'array',
+        ];
     }
 }
