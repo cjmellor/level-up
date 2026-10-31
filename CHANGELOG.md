@@ -8,6 +8,10 @@ All notable changes to `level-up` will be documented in this file.
 
 - **Entities read the configured id type once.** Package models now read `level-up.entities.id_type` when they are created instead of on every attribute access, removing a hot `config()` lookup from Eloquent's cast resolution. An existing model keeps the id type it was created with if the config changes at runtime. (#191)
 
+### Fixed
+
+- **Duplicate email verification emails.** The package's event service provider no longer registers Laravel's `SendEmailVerificationNotification` listener a second time, so apps using `MustVerifyEmail` send one verification email per sign-up instead of two. (#189)
+
 ## v3.0.0 - 2026-07-10
 
 ### Breaking changes

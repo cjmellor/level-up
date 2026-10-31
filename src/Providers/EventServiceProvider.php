@@ -52,4 +52,9 @@ class EventServiceProvider extends ServiceProvider
             ChallengeProgressListener::class,
         ],
     ];
+
+    protected function configureEmailVerification(): void
+    {
+        //
+    }
 }
